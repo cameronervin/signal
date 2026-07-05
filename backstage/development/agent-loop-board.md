@@ -75,7 +75,8 @@ pushes, opens pull requests, and updates labels.
 
 For this user-owned Project v2, `Project label sync` needs a repository secret
 named `PROJECT_TOKEN` with the `project` scope. The workflow skips with a notice
-until that secret exists. Track that credential setup in issue `#7`.
+until that secret exists. The workflow uses project owner `@me` so the token can
+resolve the current user's Project. Track that credential setup in issue `#7`.
 
 `Codex issue loop` needs `OPENAI_API_KEY` as a repository Actions secret. It
 skips with a notice until that secret exists. Track that credential setup in

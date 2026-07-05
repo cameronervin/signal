@@ -20,7 +20,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     env:
-      PROJECT_OWNER: cameronervin
+      PROJECT_OWNER: "@me"
       PROJECT_NUMBER: "2"
       GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
