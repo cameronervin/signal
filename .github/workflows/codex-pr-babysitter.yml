@@ -23,14 +23,38 @@ jobs:
     if: >-
       ${{
         github.event_name == 'workflow_dispatch' ||
-        contains(github.event.comment.body || '', '@codex fix') ||
-        contains(github.event.review.body || '', '@codex fix')
+        (
+          github.event_name == 'issue_comment' &&
+          github.event.issue.pull_request &&
+          contains(github.event.comment.body, '@codex fix')
+        ) ||
+        (
+          github.event_name == 'pull_request_review' &&
+          contains(github.event.review.body, '@codex fix')
+        ) ||
+        (
+          github.event_name == 'pull_request_review_comment' &&
+          contains(github.event.comment.body, '@codex fix')
+        )
       }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install toolchains and dependencies
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          python -m pip install --upgrade pip uv
+          cd backend && uv sync --frozen
       - name: Capture PR context
         id: context
         env:
@@ -41,6 +65,8 @@ jobs:
         run: |
           PR_NUMBER="${DISPATCH_PR_NUMBER:-${EVENT_PR_NUMBER:-$ISSUE_PR_NUMBER}}"
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          HEAD_REF="$(gh pr view "$PR_NUMBER" --json headRefName --jq '.headRefName')"
+          echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
           git fetch --no-tags origin "+refs/pull/$PR_NUMBER/head:pr-$PR_NUMBER"
           git checkout "pr-$PR_NUMBER"
           mkdir -p .codex-run
@@ -58,3 +84,27 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ steps.context.outputs.pr_number }}
+      - name: Commit and push fix pass
+        env:
+          PR_NUMBER: ${{ steps.context.outputs.pr_number }}
+          HEAD_REF: ${{ steps.context.outputs.head_ref }}
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No file changes produced by fix pass."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(agents): address PR ${PR_NUMBER} feedback"
+          git push origin "HEAD:${HEAD_REF}"
+      - name: Report workflow failure
+        if: ${{ failure() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.context.outputs.pr_number }}
+        run: |
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr edit "$PR_NUMBER" --add-label "agent:blocked" || true
+            gh pr comment "$PR_NUMBER" --body "Codex fix pass failed in GitHub Actions. Check the workflow run logs before retrying."
+          fi

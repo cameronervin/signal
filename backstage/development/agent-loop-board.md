@@ -52,6 +52,12 @@ Before running them, add `OPENAI_API_KEY` as a repository Actions secret.
 - `Codex PR review` runs on PR events and can also be dispatched manually.
 - `Codex PR babysitter` runs manually or when a trusted reviewer comments
   `@codex fix`.
+- `CI` runs backend tests/lint and frontend tests/lint/typecheck on pull
+  requests and pushes to `main`.
+
+The issue and fix-pass workflows keep networked GitHub operations outside the
+Codex sandbox. Codex edits files in the checkout; GitHub Actions commits,
+pushes, opens pull requests, and updates labels.
 
 Keep automatic merging disabled until the review and fix-pass loop has proven
 reliable on several low-risk PRs.

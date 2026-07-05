@@ -21,7 +21,7 @@ Read:
    review.
 3. Make the smallest changes needed for actionable items.
 4. Run targeted verification.
-5. Push commits to the PR branch.
+5. Leave all edits in the working tree. The workflow will commit and push.
 6. Reply with what was fixed, what was verified, and what still needs a human.
 
 ## Boundaries

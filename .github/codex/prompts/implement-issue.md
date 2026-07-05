@@ -22,8 +22,8 @@ Read:
 3. Implement the smallest vertical slice through the existing architecture.
 4. Run targeted verification, then broader verification when contracts changed.
 5. Update docs and risk trackers when behavior changed.
-6. Commit changes on a branch named `codex/issue-<number>-<short-slug>`.
-7. Open a pull request linked to the issue.
+6. Leave all edits in the working tree. The workflow will commit, push, and
+   open the pull request.
 
 ## Boundaries
 
@@ -41,7 +41,6 @@ Read:
 
 Report:
 
-- Pull request URL
 - Changed files
 - Verification commands and results
 - Docs updated or why not needed
