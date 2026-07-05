@@ -4,6 +4,12 @@ Signal uses GitHub as the durable state machine for agentic coding loops.
 Codex threads should run finite loops, create or update pull requests, and then
 stop. Labels, milestones, reviews, and CI decide what happens next.
 
+GitHub Project: `Signal Agent Loop Development`
+
+- URL: `https://github.com/users/cameronervin/projects/2`
+- Owner: `cameronervin`
+- Number: `2`
+
 ## Board Columns
 
 | Column | Meaning | Primary labels |
@@ -61,3 +67,11 @@ pushes, opens pull requests, and updates labels.
 
 Keep automatic merging disabled until the review and fix-pass loop has proven
 reliable on several low-risk PRs.
+
+## Merge Gates
+
+CI is configured and passing on `main`. Required status checks, required pull
+request reviews, and required conversation resolution should be enabled on
+`main` when the repository plan supports branch protection for private repos.
+Until then, treat those gates as operating policy rather than enforced GitHub
+settings.
