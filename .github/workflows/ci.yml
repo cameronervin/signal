@@ -32,10 +32,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
       - name: Install frontend dependencies
         run: |
           corepack enable
+          corepack prepare pnpm@10.0.0 --activate
           pnpm install --frozen-lockfile
       - name: Frontend tests
         run: cd frontend && pnpm test

@@ -45,13 +45,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Install toolchains and dependencies
         run: |
           corepack enable
+          corepack prepare pnpm@10.0.0 --activate
           pnpm install --frozen-lockfile
           python -m pip install --upgrade pip uv
           cd backend && uv sync --frozen
