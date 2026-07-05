@@ -71,7 +71,7 @@ jobs:
           git checkout "pr-$PR_NUMBER"
           mkdir -p .codex-run
           gh pr view "$PR_NUMBER" \
-            --json number,title,body,labels,author,baseRefName,headRefName,commits,files,reviews,comments,statusCheckRollup,url \
+            --json number,title,body,labels,author,baseRefName,headRefName,commits,files,reviews,comments,url \
             > .codex-run/pr.json
           gh pr diff "$PR_NUMBER" > .codex-run/pr.diff
       - name: Run Codex fix pass
