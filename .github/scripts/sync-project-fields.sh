@@ -8,9 +8,18 @@ item_url="${ITEM_URL:?ITEM_URL is required}"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
-item_id="$(gh project item-add "$project_number" --owner "$project_owner" --url "$item_url" --format json --jq '.id')"
 fields_file="$tmp_dir/fields.json"
 metadata_file="$tmp_dir/item.json"
+project_error_file="$tmp_dir/project-error.txt"
+
+if ! project_json="$(gh project view "$project_number" --owner "$project_owner" --format json 2>"$project_error_file")"; then
+  cat "$project_error_file" >&2
+  echo "::error::Project label sync cannot access project $project_owner/$project_number. For user-owned Projects v2, add a repository secret named PROJECT_TOKEN with the project scope." >&2
+  exit 1
+fi
+
+project_id="$(jq -r '.id' <<< "$project_json")"
+item_id="$(gh project item-add "$project_number" --owner "$project_owner" --url "$item_url" --format json --jq '.id')"
 
 gh project field-list "$project_number" --owner "$project_owner" --format json > "$fields_file"
 
@@ -50,7 +59,7 @@ set_single_select() {
   fi
 
   gh project item-edit \
-    --project-id "$(gh project view "$project_number" --owner "$project_owner" --format json --jq '.id')" \
+    --project-id "$project_id" \
     --id "$item_id" \
     --field-id "$field" \
     --single-select-option-id "$option_id_value" >/dev/null

@@ -75,7 +75,7 @@ pushes, opens pull requests, and updates labels.
 For user-owned Projects v2, `Project label sync` may need a repository secret
 named `PROJECT_TOKEN` with the `project` scope. It falls back to
 `GITHUB_TOKEN`, but that token may not be allowed to update user projects in all
-repository settings.
+repository settings. Track that credential setup in issue `#7`.
 
 Keep automatic merging disabled until the review and fix-pass loop has proven
 reliable on several low-risk PRs.
