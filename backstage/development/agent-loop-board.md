@@ -10,6 +10,11 @@ GitHub Project: `Signal Agent Loop Development`
 - Owner: `cameronervin`
 - Number: `2`
 
+The project has an `Agent Status` field with kanban states. GitHub's public API
+does not currently expose project view creation, so the visual board view must
+be created in the GitHub UI and grouped by `Agent Status`. Track that UI-only
+setup in issue `#6`.
+
 ## Board Columns
 
 | Column | Meaning | Primary labels |
