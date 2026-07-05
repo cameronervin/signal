@@ -1,0 +1,38 @@
+name: Human decision
+description: Track a product, architecture, credential, scoring, or merge decision.
+title: "[Decision]: "
+labels:
+  - agent:needs-human
+  - type:docs
+  - priority:p2
+body:
+  - type: textarea
+    id: decision
+    attributes:
+      label: Decision needed
+      description: What does a human need to decide before agents continue?
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options considered
+      placeholder: |
+        - Option A:
+        - Option B:
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Boundary flags
+      options:
+        - label: Alters scoring weights or tier thresholds
+        - label: Adds persistent storage, auth, workers, or live send behavior
+        - label: Stores more lead/contact data than currently modeled
+        - label: Adds a paid API dependency
+  - type: textarea
+    id: unblock
+    attributes:
+      label: What unblocks the loop?
+      placeholder: Once decided, the agent should...
+    validations:
+      required: true
