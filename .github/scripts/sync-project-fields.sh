@@ -14,8 +14,8 @@ project_error_file="$tmp_dir/project-error.txt"
 
 if ! project_json="$(gh project view "$project_number" --owner "$project_owner" --format json 2>"$project_error_file")"; then
   cat "$project_error_file" >&2
-  echo "::error::Project label sync cannot access project $project_owner/$project_number. For user-owned Projects v2, add a repository secret named PROJECT_TOKEN with the project scope." >&2
-  exit 1
+  echo "::notice::Project label sync cannot access project $project_owner/$project_number. Regenerate PROJECT_TOKEN with the classic project scope plus any extra scopes reported above, then rerun this workflow." >&2
+  exit 0
 fi
 
 project_id="$(jq -r '.id' <<< "$project_json")"
