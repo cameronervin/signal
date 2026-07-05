@@ -60,7 +60,8 @@ setup in issue `#6`.
 The workflow scaffolds in `.github/workflows/` use `openai/codex-action@v1`.
 Before running them, add `OPENAI_API_KEY` as a repository Actions secret.
 
-- `Codex issue loop` is a manual dispatch workflow for implementing one issue.
+- `Codex issue loop` runs manually or when an issue with a loop label is
+  assigned or labeled `agent:ready`.
 - `Codex PR review` runs on PR events and can also be dispatched manually.
 - `Codex PR babysitter` runs manually or when a trusted reviewer comments
   `@codex fix`.
@@ -75,6 +76,10 @@ pushes, opens pull requests, and updates labels.
 For this user-owned Project v2, `Project label sync` needs a repository secret
 named `PROJECT_TOKEN` with the `project` scope. The workflow skips with a notice
 until that secret exists. Track that credential setup in issue `#7`.
+
+`Codex issue loop` needs `OPENAI_API_KEY` as a repository Actions secret. It
+skips with a notice until that secret exists. Track that credential setup in
+issue `#1`.
 
 Keep automatic merging disabled until the review and fix-pass loop has proven
 reliable on several low-risk PRs.

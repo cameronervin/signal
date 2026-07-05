@@ -10,6 +10,8 @@ on:
         description: Loop name, such as feature-build or bugfix
         required: true
         default: feature-build
+  issues:
+    types: [assigned, labeled]
 
 permissions:
   contents: write
@@ -23,37 +25,99 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      - name: Resolve issue and loop
+        id: issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISPATCH_ISSUE_NUMBER: ${{ inputs.issue_number }}
+          DISPATCH_LOOP: ${{ inputs.loop }}
+          EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          mkdir -p .codex-run
+          ISSUE_NUMBER="${DISPATCH_ISSUE_NUMBER:-$EVENT_ISSUE_NUMBER}"
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "::notice::No issue number found for this event."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          gh issue view "$ISSUE_NUMBER" \
+            --json number,title,body,labels,milestone,assignees,url \
+            > .codex-run/issue.json
+
+          ISSUE_TITLE="$(jq -r '.title' .codex-run/issue.json)"
+          LABELS="$(jq -r '.labels[].name' .codex-run/issue.json)"
+          LOOP_LABEL="$(printf '%s\n' "$LABELS" | sed -n 's/^loop://p' | head -n 1)"
+          LOOP="${DISPATCH_LOOP:-$LOOP_LABEL}"
+
+          if [ "$EVENT_NAME" != "workflow_dispatch" ] && ! printf '%s\n' "$LABELS" | grep -qx "agent:ready"; then
+            echo "::notice::Issue #$ISSUE_NUMBER is not agent:ready; skipping."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -z "$LOOP" ]; then
+            echo "::notice::Issue #$ISSUE_NUMBER has no loop label and no manual loop input; skipping."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          SLUG="$(printf '%s' "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-//;s/-$//' | cut -c1-48)"
+          BRANCH="codex/issue-${ISSUE_NUMBER}-${SLUG:-work}"
+
+          echo "should_run=true" >> "$GITHUB_OUTPUT"
+          echo "number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "title=$ISSUE_TITLE" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "loop=$LOOP" >> "$GITHUB_OUTPUT"
+      - name: Check OpenAI key
+        id: openai
+        if: ${{ steps.issue.outputs.should_run == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::notice::Skipping Codex issue loop. Add OPENAI_API_KEY as a repository Actions secret to run coding agents."
+            gh issue comment "$ISSUE_NUMBER" --body "Codex issue loop is ready, but OPENAI_API_KEY is not configured as a repository Actions secret. Add the secret and rerun this workflow."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-node@v4
+        if: ${{ steps.openai.outputs.available == 'true' }}
         with:
           node-version: 24
       - uses: actions/setup-python@v5
+        if: ${{ steps.openai.outputs.available == 'true' }}
         with:
           python-version: "3.12"
       - name: Install toolchains and dependencies
+        if: ${{ steps.openai.outputs.available == 'true' }}
         run: |
           corepack enable
           corepack prepare pnpm@10.0.0 --activate
           pnpm install --frozen-lockfile
           python -m pip install --upgrade pip uv
           cd backend && uv sync --frozen
-      - name: Capture issue context
-        id: issue
+      - name: Prepare branch
+        if: ${{ steps.openai.outputs.available == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
+          BRANCH: ${{ steps.issue.outputs.branch }}
         run: |
-          mkdir -p .codex-run
-          gh issue view "$ISSUE_NUMBER" \
-            --json number,title,body,labels,milestone,assignees,url \
-            > .codex-run/issue.json
-          ISSUE_TITLE="$(jq -r '.title' .codex-run/issue.json)"
-          SLUG="$(printf '%s' "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-//;s/-$//' | cut -c1-48)"
-          BRANCH="codex/issue-${ISSUE_NUMBER}-${SLUG:-work}"
-          echo "title=$ISSUE_TITLE" >> "$GITHUB_OUTPUT"
-          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
-          git checkout -b "$BRANCH"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
           gh issue edit "$ISSUE_NUMBER" --remove-label "agent:ready" --add-label "agent:working" || true
       - name: Run Codex implementation loop
+        if: ${{ steps.openai.outputs.available == 'true' }}
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
@@ -62,13 +126,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ inputs.issue_number }}
-          LOOP: ${{ inputs.loop }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
+          LOOP: ${{ steps.issue.outputs.loop }}
       - name: Commit, push, and open pull request
+        if: ${{ steps.openai.outputs.available == 'true' }}
         id: pr
         env:
           GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
           ISSUE_TITLE: ${{ steps.issue.outputs.title }}
           BRANCH: ${{ steps.issue.outputs.branch }}
         run: |
@@ -93,7 +158,9 @@ jobs:
         if: ${{ failure() }}
         env:
           GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
         run: |
-          gh issue edit "$ISSUE_NUMBER" --remove-label "agent:working" --add-label "agent:blocked" || true
-          gh issue comment "$ISSUE_NUMBER" --body "Codex issue loop failed in GitHub Actions. Check the workflow run logs before retrying."
+          if [ -n "$ISSUE_NUMBER" ]; then
+            gh issue edit "$ISSUE_NUMBER" --remove-label "agent:working" --add-label "agent:blocked" || true
+            gh issue comment "$ISSUE_NUMBER" --body "Codex issue loop failed in GitHub Actions. Check the workflow run logs before retrying."
+          fi
