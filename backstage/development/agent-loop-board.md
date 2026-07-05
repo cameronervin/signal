@@ -24,6 +24,7 @@ setup in issue `#6`.
 | Working | An implementation agent is active | `agent:working` |
 | Review | A PR is open and under Codex or human review | `agent:reviewing`, `review:codex`, `review:human` |
 | Needs Fix | Review comments or CI failures need another pass | `agent:needs-fix`, `ci:failed` |
+| Blocked | Work cannot proceed without credentials, permissions, or product input | `agent:blocked` |
 | Merge Ready | Required checks and review gates are satisfied | `agent:merge-ready`, `ci:passing` |
 | Done | The work is merged or intentionally closed | Closed issue or merged PR |
 
@@ -63,12 +64,18 @@ Before running them, add `OPENAI_API_KEY` as a repository Actions secret.
 - `Codex PR review` runs on PR events and can also be dispatched manually.
 - `Codex PR babysitter` runs manually or when a trusted reviewer comments
   `@codex fix`.
+- `Project label sync` maps issue and PR labels to the GitHub Project fields.
 - `CI` runs backend tests/lint and frontend tests/lint/typecheck on pull
   requests and pushes to `main`.
 
 The issue and fix-pass workflows keep networked GitHub operations outside the
 Codex sandbox. Codex edits files in the checkout; GitHub Actions commits,
 pushes, opens pull requests, and updates labels.
+
+For user-owned Projects v2, `Project label sync` may need a repository secret
+named `PROJECT_TOKEN` with the `project` scope. It falls back to
+`GITHUB_TOKEN`, but that token may not be allowed to update user projects in all
+repository settings.
 
 Keep automatic merging disabled until the review and fix-pass loop has proven
 reliable on several low-risk PRs.

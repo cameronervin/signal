@@ -1,0 +1,44 @@
+name: Project label sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      item_url:
+        description: Issue or pull request URL to sync
+        required: true
+  issues:
+    types: [opened, reopened, closed, labeled, unlabeled]
+  pull_request:
+    types: [opened, reopened, closed, ready_for_review, converted_to_draft, labeled, unlabeled, synchronize]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_OWNER: cameronervin
+      PROJECT_NUMBER: "2"
+      GH_TOKEN: ${{ secrets.PROJECT_TOKEN || github.token }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Resolve item URL
+        id: item
+        env:
+          DISPATCH_ITEM_URL: ${{ inputs.item_url }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          item_url="${DISPATCH_ITEM_URL:-${PR_URL:-$ISSUE_URL}}"
+          if [ -z "$item_url" ]; then
+            echo "No issue or pull request URL found for this event." >&2
+            exit 1
+          fi
+          echo "url=$item_url" >> "$GITHUB_OUTPUT"
+      - name: Sync project fields from labels
+        env:
+          ITEM_URL: ${{ steps.item.outputs.url }}
+        run: bash .github/scripts/sync-project-fields.sh
