@@ -22,10 +22,22 @@ jobs:
     env:
       PROJECT_OWNER: cameronervin
       PROJECT_NUMBER: "2"
-      GH_TOKEN: ${{ secrets.PROJECT_TOKEN || github.token }}
+      GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     steps:
       - uses: actions/checkout@v5
+      - name: Check project token
+        id: token
+        env:
+          PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+        run: |
+          if [ -z "$PROJECT_TOKEN" ]; then
+            echo "::notice::Skipping project sync. Add a PROJECT_TOKEN repository secret with the project scope to update the user-owned GitHub Project."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Resolve item URL
+        if: ${{ steps.token.outputs.available == 'true' }}
         id: item
         env:
           DISPATCH_ITEM_URL: ${{ inputs.item_url }}
@@ -39,6 +51,7 @@ jobs:
           fi
           echo "url=$item_url" >> "$GITHUB_OUTPUT"
       - name: Sync project fields from labels
+        if: ${{ steps.token.outputs.available == 'true' }}
         env:
           ITEM_URL: ${{ steps.item.outputs.url }}
         run: bash .github/scripts/sync-project-fields.sh

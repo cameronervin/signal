@@ -72,10 +72,9 @@ The issue and fix-pass workflows keep networked GitHub operations outside the
 Codex sandbox. Codex edits files in the checkout; GitHub Actions commits,
 pushes, opens pull requests, and updates labels.
 
-For user-owned Projects v2, `Project label sync` may need a repository secret
-named `PROJECT_TOKEN` with the `project` scope. It falls back to
-`GITHUB_TOKEN`, but that token may not be allowed to update user projects in all
-repository settings. Track that credential setup in issue `#7`.
+For this user-owned Project v2, `Project label sync` needs a repository secret
+named `PROJECT_TOKEN` with the `project` scope. The workflow skips with a notice
+until that secret exists. Track that credential setup in issue `#7`.
 
 Keep automatic merging disabled until the review and fix-pass loop has proven
 reliable on several low-risk PRs.
