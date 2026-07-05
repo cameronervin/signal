@@ -29,13 +29,13 @@ export function PipelineStepper({ steps }: Props) {
             </span>
             <span className="stepper-content">
               <span className="flex items-baseline justify-between gap-3">
-                <strong className={step.status === "pending" ? "text-sm text-[var(--ink-400)]" : "text-sm"}>
+                <strong className={step.status === "pending" ? "text-sm text-soft" : "text-sm"}>
                   {step.name}
                 </strong>
                 {step.duration && (
                   <span
-                    className={`mono text-[11px] ${
-                      step.status === "active" ? "text-[var(--amber-text)]" : "text-[var(--ink-400)]"
+                    className={`mono text-xs ${
+                      step.status === "active" ? "text-warning" : "text-soft"
                     }`}
                   >
                     {step.duration}
@@ -44,7 +44,7 @@ export function PipelineStepper({ steps }: Props) {
               </span>
               <span
                 className={`mt-2 block text-sm leading-6 ${
-                  step.status === "pending" ? "text-[var(--ink-400)]" : "text-[var(--ink-600)]"
+                  step.status === "pending" ? "text-soft" : "text-muted"
                 }`}
               >
                 {step.summary}
@@ -52,7 +52,7 @@ export function PipelineStepper({ steps }: Props) {
               {step.chips && (
                 <span className="mt-3 flex flex-wrap gap-1.5">
                   {step.chips.map((chip) => (
-                    <span key={chip} className="source-chip border-solid text-[10.5px]">
+                    <span key={chip} className="source-chip solid">
                       {chip}
                     </span>
                   ))}

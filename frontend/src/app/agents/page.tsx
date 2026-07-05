@@ -1,13 +1,25 @@
-import { ChevronRight } from "lucide-react";
+import { BadgeCheck, ChevronRight, Send, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/ui/PageHeader";
+import { SearchInput } from "@/components/ui/SearchInput";
 import { agentRuns } from "@/lib/fixtures/leads";
 
 export default function AgentsPage() {
   return (
     <>
-      <PageHeader title="Agent Assignment" subtitle={`${agentRuns.length} agents working`} />
+      <PageHeader
+        title="Agent Assignment"
+        subtitle={`${agentRuns.length} agents working`}
+        actions={
+          <div className="flex gap-2">
+            <button className="button secondary" type="button">
+              <SlidersHorizontal size={16} /> Filter
+            </button>
+            <SearchInput label="Search agent runs" placeholder="Search agents..." />
+          </div>
+        }
+      />
       <main className="content">
         <section className="surface-card data-table">
           <div className="table-row table-head agent-grid mono">
@@ -19,31 +31,56 @@ export default function AgentsPage() {
             <span />
           </div>
           <div className="table-body">
-            {agentRuns.map((run) => (
-              <Link key={run.runId} href={`/agents/${run.runId}`} className={`table-row agent-grid ${run.disabled ? "dimmed" : ""}`}>
-                <span>
-                  <strong className="block text-sm">{run.agent}</strong>
-                  <span className="text-xs text-[var(--ink-600)]">{run.kind}</span>
-                </span>
-                <span className="text-sm font-semibold">{run.lead}</span>
-                <span className="mono text-sm">{run.started}</span>
-                <span>
-                  <span className="mb-2 block text-sm font-semibold">{run.stage}</span>
-                  <span className="grid grid-cols-4 gap-1">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <span
-                        key={index}
-                        className={`h-1.5 rounded-full ${index < run.stageIndex ? "bg-[var(--brand-primary)]" : "bg-[#EEF1F0]"}`}
-                      />
-                    ))}
+            {agentRuns.map((run) => {
+              const cells = (
+                <>
+                  <span>
+                    <span className="flex items-center gap-3">
+                      <span className={`icon-tile ${run.agent.includes("Enrichment") ? "neutral" : ""}`}>
+                        {run.agent.includes("Enrichment") ? <BadgeCheck size={16} /> : <Send size={15} />}
+                      </span>
+                      <span>
+                        <strong className="block text-sm">{run.agent}</strong>
+                        <span className="text-xs text-muted">{run.kind}</span>
+                      </span>
+                    </span>
                   </span>
-                </span>
-                <span className="rounded-md bg-[var(--brand-tint)] px-3 py-1.5 text-xs font-bold text-[var(--brand-deep)]">
-                  {run.status}
-                </span>
-                {!run.disabled && <ChevronRight size={18} color="var(--ink-400)" />}
-              </Link>
-            ))}
+                  <span className="text-sm font-semibold">{run.lead}</span>
+                  <span className="mono text-sm">{run.started}</span>
+                  <span>
+                    <span className="mb-2 block text-sm font-semibold">{run.stage}</span>
+                    <span className="progress-segments">
+                      {Array.from({ length: 4 }).map((_, index) => (
+                        <span
+                          key={index}
+                          className={
+                            index < run.stageIndex ? "done" : index === run.stageIndex && !run.disabled ? "active" : ""
+                          }
+                        />
+                      ))}
+                    </span>
+                  </span>
+                  <span
+                    className={`status-pill ${
+                      run.status === "In progress" ? "warning" : run.disabled ? "muted" : ""
+                    }`}
+                  >
+                    {run.status}
+                  </span>
+                  {!run.disabled && <ChevronRight className="chevron-soft" size={18} />}
+                </>
+              );
+
+              return run.disabled ? (
+                <div key={run.runId} className="table-row agent-grid dimmed">
+                  {cells}
+                </div>
+              ) : (
+                <Link key={run.runId} href={`/agents/${run.runId}`} className="table-row agent-grid">
+                  {cells}
+                </Link>
+              );
+            })}
           </div>
         </section>
       </main>
