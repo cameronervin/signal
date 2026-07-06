@@ -8,6 +8,9 @@ on:
         required: true
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, labeled]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
 
 permissions:
   contents: read
@@ -42,6 +45,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
 
       - name: Capture PR context
         id: context
@@ -163,19 +167,21 @@ jobs:
           }
 
           if grep -Eq '^REVIEW_STATUS:[[:space:]]*needs-fix' "$message_file"; then
-            apply_labels "agent:needs-fix" "agent:merge-ready,ci:passing"
+            apply_labels "agent:needs-fix" "agent:merge-ready,ci:passing,review:codex-clear"
           elif grep -Eq '^REVIEW_STATUS:[[:space:]]*human' "$message_file"; then
-            apply_labels "review:human,agent:needs-human" "agent:merge-ready"
+            apply_labels "review:human,agent:needs-human" "agent:merge-ready,review:codex-clear"
           elif grep -Eq '^REVIEW_STATUS:[[:space:]]*clear' "$message_file"; then
             pr_state="$(gh pr view "$PR_NUMBER" --json labels,statusCheckRollup)"
             needs_human="$(jq -r 'any(.labels[]?; .name == "review:human")' <<< "$pr_state")"
             backend_ok="$(jq -r 'any(.statusCheckRollup[]?; .name == "backend" and .conclusion == "SUCCESS")' <<< "$pr_state")"
             frontend_ok="$(jq -r 'any(.statusCheckRollup[]?; .name == "frontend" and .conclusion == "SUCCESS")' <<< "$pr_state")"
 
-            if [[ "$needs_human" != "true" && "$backend_ok" == "true" && "$frontend_ok" == "true" ]]; then
-              apply_labels "agent:merge-ready,ci:passing" "agent:reviewing,agent:needs-fix,ci:failed"
+            if [[ "$needs_human" == "true" ]]; then
+              apply_labels "review:codex-clear" "agent:merge-ready,agent:needs-fix,ci:failed"
+            elif [[ "$backend_ok" == "true" && "$frontend_ok" == "true" ]]; then
+              apply_labels "review:codex-clear,agent:merge-ready,ci:passing" "agent:reviewing,agent:needs-fix,ci:failed"
             else
-              apply_labels "agent:reviewing" "agent:merge-ready,agent:needs-fix,ci:failed"
+              apply_labels "review:codex-clear,agent:reviewing" "agent:merge-ready,agent:needs-fix,ci:failed"
             fi
           else
             apply_labels "agent:needs-human" ""
@@ -226,3 +232,61 @@ jobs:
           path: .codex-run/
           if-no-files-found: ignore
           include-hidden-files: true
+
+  reconcile-ci:
+    if: >-
+      ${{
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success'
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Reconcile clear review with passing CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if [ -z "$HEAD_BRANCH" ]; then
+            echo "::notice::No workflow_run head branch found for CI reconciliation."
+            exit 0
+          fi
+
+          PR_NUMBER="$(gh pr list --head "$HEAD_BRANCH" --state open --json number --jq '.[0].number // ""')"
+          if [ -z "$PR_NUMBER" ]; then
+            echo "::notice::No open PR found for CI head branch $HEAD_BRANCH."
+            exit 0
+          fi
+
+          mkdir -p .codex-run
+          gh pr view "$PR_NUMBER" \
+            --json labels,statusCheckRollup,headRefName,headRepository,isCrossRepository \
+            > .codex-run/pr.json
+
+          head_ref="$(jq -r '.headRefName' .codex-run/pr.json)"
+          head_repository="$(jq -r '.headRepository.nameWithOwner' .codex-run/pr.json)"
+          is_cross_repository="$(jq -r '.isCrossRepository' .codex-run/pr.json)"
+          has_codex_review="$(jq -r 'any(.labels[]?; .name == "review:codex")' .codex-run/pr.json)"
+          has_clear_review="$(jq -r 'any(.labels[]?; .name == "review:codex-clear")' .codex-run/pr.json)"
+          needs_human="$(jq -r 'any(.labels[]?; .name == "review:human" or .name == "agent:needs-human")' .codex-run/pr.json)"
+          needs_fix="$(jq -r 'any(.labels[]?; .name == "agent:needs-fix")' .codex-run/pr.json)"
+          backend_ok="$(jq -r 'any(.statusCheckRollup[]?; .name == "backend" and .conclusion == "SUCCESS")' .codex-run/pr.json)"
+          frontend_ok="$(jq -r 'any(.statusCheckRollup[]?; .name == "frontend" and .conclusion == "SUCCESS")' .codex-run/pr.json)"
+
+          if [[ "$is_cross_repository" != "false" || "$head_repository" != "$GITHUB_REPOSITORY" || "$head_ref" != codex/* ]]; then
+            echo "::notice::Skipping CI reconciliation for non-agent or cross-repository PR #$PR_NUMBER."
+            exit 0
+          fi
+          if [[ "$has_codex_review" == "true" && "$has_clear_review" == "true" && "$needs_human" != "true" && "$needs_fix" != "true" && "$backend_ok" == "true" && "$frontend_ok" == "true" ]]; then
+            gh pr edit "$PR_NUMBER" --remove-label "agent:reviewing,ci:failed" || true
+            gh pr edit "$PR_NUMBER" --add-label "agent:merge-ready,ci:passing"
+          else
+            echo "::notice::PR #$PR_NUMBER is not ready for merge-state reconciliation."
+          fi

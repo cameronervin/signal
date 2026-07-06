@@ -21,7 +21,7 @@ be created in the GitHub UI and grouped by `Agent Status`.
 | Intake | Work exists but has not been shaped or approved for an agent | `agent:needs-human` |
 | Ready | A bounded loop can start | `agent:ready` |
 | Working | An implementation or fix agent is active | `agent:working` |
-| Review | A PR is open and under Codex or human review | `agent:reviewing`, `review:codex`, `review:human` |
+| Review | A PR is open and under Codex or human review | `agent:reviewing`, `review:codex`, `review:codex-clear`, `review:human` |
 | Needs Fix | Review comments or CI failures need another pass | `agent:needs-fix`, `ci:failed` |
 | Blocked | Work cannot proceed without credentials, permissions, budget, or product input | `agent:blocked` |
 | Merge Ready | Required checks and review gates are satisfied | `agent:merge-ready`, `ci:passing` |
@@ -42,8 +42,8 @@ be created in the GitHub UI and grouped by `Agent Status`.
   `surface:scoring`, `surface:integrations`, `surface:docs`.
 - Risk: `risk:scoring-change`, `risk:outreach-gate`,
   `risk:data-handling`, `risk:external-api`.
-- Review and CI: `review:codex`, `review:human`, `ci:failed`,
-  `ci:passing`.
+- Review and CI: `review:codex`, `review:codex-clear`, `review:human`,
+  `ci:failed`, `ci:passing`.
 
 ## Operating Rules
 
@@ -64,8 +64,8 @@ Before running them, add `OPENAI_API_KEY` as a repository Actions secret.
 - `Codex issue loop` validates issue intake, starts maintainer-ready issues,
   creates a branch, opens a PR, writes loop evidence, and moves the issue to
   review.
-- `Codex PR review` runs automatically for PRs labeled `review:codex` and can
-  be manually dispatched.
+- `Codex PR review` runs automatically for PRs labeled `review:codex`,
+  reconciles clear reviews after CI success, and can be manually dispatched.
 - `Codex PR babysitter` runs on failed `CI`, `agent:needs-fix`, trusted
   `@codex fix` comments, or manual dispatch, with a two-pass budget.
 - `Project label sync` maps issue and PR labels to the GitHub Project fields.

@@ -57,6 +57,7 @@ Automatic start requires:
 - `agent:fix-pass-1`, `agent:fix-pass-2`: consumed fix-pass budget.
 - `agent:merge-ready`: checks and review are satisfied.
 - `agent:blocked`: workflow needs human input or external state.
+- `review:codex-clear`: Codex review is clear; CI may still be catching up.
 
 ## Review And Fix Passes
 
@@ -71,7 +72,10 @@ gh workflow run codex-pr-review.yml \
 ```
 
 The review agent ends with `REVIEW_STATUS: needs-fix`, `clear`, or `human`.
-`needs-fix` adds `agent:needs-fix`; `human` adds a human review gate.
+`needs-fix` adds `agent:needs-fix`; `clear` adds `review:codex-clear`;
+`human` adds a human review gate. If review clears before CI finishes, the
+review workflow reconciles the PR to `agent:merge-ready` after backend and
+frontend checks pass.
 
 The babysitter can run from:
 
