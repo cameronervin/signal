@@ -178,6 +178,34 @@ def demo_enrichment(company: str, city: str, state: str) -> Enrichment:
                 retrieved_at=retrieved_at,
                 confidence="fallback",
             ),
+            SourceFact(
+                source="Fixture company context",
+                label="Asset type fit",
+                value="multifamily",
+                retrieved_at=retrieved_at,
+                confidence="fallback",
+            ),
+            SourceFact(
+                source="Fixture market context",
+                label="Household growth",
+                value=f"{household_growth:.1f}%",
+                retrieved_at=retrieved_at,
+                confidence="fallback",
+            ),
+            SourceFact(
+                source="Fixture market context",
+                label="Labor market",
+                value=f"{unemployment_rate:.1f}% unemployment",
+                retrieved_at=retrieved_at,
+                confidence="fallback",
+            ),
+            SourceFact(
+                source="Fixture local context",
+                label="Walkability",
+                value=str(walkability_score),
+                retrieved_at=retrieved_at,
+                confidence="fallback",
+            ),
         ],
     )
 

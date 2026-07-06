@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from app.schemas.lead import (
     Enrichment,
     GateResult,
@@ -16,7 +18,17 @@ PERSONAL_DOMAINS = {
     "aol.com",
 }
 
-SENIORITY_POINTS = {
+TIER_THRESHOLDS = {
+    "A": 75,
+    "B": 50,
+}
+
+BONUS_POINTS = {
+    "recent_trigger": 10,
+    "related_context": 10,
+}
+
+SENIORITY_POINTS: dict[str, int] = {
     "chief": 15,
     "cfo": 15,
     "ceo": 15,
@@ -26,6 +38,102 @@ SENIORITY_POINTS = {
     "director": 12,
     "regional": 10,
     "manager": 7,
+}
+
+ASSET_TYPE_POINTS = {
+    "multifamily": 10,
+    "student": 10,
+    "sfr": 10,
+    "unclear": 4,
+    "commercial": 2,
+}
+
+
+@dataclass(frozen=True)
+class Bucket:
+    threshold: float
+    points: int
+
+
+@dataclass(frozen=True)
+class RubricComponent:
+    name: str
+    max_points: int
+    rationale: str
+    source_refs: tuple[str, ...] = ()
+
+
+COMPANY_FIT_COMPONENTS = {
+    "portfolio_scale": RubricComponent(
+        name="portfolio_scale",
+        max_points=25,
+        rationale="Company unit estimate indicates portfolio scale.",
+        source_refs=("Company units",),
+    ),
+    "contact_seniority": RubricComponent(
+        name="contact_seniority",
+        max_points=15,
+        rationale="Contact role suggests buying or evaluation influence.",
+    ),
+    "asset_type_fit": RubricComponent(
+        name="asset_type_fit",
+        max_points=10,
+        rationale="Property and company signals fit the v1 multifamily focus.",
+        source_refs=("Asset type fit",),
+    ),
+    "company_momentum": RubricComponent(
+        name="company_momentum",
+        max_points=10,
+        rationale="Recent trigger or fallback company context supports urgency.",
+        source_refs=("Trigger event",),
+    ),
+}
+
+MARKET_OPPORTUNITY_COMPONENTS = {
+    "renter_share": RubricComponent(
+        name="renter_share",
+        max_points=12,
+        rationale="Higher renter share increases market opportunity.",
+        source_refs=("Renter share",),
+    ),
+    "rent_level_trend": RubricComponent(
+        name="rent_level_trend",
+        max_points=10,
+        rationale="Rent growth supports active leasing-market pressure.",
+        source_refs=("Rent growth",),
+    ),
+    "population_household_growth": RubricComponent(
+        name="population_household_growth",
+        max_points=8,
+        rationale="Household growth contributes to demand signal.",
+        source_refs=("Household growth",),
+    ),
+    "labor_market_tightness": RubricComponent(
+        name="labor_market_tightness",
+        max_points=5,
+        rationale="Lower unemployment supports leasing demand stability.",
+        source_refs=("Labor market",),
+    ),
+    "walkability_density": RubricComponent(
+        name="walkability_density",
+        max_points=5,
+        rationale="Local walkability or density indicates market fit.",
+        source_refs=("Walkability",),
+    ),
+}
+
+BONUS_COMPONENTS = {
+    "recent_trigger_bonus": RubricComponent(
+        name="recent_trigger_bonus",
+        max_points=10,
+        rationale="Recent trigger adds a bounded urgency bonus.",
+        source_refs=("Trigger event",),
+    ),
+    "related_context_bonus": RubricComponent(
+        name="related_context_bonus",
+        max_points=10,
+        rationale="Related inbound context adds a bounded urgency bonus.",
+    ),
 }
 
 
@@ -54,15 +162,17 @@ def score_lead(
     lead: LeadCreate,
     gates: GateResult,
     enrichment: Enrichment,
+    *,
+    related_context_count: int = 0,
 ) -> ScoreBreakdown:
     if gates.status == "failed":
         return ScoreBreakdown(
-            total=28,
+            total=0,
             tier="C",
             company_fit=0,
             market_opportunity=0,
             multipliers=[],
-            why_line=f"Gate failed: {', '.join(gates.failures)}",
+            why_line=f"C-tier: gate failed because {', '.join(gates.failures)}.",
             components=[
                 ScoreComponent(
                     name="gates",
@@ -74,36 +184,59 @@ def score_lead(
 
     portfolio = _portfolio_points(enrichment.company_units or 0)
     seniority = _seniority_points(lead.role or "")
-    asset_fit = 10
+    asset_fit = _asset_type_points(enrichment.asset_type_fit)
     momentum = 10 if enrichment.recent_trigger else 4
     company_fit = min(60, portfolio + seniority + asset_fit + momentum)
 
-    renter = _bucket(enrichment.renter_share or 0, [(0.6, 12), (0.5, 9), (0.4, 6)], 3)
+    renter = _bucket(
+        enrichment.renter_share or 0,
+        [Bucket(0.6, 12), Bucket(0.5, 9), Bucket(0.4, 6)],
+        3,
+    )
     rent = _bucket(
         (enrichment.rent_growth_yoy or 0) / 100,
-        [(0.08, 10), (0.05, 8), (0.02, 5)],
+        [Bucket(0.08, 10), Bucket(0.05, 8), Bucket(0.02, 5)],
         2,
     )
     growth = _bucket(
         (enrichment.household_growth or 0) / 100,
-        [(0.04, 8), (0.025, 6), (0.01, 4)],
+        [Bucket(0.04, 8), Bucket(0.025, 6), Bucket(0.01, 4)],
         1,
     )
     labor = _bucket(
         1 - ((enrichment.unemployment_rate or 6) / 10),
-        [(0.68, 5), (0.55, 3)],
+        [Bucket(0.67, 5), Bucket(0.55, 3)],
         1,
     )
-    density = 4
+    density = _bucket(
+        float(enrichment.walkability_score or 0),
+        [Bucket(70, 5), Bucket(55, 3), Bucket(40, 2)],
+        1,
+    )
     market = min(40, renter + rent + growth + labor + density)
 
-    bonuses = 10 if enrichment.recent_trigger else 0
-    total = min(100, company_fit + market + bonuses)
-    tier = _tier(total)
-    why_line = _why_line(enrichment, portfolio, seniority, bonuses)
-    multipliers = (
-        ["recent_trigger:+10"] if enrichment.recent_trigger else ["no_multiplier"]
+    recent_bonus = BONUS_POINTS["recent_trigger"] if enrichment.recent_trigger else 0
+    related_bonus = (
+        BONUS_POINTS["related_context"] if related_context_count > 0 else 0
     )
+    total = min(100, company_fit + market + recent_bonus + related_bonus)
+    tier = _tier(total)
+    why_line = _why_line(
+        tier=tier,
+        enrichment=enrichment,
+        portfolio_points=portfolio,
+        seniority_points=seniority,
+        market_points=market,
+        recent_bonus=recent_bonus,
+        related_bonus=related_bonus,
+    )
+    multipliers = []
+    if recent_bonus:
+        multipliers.append(f"recent_trigger:+{recent_bonus}")
+    if related_bonus:
+        multipliers.append(f"related_context:+{related_bonus}")
+    if not multipliers:
+        multipliers.append("no_bonus")
 
     return ScoreBreakdown(
         total=total,
@@ -113,61 +246,17 @@ def score_lead(
         multipliers=multipliers,
         why_line=why_line,
         components=[
-            ScoreComponent(
-                name="portfolio_scale",
-                points=portfolio,
-                rationale="Company unit estimate indicates portfolio scale.",
-                source_refs=["Company units"],
-            ),
-            ScoreComponent(
-                name="seniority",
-                points=seniority,
-                rationale="Contact role suggests buying or evaluation influence.",
-            ),
-            ScoreComponent(
-                name="asset_type_fit",
-                points=asset_fit,
-                rationale="Property and company signals fit the v1 multifamily focus.",
-            ),
-            ScoreComponent(
-                name="momentum",
-                points=momentum,
-                rationale="Recent trigger or fallback market context supports urgency.",
-                source_refs=["Trigger event"],
-            ),
-            ScoreComponent(
-                name="renter_share",
-                points=renter,
-                rationale="Higher renter share increases market opportunity.",
-                source_refs=["Renter share"],
-            ),
-            ScoreComponent(
-                name="rent_growth",
-                points=rent,
-                rationale="Rent growth supports active leasing-market pressure.",
-                source_refs=["Rent growth"],
-            ),
-            ScoreComponent(
-                name="household_growth",
-                points=growth,
-                rationale="Household growth contributes to demand signal.",
-            ),
-            ScoreComponent(
-                name="labor_market",
-                points=labor,
-                rationale="Lower unemployment supports leasing demand stability.",
-            ),
-            ScoreComponent(
-                name="walkability_density",
-                points=density,
-                rationale="Fixture local-context signal indicates density fit.",
-            ),
-            ScoreComponent(
-                name="trigger_bonus",
-                points=bonuses,
-                rationale="Recent trigger adds a bounded urgency bonus.",
-                source_refs=["Trigger event"],
-            ),
+            _component("portfolio_scale", portfolio),
+            _component("contact_seniority", seniority),
+            _component("asset_type_fit", asset_fit),
+            _component("company_momentum", momentum),
+            _component("renter_share", renter),
+            _component("rent_level_trend", rent),
+            _component("population_household_growth", growth),
+            _component("labor_market_tightness", labor),
+            _component("walkability_density", density),
+            _component("recent_trigger_bonus", recent_bonus),
+            _component("related_context_bonus", related_bonus),
         ],
     )
 
@@ -190,34 +279,66 @@ def _seniority_points(role: str) -> int:
     return 4
 
 
-def _bucket(value: float, thresholds: list[tuple[float, int]], fallback: int) -> int:
-    for threshold, points in thresholds:
-        if value >= threshold:
-            return points
+def _asset_type_points(asset_type: str | None) -> int:
+    if asset_type is None:
+        return ASSET_TYPE_POINTS["unclear"]
+    return ASSET_TYPE_POINTS.get(asset_type, ASSET_TYPE_POINTS["unclear"])
+
+
+def _bucket(value: float, thresholds: list[Bucket], fallback: int) -> int:
+    for bucket in thresholds:
+        if value >= bucket.threshold:
+            return bucket.points
     return fallback
 
 
 def _tier(score: int) -> Tier:
-    if score >= 75:
+    if score >= TIER_THRESHOLDS["A"]:
         return "A"
-    if score >= 50:
+    if score >= TIER_THRESHOLDS["B"]:
         return "B"
     return "C"
 
 
+def _component(name: str, points: int) -> ScoreComponent:
+    config = (
+        COMPANY_FIT_COMPONENTS.get(name)
+        or MARKET_OPPORTUNITY_COMPONENTS.get(name)
+        or BONUS_COMPONENTS[name]
+    )
+    return ScoreComponent(
+        name=config.name,
+        points=min(points, config.max_points),
+        rationale=config.rationale,
+        source_refs=list(config.source_refs),
+    )
+
+
 def _why_line(
+    *,
+    tier: Tier,
     enrichment: Enrichment,
     portfolio_points: int,
     seniority_points: int,
-    bonuses: int,
+    market_points: int,
+    recent_bonus: int,
+    related_bonus: int,
 ) -> str:
     reasons = []
     if portfolio_points >= 21:
         reasons.append("large portfolio")
     if seniority_points >= 12:
         reasons.append("senior contact")
+    if enrichment.renter_share and enrichment.renter_share >= 0.6:
+        reasons.append("high renter share")
     if enrichment.rent_growth_yoy and enrichment.rent_growth_yoy >= 5:
         reasons.append(f"{enrichment.rent_growth_yoy:.1f}% rent growth")
-    if bonuses:
+    if recent_bonus:
         reasons.append("recent trigger event")
-    return " · ".join(reasons) if reasons else "Solid fit with moderate market signal"
+    if related_bonus:
+        reasons.append("related inbound context")
+    if not recent_bonus:
+        reasons.append("no recent trigger found")
+    if tier == "C" and market_points < 20:
+        reasons.append("weaker market signal")
+    return f"{tier}-tier: {', '.join(reasons)}."

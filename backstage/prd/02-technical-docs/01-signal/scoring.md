@@ -24,6 +24,19 @@ Warnings do not suppress drafts but appear as flags. Example warnings:
 
 Total score target: 0-100.
 
+Implemented configuration lives in `backend/app/agents/scoring.py` as explicit
+rubric tables:
+
+- `COMPANY_FIT_COMPONENTS` caps the company/contact fit components at 60
+  points.
+- `MARKET_OPPORTUNITY_COMPONENTS` caps the market/property opportunity
+  components at 40 points.
+- `BONUS_COMPONENTS`, `BONUS_POINTS`, and `TIER_THRESHOLDS` define bounded
+  bonuses and A/B/C thresholds.
+
+Each scored response returns component names, point values, rationales, and
+source-reference labels when the component maps to an enrichment fact.
+
 ### Company And Contact Fit - 60 Points
 
 | Signal | Points | Notes |
@@ -55,6 +68,11 @@ in an average market may still deserve attention.
 
 Bonuses are bounded by a max score of 100.
 
+The scorer accepts related-context count as an explicit input and caps that
+bonus at +10. The current fixture graph attaches related context after scoring,
+so seeded calibration fixtures assert a `related_context_bonus` component at 0
+until a later pipeline slice moves repeat-inbound context ahead of scoring.
+
 ## Tiers
 
 | Tier | Score |
@@ -84,3 +102,18 @@ All weights are documented hypotheses for the take-home MVP. After a pilot,
 compare score bands against rep judgment, speed-to-lead, response rate, and
 meeting conversion. Reweight the rubric in config after enough labeled examples
 exist.
+
+Current deterministic fixture calibration:
+
+| Fixture handle | Tier | Company/contact | Market/property | Total |
+| --- | --- | ---: | ---: | ---: |
+| `a_tier` | A | 60 | 40 | 100 |
+| `b_tier` | B | 42 | 27 | 69 |
+| `c_tier` | C | 24 | 9 | 33 |
+| `warning_only` | B | 32 | 40 | 72 |
+| `missing_trigger` | B | 32 | 27 | 59 |
+| `hard_gate_failed` | C | 0 | 0 | 0 |
+
+Hard-gate failures return C-tier, zero scored component totals, a gate-failure
+why-line, and no draft eligibility even when the underlying enrichment values
+would otherwise score highly.

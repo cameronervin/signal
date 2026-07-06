@@ -50,6 +50,19 @@ Maintain fixtures for:
 - Worker queued/running/succeeded case.
 - Worker dispatch failure or broker-unavailable fallback case.
 
+The deterministic scoring calibration suite lives in
+`backend/tests/test_scoring_calibration.py` and covers:
+
+- A, B, C, warning-only, missing-trigger, and hard-gate-failed seed handles.
+- Exact company/contact fit totals, market/property opportunity totals, final
+  scores, and A/B/C tiers.
+- Component-level point values and source-reference labels for enrichment-backed
+  rationale.
+- Bounded recent-trigger and related-context bonuses with a final score cap of
+  100.
+- Hard-gate failure behavior that forces C-tier, zero scored totals, and draft
+  suppression regardless of high enrichment values.
+
 ## Manual Demo Checks
 
 - Insert or seed a lead and show the pipeline run.
