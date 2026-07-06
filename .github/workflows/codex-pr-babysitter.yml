@@ -212,17 +212,6 @@ jobs:
           ```
           PROMPT
 
-      - name: Checkout trusted PR head
-        if: ${{ steps.fixpass.outputs.should_run == 'true' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ steps.context.outputs.pr_number }}
-        run: |
-          auth_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
-          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" \
-            fetch --no-tags origin "+refs/pull/$PR_NUMBER/head:pr-$PR_NUMBER"
-          git checkout "pr-$PR_NUMBER"
-
       - uses: actions/setup-node@v4
         if: ${{ steps.fixpass.outputs.should_run == 'true' }}
         with:
@@ -254,6 +243,17 @@ jobs:
           else
             echo "available=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Checkout trusted PR head
+        if: ${{ steps.openai.outputs.available == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.context.outputs.pr_number }}
+        run: |
+          auth_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" \
+            fetch --no-tags origin "+refs/pull/$PR_NUMBER/head:pr-$PR_NUMBER"
+          git checkout "pr-$PR_NUMBER"
 
       - name: Run Codex fix pass
         id: codex
