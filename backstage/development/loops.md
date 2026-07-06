@@ -20,10 +20,11 @@ goals = true
 
 ## Start A Loop
 
-Low-risk issue-form submissions can self-start after the intake normalizer
-validates required fields and applies labels. High-risk work remains in
-`agent:needs-human` until a human explicitly applies `review:human` and
-`agent:ready`, or manually dispatches the loop workflow.
+Low-risk issue-form submissions are normalized into loop labels, then start
+only after a maintainer applies `agent:ready` or manually dispatches the loop
+workflow. High-risk work remains in `agent:needs-human` until a human explicitly
+applies `review:human` and `agent:ready`, or manually dispatches the loop
+workflow.
 
 Manual start:
 
@@ -39,7 +40,7 @@ Automatic start requires:
 1. A complete agent-loop issue form.
 2. Exactly one `loop:*` label after normalization.
 3. Priority, type, surface, and risk labels after normalization.
-4. `agent:ready`.
+4. Maintainer-applied `agent:ready`.
 5. No active `agent:working`, `agent:reviewing`, or `agent:merge-ready` state.
 
 ## Labels That Matter

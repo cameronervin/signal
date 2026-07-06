@@ -50,7 +50,8 @@ be created in the GitHub UI and grouped by `Agent Status`.
 1. Every agent-owned issue needs exactly one loop label.
 2. Every implementation PR links back to an issue.
 3. Risk labels require explicit PR checklist attention and human review.
-4. Low-risk complete issue forms may self-promote to `agent:ready`.
+4. Low-risk complete issue forms may be normalized automatically, but launch
+   still requires maintainer-applied `agent:ready` or manual dispatch.
 5. High-risk issue forms remain `agent:needs-human` until human-approved.
 6. Fix passes stop after two attempts and then become `agent:blocked`.
 7. Merge decisions stay behind branch protection and human review.
@@ -60,7 +61,7 @@ be created in the GitHub UI and grouped by `Agent Status`.
 The workflow scaffolds in `.github/workflows/` use `openai/codex-action@v1`.
 Before running them, add `OPENAI_API_KEY` as a repository Actions secret.
 
-- `Codex issue loop` validates issue intake, starts low-risk ready issues,
+- `Codex issue loop` validates issue intake, starts maintainer-ready issues,
   creates a branch, opens a PR, writes loop evidence, and moves the issue to
   review.
 - `Codex PR review` runs automatically for PRs labeled `review:codex` and can
@@ -98,13 +99,14 @@ with a docs-only change. The run must preserve human merge gates, avoid product
 behavior changes, and leave loop evidence in `.codex-run/loop-result.json`.
 
 1. Open a complete agent-loop issue with no risk flags.
-2. Confirm intake normalization applies loop, priority, type, surface, and
-   `agent:ready`.
-3. Confirm `Codex issue loop` creates a branch and PR.
-4. Confirm `Codex PR review` posts a review.
-5. Force or simulate a CI failure only on a disposable PR, then confirm the
+2. Confirm intake normalization applies loop, priority, type, and surface
+   labels while leaving the issue in human intake.
+3. Apply `agent:ready` or manually dispatch the issue loop.
+4. Confirm `Codex issue loop` creates a branch and PR.
+5. Confirm `Codex PR review` posts a review.
+6. Force or simulate a CI failure only on a disposable PR, then confirm the
    babysitter consumes at most two fix passes.
-6. Confirm merge still requires human review and branch protection.
+7. Confirm merge still requires human review and branch protection.
 
 ## Merge Gates
 

@@ -11,7 +11,7 @@ on:
         required: true
         default: feature-build
   issues:
-    types: [opened, labeled, assigned]
+    types: [labeled, assigned]
 
 permissions:
   contents: write

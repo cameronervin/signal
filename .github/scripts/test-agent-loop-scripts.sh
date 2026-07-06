@@ -42,6 +42,16 @@ cat > "$tmp_dir/ready.json" <<'JSON'
 }
 JSON
 
+cat > "$tmp_dir/low-risk-ready.json" <<'JSON'
+{
+  "number": 105,
+  "body": "### Loop\n\nfeature-build\n\n### Priority\n\np2\n\n### Type\n\ndocs\n\n### Surfaces\n\n- [X] docs\n\n### Risk flags\n\n- [ ] scoring-change\n\n### User-visible outcome\n\nA maintainer can see loop docs.\n\n### Acceptance criteria\n\n- Contract exists\n\n### Budget\n\nOne implementation pass.\n\n### Stop condition\n\nStop when docs are updated.\n\n### Artifact expectations\n\nWrite loop-result.json.\n",
+  "labels": [
+    {"name": "agent:ready"}
+  ]
+}
+JSON
+
 run_case() {
   local name="$1"
   local expected="$2"
@@ -55,7 +65,9 @@ run_case() {
   fi
 }
 
-run_case low-risk true issues
+run_case low-risk false issues
+run_case low-risk true workflow_dispatch
+run_case low-risk-ready true issues
 run_case high-risk false issues
 run_case malformed false issues
 run_case ready true workflow_dispatch

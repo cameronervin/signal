@@ -166,13 +166,16 @@ elif [[ "$high_risk" == "true" && "$event_name" != "workflow_dispatch" && "$has_
   valid=true
   should_run=false
   reason="high risk requires human review"
-else
+elif [[ "$event_name" == "workflow_dispatch" || "$has_ready" == "true" ]]; then
   valid=true
   remove_labels+=("agent:needs-human")
-  if [[ "$event_name" == "workflow_dispatch" || "$has_ready" == "true" || "$high_risk" == "false" ]]; then
-    add_labels+=("agent:ready")
-    should_run=true
-  fi
+  add_labels+=("agent:ready")
+  should_run=true
+else
+  valid=true
+  add_labels+=("agent:needs-human")
+  should_run=false
+  reason="waiting for agent:ready"
 fi
 
 if [[ "${#add_labels[@]}" -gt 0 ]]; then
