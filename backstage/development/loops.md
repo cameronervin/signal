@@ -4,6 +4,19 @@ Signal uses GitHub issues as the queue for Codex build loops. A loop starts
 from one bounded issue, creates a branch, opens a PR, gets reviewed, accepts
 fix passes, and stops at the merge gate.
 
+## Agent Defaults
+
+The GitHub Action Codex jobs pin `model: gpt-5.5`.
+
+Issue implementation agents start their prompt with `/goal` so Codex keeps one
+definition of done while it works the issue. If you run loops locally, set
+`model = "gpt-5.5"` in `~/.codex/config.toml` and enable goals:
+
+```toml
+[features]
+goals = true
+```
+
 ## Start A Loop
 
 Manual start:
@@ -44,8 +57,18 @@ Use `agent:needs-human` for intake items that are not ready to run.
 
 ## Review And Fix Passes
 
-PRs created by the issue loop get `review:codex`. The review workflow comments
-with findings or "No findings."
+PRs created by the issue loop get `review:codex`.
+
+During scaffold and early product build, Codex PR review is manual-only. Run it
+when a PR has enough implementation surface to inspect:
+
+```bash
+gh workflow run codex-pr-review.yml \
+  --repo cameronervin/signal \
+  -f pr_number=123
+```
+
+Turn automatic PR review back on after several low-risk loop PRs are stable.
 
 To ask the babysitter for a fix pass, comment on the PR:
 
@@ -54,8 +77,8 @@ To ask the babysitter for a fix pass, comment on the PR:
 ```
 
 The babysitter checks out the PR branch, applies a focused fix, commits, and
-pushes back to the same PR. The review workflow then runs again on the updated
-branch.
+pushes back to the same PR. Re-run the review workflow manually when you want
+another Codex review pass.
 
 ## Merge Rules
 

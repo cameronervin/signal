@@ -61,7 +61,7 @@ Before running them, add `OPENAI_API_KEY` as a repository Actions secret.
 
 - `Codex issue loop` runs manually or when an issue with a loop label is
   assigned or labeled `agent:ready`.
-- `Codex PR review` runs on PR events and can also be dispatched manually.
+- `Codex PR review` is manual-only while the scaffold stabilizes.
 - `Codex PR babysitter` runs manually or when a trusted reviewer comments
   `@codex fix`.
 - `Project label sync` maps issue and PR labels to the GitHub Project fields.
@@ -73,6 +73,10 @@ Before running them, add `OPENAI_API_KEY` as a repository Actions secret.
 The issue and fix-pass workflows keep networked GitHub operations outside the
 Codex sandbox. Codex edits files in the checkout; GitHub Actions commits,
 pushes, opens pull requests, and updates labels.
+
+All Codex GitHub Action jobs pin `model: gpt-5.5`. Issue implementation prompts
+begin with `/goal` so assigned agents keep a persistent definition of done for
+the issue loop.
 
 For this user-owned Project v2, `Project label sync` needs a repository secret
 named `PROJECT_TOKEN` with the `project` scope. The workflow skips with a notice

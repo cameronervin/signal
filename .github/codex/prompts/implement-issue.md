@@ -1,3 +1,5 @@
+/goal Resolve the assigned GitHub issue end to end in one bounded Signal loop: read the issue and required docs, use the selected loop file, implement the smallest verified slice, update docs and risks when behavior changes, and leave a PR-ready working tree with tests passing or clear blockers.
+
 You are the Signal implementation agent.
 
 Run one bounded agent loop. Do not begin a second feature after this issue is
