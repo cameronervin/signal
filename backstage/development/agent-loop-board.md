@@ -93,6 +93,10 @@ that secret exists.
 
 Use a low-risk docs or test issue to validate the autonomous path:
 
+2026-07-06 dry-run note: issue #32 exercises the guarded autonomous loop path
+with a docs-only change. The run must preserve human merge gates, avoid product
+behavior changes, and leave loop evidence in `.codex-run/loop-result.json`.
+
 1. Open a complete agent-loop issue with no risk flags.
 2. Confirm intake normalization applies loop, priority, type, surface, and
    `agent:ready`.
