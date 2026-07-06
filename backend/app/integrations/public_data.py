@@ -386,6 +386,7 @@ class PublicDataClientConfig:
     news_api_key: str | None = None
     fred_api_key: str | None = None
     timeout_seconds: float = 8.0
+    cache_ttl_seconds: int = 86_400
 
 
 @dataclass(frozen=True)
@@ -423,6 +424,11 @@ PERSONAL_DOMAINS = {
 
 FIXTURE_COORDINATES: dict[tuple[str, str, str], tuple[float, float]] = {
     ("100 main st", "austin", "tx"): (30.2672, -97.7431),
+    ("100 market st", "austin", "tx"): (30.2672, -97.7431),
+    ("200 market st", "dallas", "tx"): (32.7767, -96.7970),
+    ("300 market st", "boise", "id"): (43.6150, -116.2023),
+    ("400 market st", "austin", "tx"): (30.2672, -97.7431),
+    ("500 market st", "dallas", "tx"): (32.7767, -96.7970),
     ("123 market st", "austin", "tx"): (30.2672, -97.7431),
     ("123 market st", "charlotte", "nc"): (35.2271, -80.8431),
     ("123 market st", "raleigh", "nc"): (35.7796, -78.6382),
@@ -521,26 +527,32 @@ class PublicDataClient:
     ) -> _GeoResult:
         if self.config.use_fixtures:
             return self._fixture_geocode(lead, retrieved_at)
+        lookup_key = self._geocode_lookup_key(lead)
+        cached = self.cache.get("geocoding", "nominatim", lookup_key)
+        if cached is not None:
+            return self._geo_from_normalized(
+                cached.response.model_copy(update={"cache_hit": True}),
+                lead,
+            )
         try:
-            return await self._live_geocode(lead, retrieved_at)
+            result = await self._live_geocode(lead, retrieved_at)
         except (httpx.HTTPError, KeyError, TypeError, ValueError):
             warnings.append("geocoding fixture fallback")
             degraded_reasons.append("geocoding: fixture fallback")
             return self._fixture_geocode(lead, retrieved_at)
+        self.cache.set(
+            self._normalized_geocode_result(lookup_key, result),
+            ttl_seconds=self.config.cache_ttl_seconds,
+            refresh_policy="ttl",
+        )
+        return result
 
     async def _live_geocode(
         self,
         lead: LeadCreate,
         retrieved_at: datetime,
     ) -> _GeoResult:
-        query = ", ".join(
-            [
-                lead.property_address,
-                lead.city,
-                lead.state,
-                lead.country,
-            ]
-        )
+        query = self._geocode_lookup_key(lead)
         async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
             response = await client.get(
                 "https://nominatim.openstreetmap.org/search",
@@ -568,6 +580,70 @@ class PublicDataClient:
                     confidence="high",
                 )
             ],
+        )
+
+    def _geocode_lookup_key(self, lead: LeadCreate) -> str:
+        return ", ".join(
+            [
+                lead.property_address,
+                lead.city,
+                lead.state,
+                lead.country,
+            ]
+        )
+
+    def _normalized_geocode_result(
+        self,
+        lookup_key: str,
+        result: _GeoResult,
+    ) -> NormalizedPublicDataResult:
+        latitude: float | None = None
+        longitude: float | None = None
+        if result.coordinates is not None:
+            latitude, longitude = result.coordinates
+        return NormalizedPublicDataResult(
+            provider_category="geocoding",
+            lookup_key=lookup_key,
+            source="nominatim",
+            data={
+                "market": result.market,
+                "latitude": latitude,
+                "longitude": longitude,
+                "geo_confidence": result.geo_confidence,
+                "census_geo_id": result.census_geo_id,
+            },
+            facts=result.facts,
+        )
+
+    def _geo_from_normalized(
+        self,
+        result: NormalizedPublicDataResult,
+        lead: LeadCreate,
+    ) -> _GeoResult:
+        latitude = result.data.get("latitude")
+        longitude = result.data.get("longitude")
+        coordinates = (
+            (float(latitude), float(longitude))
+            if latitude is not None and longitude is not None
+            else None
+        )
+        market = result.data.get("market")
+        geo_confidence = result.data.get("geo_confidence")
+        census_geo_id = result.data.get("census_geo_id")
+        market_value = (
+            str(market) if isinstance(market, str) else f"{lead.city}, {lead.state}"
+        )
+        census_geo_id_value = (
+            str(census_geo_id) if isinstance(census_geo_id, str) else None
+        )
+        return _GeoResult(
+            market=market_value,
+            coordinates=coordinates,
+            geo_confidence=(
+                str(geo_confidence) if isinstance(geo_confidence, str) else None
+            ),
+            census_geo_id=census_geo_id_value,
+            facts=result.facts,
         )
 
     def _fixture_geocode(self, lead: LeadCreate, retrieved_at: datetime) -> _GeoResult:
@@ -785,19 +861,31 @@ class PublicDataClient:
     ) -> dict[str, object]:
         if self.config.use_fixtures:
             return self._fixture_domain_quality(lead, retrieved_at)
+        domain = self._domain_lookup_key(lead)
+        cached = self.cache.get("domain_quality", "dns_mx", domain)
+        if cached is not None:
+            return self._domain_from_normalized(
+                cached.response.model_copy(update={"cache_hit": True})
+            )
         try:
-            return await self._live_domain_quality(lead, retrieved_at)
+            result = await self._live_domain_quality(lead, retrieved_at)
         except (dns.exception.DNSException, TimeoutError, OSError):
-            warnings.append("domain-quality fixture fallback")
-            degraded_reasons.append("domain_quality: fixture fallback")
-            return self._fixture_domain_quality(lead, retrieved_at)
+            warnings.append("domain quality unavailable")
+            degraded_reasons.append("domain_quality: provider unavailable")
+            return self._unknown_domain_quality(retrieved_at)
+        self.cache.set(
+            self._normalized_domain_result(domain, result),
+            ttl_seconds=self.config.cache_ttl_seconds,
+            refresh_policy="ttl",
+        )
+        return result
 
     async def _live_domain_quality(
         self,
         lead: LeadCreate,
         retrieved_at: datetime,
     ) -> dict[str, object]:
-        domain = lead.email.split("@")[-1].lower()
+        domain = self._domain_lookup_key(lead)
         if domain in PERSONAL_DOMAINS:
             status = "personal"
         elif "." not in domain:
@@ -822,6 +910,57 @@ class PublicDataClient:
                     confidence="high" if status == "corporate" else "medium",
                 )
             ],
+        }
+
+    def _domain_lookup_key(self, lead: LeadCreate) -> str:
+        return lead.email.split("@")[-1].lower()
+
+    def _unknown_domain_quality(self, retrieved_at: datetime) -> dict[str, object]:
+        return {
+            "domain_status": "unknown",
+            "facts": [
+                _fact(
+                    source="domain_quality",
+                    label="Domain quality",
+                    value="unknown",
+                    retrieved_at=retrieved_at,
+                    confidence="low",
+                )
+            ],
+        }
+
+    def _normalized_domain_result(
+        self,
+        lookup_key: str,
+        result: dict[str, object],
+    ) -> NormalizedPublicDataResult:
+        domain_status = result.get("domain_status")
+        return NormalizedPublicDataResult(
+            provider_category="domain_quality",
+            lookup_key=lookup_key,
+            source="dns_mx",
+            data={
+                "domain_status": (
+                    domain_status if isinstance(domain_status, str) else "unknown"
+                )
+            },
+            facts=[
+                fact
+                for fact in result.get("facts", [])
+                if isinstance(fact, SourceFact)
+            ],
+        )
+
+    def _domain_from_normalized(
+        self,
+        result: NormalizedPublicDataResult,
+    ) -> dict[str, object]:
+        domain_status = result.data.get("domain_status")
+        return {
+            "domain_status": (
+                domain_status if isinstance(domain_status, str) else "unknown"
+            ),
+            "facts": result.facts,
         }
 
 
@@ -850,6 +989,6 @@ def _company_units(company: str) -> int | None:
         return 85000
     if any(token in normalized for token in ("homes", "communities")):
         return 42000
-    if any(token in normalized for token in ("housing", "apartments")):
+    if any(token in normalized for token in ("housing", "apartments", "portfolio")):
         return 12000
     return None

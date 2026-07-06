@@ -66,7 +66,7 @@ Do not persist raw provider payloads in v1 responses.
 
 `GateResult` contains:
 
-- `status`: `passed` or `failed`
+- `status`: `pending`, `passed`, or `failed`
 - `failures`: hard failures
 - `warnings`: non-blocking concerns
 

@@ -64,7 +64,7 @@ async def test_app_factory_accepts_dependency_overrides() -> None:
     assert get_lead_service in app.dependency_overrides
     override = app.dependency_overrides[get_lead_service]
 
-    assert await list_leads(override()) == []
+    assert await list_leads(await override()) == []
 
 
 def test_settings_cover_demo_safe_backend_configuration() -> None:
@@ -78,6 +78,9 @@ def test_settings_cover_demo_safe_backend_configuration() -> None:
     assert settings.max_agent_retries >= 0
     assert settings.provider_timeout_seconds > 0
     assert settings.request_timeout_seconds > 0
+    assert settings.agent_execution_mode == "inline"
+    assert settings.celery_agent_queue == "signal-agent-runs"
+    assert settings.enable_demo_seed_endpoint is False
     assert settings.has_llm_key is False
 
     assert Settings(openai_api_key="test-key").has_llm_key is True

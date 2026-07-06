@@ -177,7 +177,7 @@ async def test_live_geocode_no_data_fallback_requires_matching_fixture_address(
 
 
 @pytest.mark.asyncio
-async def test_live_domain_dns_failure_uses_sanitized_fixture_fallback(
+async def test_live_domain_dns_failure_returns_gate_failing_unknown_status(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     async def fixture_live_geocode(
@@ -196,9 +196,9 @@ async def test_live_domain_dns_failure_uses_sanitized_fixture_fallback(
 
     result = await client.enrich(_lead())
 
-    assert result.enrichment.domain_status == "corporate"
-    assert "domain-quality fixture fallback" in result.warnings
-    assert "domain_quality: fixture fallback" in result.degraded_reasons
+    assert result.enrichment.domain_status == "unknown"
+    assert "domain quality unavailable" in result.warnings
+    assert "domain_quality: provider unavailable" in result.degraded_reasons
     assert all("operator.example" not in warning for warning in result.warnings)
 
 
@@ -238,3 +238,74 @@ async def test_live_domain_negative_dns_results_do_not_use_fixture_fallback(
         fact.label == "Domain quality" and fact.value == expected_status
         for fact in result.enrichment.sources
     )
+
+
+@pytest.mark.asyncio
+async def test_live_geocode_success_uses_cache_on_repeat_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+
+    class SuccessResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> list[dict[str, str]]:
+            return [{"lat": "30.2672", "lon": "-97.7431"}]
+
+    class SuccessAsyncClient:
+        def __init__(self, *, timeout: float) -> None:
+            self.timeout = timeout
+
+        async def __aenter__(self) -> "SuccessAsyncClient":
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+        async def get(self, *args: object, **kwargs: object) -> SuccessResponse:
+            nonlocal calls
+            calls += 1
+            return SuccessResponse()
+
+    monkeypatch.setattr(public_data.httpx, "AsyncClient", SuccessAsyncClient)
+    client = PublicDataClient(PublicDataClientConfig(use_fixtures=False))
+    lead = _lead(email="contact@gmail.com")
+
+    first = await client.enrich(lead)
+    second = await client.enrich(lead)
+
+    assert first.enrichment.coordinates == (30.2672, -97.7431)
+    assert second.enrichment.coordinates == (30.2672, -97.7431)
+    assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_live_domain_success_uses_cache_on_repeat_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+
+    async def fixture_live_geocode(
+        self: PublicDataClient,
+        lead: LeadCreate,
+        retrieved_at: datetime,
+    ) -> object:
+        return self._fixture_geocode(lead, retrieved_at)
+
+    async def successful_resolve(domain: str, record_type: str) -> list[object]:
+        nonlocal calls
+        calls += 1
+        return [object()]
+
+    monkeypatch.setattr(PublicDataClient, "_live_geocode", fixture_live_geocode)
+    monkeypatch.setattr(public_data.dns.asyncresolver, "resolve", successful_resolve)
+    client = PublicDataClient(PublicDataClientConfig(use_fixtures=False))
+    lead = _lead()
+
+    first = await client.enrich(lead)
+    second = await client.enrich(lead)
+
+    assert first.enrichment.domain_status == "corporate"
+    assert second.enrichment.domain_status == "corporate"
+    assert calls == 1

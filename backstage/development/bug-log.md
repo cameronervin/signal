@@ -9,3 +9,4 @@ Track reproduced bugs here.
 | 2026-07-06 | B-003 | Blank optional provider and LLM env values failed settings startup or key-presence checks | Closed | Normalized blank optional values to unset and added env-backed regression coverage |
 | 2026-07-06 | B-004 | Unsupported fixture geocoding could resolve to default US coordinates | Closed | Restricted fixture geocoding to explicit fixture keys and added hard-gate draft-suppression plus live fallback regression coverage |
 | 2026-07-06 | B-005 | Fixture geocoding and negative DNS fallbacks could allow unsupported leads through hard gates | Closed | Required explicit street/city/state fixture geocoding keys, treated negative MX answers as invalid or unknown, and added adapter plus pipeline regression coverage |
+| 2026-07-06 | B-006 | Seed reset endpoint was mounted by default | Closed | Added explicit `SIGNAL_ENABLE_DEMO_SEED_ENDPOINT` route mounting and regression coverage |
