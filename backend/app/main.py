@@ -7,22 +7,29 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
+from app.services.lead_service import LeadService, get_lead_service
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    settings = get_settings()
-    configure_logging(settings.log_level)
-    yield
+def build_lifespan(settings: Settings):
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        configure_logging(settings.log_level)
+        app.state.settings = settings
+        yield
+
+    return lifespan
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    lead_service: LeadService | None = None,
+) -> FastAPI:
     app_settings = settings or get_settings()
     app = FastAPI(
         title="Signal API",
         version="0.1.0",
         description="Triggered inbound lead enrichment and scoring API.",
-        lifespan=lifespan,
+        lifespan=build_lifespan(app_settings),
     )
     app.add_middleware(
         CORSMiddleware,
@@ -31,6 +38,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["GET", "POST"],
         allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
     )
+    app.dependency_overrides[get_settings] = lambda: app_settings
+    if lead_service is not None:
+        app.dependency_overrides[get_lead_service] = lambda: lead_service
     app.include_router(api_router, prefix="/api/v1")
     return app
 
