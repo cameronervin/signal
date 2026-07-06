@@ -262,15 +262,32 @@ jobs:
         env:
           PR_NUMBER: ${{ steps.context.outputs.pr_number }}
 
+      - name: Prepare fix patch
+        id: fix_patch
+        if: ${{ steps.openai.outputs.available == 'true' }}
+        run: |
+          mkdir -p .codex-run
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git -c core.hooksPath=/dev/null add -A
+          git -c core.hooksPath=/dev/null diff --cached --name-only > .codex-run/changed-files.txt
+          git -c core.hooksPath=/dev/null diff --cached --binary > "$RUNNER_TEMP/agent.patch"
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+
       - name: Commit and push fix pass
         if: ${{ steps.openai.outputs.available == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ steps.context.outputs.pr_number }}
           HEAD_REF: ${{ steps.context.outputs.head_ref }}
           NEXT_PASS: ${{ steps.fixpass.outputs.next_pass }}
           VERIFICATION_SUMMARY: ${{ steps.codex.outputs.final-message }}
           FIX_PASS_COUNT: ${{ steps.fixpass.outputs.next_pass }}
+          HAS_CHANGES: ${{ steps.fix_patch.outputs.has_changes }}
         run: |
           write_loop_result() {
             local status="$1"
@@ -311,24 +328,34 @@ jobs:
               }' > .codex-run/loop-result.json
           }
 
-          if [ -z "$(git status --porcelain)" ]; then
+          if [[ "$HAS_CHANGES" != "true" ]]; then
             write_loop_result "no_changes" "Codex fix pass produced no file changes."
             gh pr edit "$PR_NUMBER" --add-label "agent:needs-human" || true
             gh pr comment "$PR_NUMBER" --body "Codex fix pass $NEXT_PASS completed without file changes. Marking for human review."
             exit 0
           fi
 
-          git diff --name-only > .codex-run/changed-files.txt
+          auth_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          trusted_dir="$RUNNER_TEMP/trusted-fix-commit"
+          rm -rf "$trusted_dir"
+          git \
+            -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" \
+            clone --no-checkout "https://github.com/${GITHUB_REPOSITORY}.git" "$trusted_dir"
+          cd "$trusted_dir"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" fetch origin "$HEAD_REF"
+          git checkout -B "$HEAD_REF" "origin/$HEAD_REF"
+          git apply --binary "$RUNNER_TEMP/agent.patch"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -c core.hooksPath=/dev/null add -A
           git -c core.hooksPath=/dev/null commit -m "fix(agents): address PR ${PR_NUMBER} feedback"
           # Safe because the context step rejects forks and non-codex branches.
-          auth_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
           git \
             -c core.hooksPath=/dev/null \
             -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" \
             push origin "HEAD:${HEAD_REF}"
+          cd "$GITHUB_WORKSPACE"
+
           gh pr edit "$PR_NUMBER" --remove-label "agent:needs-fix,ci:failed,agent:blocked" || true
           gh pr edit "$PR_NUMBER" --add-label "agent:fix-pass-${NEXT_PASS},agent:reviewing,review:codex" || true
           write_loop_result "completed" ""
