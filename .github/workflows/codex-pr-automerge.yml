@@ -1,0 +1,151 @@
+name: Codex PR automerge
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: GitHub pull request number to evaluate for automerge
+        required: true
+  pull_request:
+    types: [labeled, synchronize, reopened, ready_for_review]
+  workflow_run:
+    workflows: ["CI", "Codex PR review"]
+    types: [completed]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: read
+
+concurrency:
+  group: signal-pr-automerge-${{ inputs.pr_number || github.event.pull_request.number || github.event.workflow_run.head_branch || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  automerge:
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        github.event_name == 'pull_request' ||
+        (
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.conclusion == 'success'
+        )
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Resolve PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISPATCH_PR_NUMBER: ${{ inputs.pr_number }}
+          EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          PR_NUMBER="${DISPATCH_PR_NUMBER:-$EVENT_PR_NUMBER}"
+          if [ -z "$PR_NUMBER" ] && [ -n "$HEAD_BRANCH" ]; then
+            PR_NUMBER="$(gh pr list --head "$HEAD_BRANCH" --state open --json number --jq '.[0].number // ""')"
+          fi
+          if [ -z "$PR_NUMBER" ]; then
+            echo "::notice::No open pull request found for automerge trigger."
+            echo "should_continue=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "should_continue=true" >> "$GITHUB_OUTPUT"
+
+      - name: Validate automerge policy
+        id: policy
+        if: ${{ steps.pr.outputs.should_continue == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          mkdir -p .codex-run
+          gh pr view "$PR_NUMBER" \
+            --json number,state,isDraft,baseRefName,headRefName,headRefOid,headRepository,isCrossRepository,labels,statusCheckRollup,mergeStateStatus,mergeable,url \
+            > .codex-run/pr.json
+
+          state="$(jq -r '.state' .codex-run/pr.json)"
+          is_draft="$(jq -r '.isDraft' .codex-run/pr.json)"
+          base_ref="$(jq -r '.baseRefName' .codex-run/pr.json)"
+          head_ref="$(jq -r '.headRefName' .codex-run/pr.json)"
+          head_repository="$(jq -r '.headRepository.nameWithOwner' .codex-run/pr.json)"
+          is_cross_repository="$(jq -r '.isCrossRepository' .codex-run/pr.json)"
+          mergeable="$(jq -r '.mergeable' .codex-run/pr.json)"
+          merge_state="$(jq -r '.mergeStateStatus' .codex-run/pr.json)"
+
+          has_required_labels="$(jq -r '
+            (any(.labels[]?; .name == "agent:merge-ready")) and
+            (any(.labels[]?; .name == "review:codex-clear")) and
+            (any(.labels[]?; .name == "ci:passing"))
+          ' .codex-run/pr.json)"
+          has_blocking_labels="$(jq -r '
+            any(.labels[]?; .name == "agent:needs-fix" or .name == "agent:needs-human" or .name == "agent:blocked" or .name == "review:human")
+          ' .codex-run/pr.json)"
+          has_risk_labels="$(jq -r 'any(.labels[]?; .name | startswith("risk:"))' .codex-run/pr.json)"
+          backend_ok="$(jq -r 'any(.statusCheckRollup[]?; .name == "backend" and .conclusion == "SUCCESS")' .codex-run/pr.json)"
+          frontend_ok="$(jq -r 'any(.statusCheckRollup[]?; .name == "frontend" and .conclusion == "SUCCESS")' .codex-run/pr.json)"
+          review_ok="$(jq -r 'any(.statusCheckRollup[]?; .name == "review" and .conclusion == "SUCCESS")' .codex-run/pr.json)"
+
+          should_merge=true
+          reason=""
+          if [[ "$state" != "OPEN" ]]; then
+            should_merge=false
+            reason="PR is not open"
+          elif [[ "$is_draft" == "true" ]]; then
+            should_merge=false
+            reason="PR is draft"
+          elif [[ "$base_ref" != "main" ]]; then
+            should_merge=false
+            reason="PR base is not main"
+          elif [[ "$head_ref" != codex/* ]]; then
+            should_merge=false
+            reason="PR head is not an agent-owned codex branch"
+          elif [[ "$is_cross_repository" != "false" || "$head_repository" != "$GITHUB_REPOSITORY" ]]; then
+            should_merge=false
+            reason="PR is not same-repository"
+          elif [[ "$has_required_labels" != "true" ]]; then
+            should_merge=false
+            reason="required automerge labels are missing"
+          elif [[ "$has_blocking_labels" == "true" ]]; then
+            should_merge=false
+            reason="blocking human/fix labels are present"
+          elif [[ "$has_risk_labels" == "true" ]]; then
+            should_merge=false
+            reason="risk labels require human review"
+          elif [[ "$backend_ok" != "true" || "$frontend_ok" != "true" || "$review_ok" != "true" ]]; then
+            should_merge=false
+            reason="required checks are not successful"
+          elif [[ "$mergeable" == "CONFLICTING" ]]; then
+            should_merge=false
+            reason="PR has merge conflicts"
+          fi
+
+          {
+            echo "should_merge=$should_merge"
+            echo "reason=$reason"
+            echo "merge_state=$merge_state"
+          } >> "$GITHUB_OUTPUT"
+          if [[ "$should_merge" != "true" ]]; then
+            echo "::notice::Skipping automerge for PR #$PR_NUMBER: $reason."
+          fi
+
+      - name: Merge PR
+        if: ${{ steps.policy.outputs.should_merge == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          gh pr comment "$PR_NUMBER" --body "Codex automerge is merging this low-risk agent PR after clear AI review and passing required checks."
+          gh pr merge "$PR_NUMBER" --squash --delete-branch

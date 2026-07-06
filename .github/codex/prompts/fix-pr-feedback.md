@@ -30,9 +30,9 @@ Read:
 
 - Do not change scoring weights or thresholds unless the PR already carries
   explicit human approval for that change.
-- Do not bypass the human review gate.
+- Do not bypass product, outreach, high-risk, or automerge policy gates.
 - Do not resolve review comments by deleting coverage or weakening assertions.
-- Do not merge the PR.
+- Do not merge the PR; only the automerge workflow may merge.
 
 ## Final Output
 

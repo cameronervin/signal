@@ -97,8 +97,16 @@ body from this artifact.
 
 ## Merge Rules
 
-`main` is protected. A PR must pass `backend` and `frontend`, have an approving
-review, resolve conversations, and satisfy branch freshness before merge.
+`main` is protected. A low-risk agent PR may automerge only when all of these
+are true:
+
+- The PR is open, not draft, same-repository, and on a `codex/*` branch.
+- Labels include `agent:merge-ready`, `review:codex-clear`, and `ci:passing`.
+- Labels do not include `agent:needs-fix`, `agent:needs-human`,
+  `agent:blocked`, or `review:human`.
+- No high-risk labels are present.
+- Required checks `backend`, `frontend`, and `review` are successful.
+- Required conversations are resolved and branch protection allows the merge.
 
 Keep high-risk work human-reviewed:
 
@@ -107,7 +115,8 @@ Keep high-risk work human-reviewed:
 - `risk:data-handling`
 - `risk:external-api`
 
-No workflow auto-merges.
+`Codex PR automerge` is the only workflow allowed to merge code. Implementation
+and fix-pass agents must never merge their own work.
 
 ## Safe Operating Cadence
 

@@ -129,6 +129,12 @@ jobs:
         env:
           PR_NUMBER: ${{ steps.context.outputs.pr_number }}
 
+      - name: Require Codex review output
+        if: ${{ steps.openai.outputs.available != 'true' || steps.codex.outputs.final-message == '' }}
+        run: |
+          echo "::error::Codex review is required before this PR can be AI-merged."
+          exit 1
+
       - name: Post review comment
         if: ${{ steps.openai.outputs.available == 'true' && steps.codex.outputs.final-message != '' }}
         uses: actions/github-script@v7
@@ -232,6 +238,20 @@ jobs:
           path: .codex-run/
           if-no-files-found: ignore
           include-hidden-files: true
+
+      - name: Enforce clear Codex review
+        if: ${{ steps.openai.outputs.available == 'true' && steps.codex.outputs.final-message != '' }}
+        env:
+          CODEX_FINAL_MESSAGE: ${{ steps.codex.outputs.final-message }}
+        run: |
+          message_file="$(mktemp)"
+          printf '%s\n' "$CODEX_FINAL_MESSAGE" > "$message_file"
+
+          if grep -Eq '^REVIEW_STATUS:[[:space:]]*clear' "$message_file"; then
+            exit 0
+          fi
+          echo "::error::Codex review did not clear this PR."
+          exit 1
 
   reconcile-ci:
     if: >-

@@ -45,9 +45,20 @@ Each loop writes a `.codex-run/loop-result.json` artifact with:
 - Blockers.
 - Fix-pass count.
 
-## Human Gates
+## Merge Gates
 
-No Signal loop may merge code. Branch protection, required checks, resolved
-conversations, and human review remain the merge gate. High-risk labels require
-human review before merge and before autonomous launch unless manually
-dispatched by a repository maintainer.
+Low-risk agent pull requests may merge automatically when Codex review is clear,
+required CI and review checks pass, conversations are resolved, and the PR has
+only agent-owned labels allowed by the manifest. The automerge workflow is the
+only component allowed to merge code; implementation and fix-pass agents must
+not merge.
+
+High-risk labels require human review before merge and before autonomous launch
+unless manually dispatched by a repository maintainer:
+
+- `risk:scoring-change`
+- `risk:outreach-gate`
+- `risk:data-handling`
+- `risk:external-api`
+
+Product outreach behavior remains human-gated regardless of code automerge.

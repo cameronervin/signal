@@ -48,7 +48,7 @@ fix_pass_count="$(jq -r '.fix_pass_count // 0' "$result_path")"
   echo
   echo "## Merge Gate"
   echo
-  echo "No auto-merge. Human review, required checks, and branch protection remain mandatory."
+  echo "Low-risk automerge requires Codex review clear, passing required checks, allowed labels, and branch protection. High-risk work remains human-reviewed."
 } > "$body_file"
 
 gh pr edit "$pr_number" --body-file "$body_file"

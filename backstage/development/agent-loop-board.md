@@ -54,7 +54,8 @@ be created in the GitHub UI and grouped by `Agent Status`.
    still requires maintainer-applied `agent:ready` or manual dispatch.
 5. High-risk issue forms remain `agent:needs-human` until human-approved.
 6. Fix passes stop after two attempts and then become `agent:blocked`.
-7. Merge decisions stay behind branch protection and human review.
+7. Low-risk merge decisions may be made by Codex review plus branch protection.
+   High-risk work stays human-reviewed.
 
 ## Automation Setup
 
@@ -66,6 +67,8 @@ Before running them, add `OPENAI_API_KEY` as a repository Actions secret.
   review.
 - `Codex PR review` runs automatically for PRs labeled `review:codex`,
   reconciles clear reviews after CI success, and can be manually dispatched.
+- `Codex PR automerge` merges only low-risk agent PRs after Codex review,
+  backend, and frontend checks pass.
 - `Codex PR babysitter` runs on failed `CI`, `agent:needs-fix`, trusted
   `@codex fix` comments, or manual dispatch, with a two-pass budget.
 - `Project label sync` maps issue and PR labels to the GitHub Project fields.
@@ -95,8 +98,8 @@ that secret exists.
 Use a low-risk docs or test issue to validate the autonomous path:
 
 2026-07-06 dry-run note: issue #32 exercises the guarded autonomous loop path
-with a docs-only change. The run must preserve human merge gates, avoid product
-behavior changes, and leave loop evidence in `.codex-run/loop-result.json`.
+with a docs-only change. The run must preserve high-risk human gates, avoid
+product behavior changes, and leave loop evidence in `.codex-run/loop-result.json`.
 
 1. Open a complete agent-loop issue with no risk flags.
 2. Confirm intake normalization applies loop, priority, type, and surface
@@ -106,7 +109,8 @@ behavior changes, and leave loop evidence in `.codex-run/loop-result.json`.
 5. Confirm `Codex PR review` posts a review.
 6. Force or simulate a CI failure only on a disposable PR, then confirm the
    babysitter consumes at most two fix passes.
-7. Confirm merge still requires human review and branch protection.
+7. Confirm low-risk merge waits for Codex review plus branch protection, and
+   high-risk work still requires human review.
 
 ## Merge Gates
 
