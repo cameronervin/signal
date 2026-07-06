@@ -18,8 +18,10 @@ export default async function AgentRunPage({ params }: Props) {
   }
   const lead = run.leadId ? getLead(run.leadId) : undefined;
   const reviewStep = run.steps.find((step) => step.name === "Human review");
-  const outputReady = Boolean(lead?.draft && reviewStep && reviewStep.status !== "pending");
-  const scoreLabel = outputReady && lead ? `${lead.score.total} · ${lead.score.tier}` : "Pending";
+  const exported = run.steps.some((step) => step.name === "Export" && step.status === "done");
+  const awaitingReview = Boolean(lead?.draft && reviewStep?.status === "active");
+  const outputComplete = Boolean(lead?.draft && (awaitingReview || exported));
+  const scoreLabel = outputComplete && lead ? `${lead.score.total} · ${lead.score.tier}` : "Pending";
 
   const stepDetails = run.steps.map((step, index) => ({
     ...step,
@@ -41,13 +43,13 @@ export default async function AgentRunPage({ params }: Props) {
             <Link className="button secondary" href="/agents">
               <ChevronLeft size={16} /> Back
             </Link>
-            <span className={`status-pill ${outputReady ? "warning" : "muted"}`}>
-              {outputReady ? "Awaiting your review" : run.status}
+            <span className={`status-pill ${awaitingReview ? "warning" : "muted"}`}>
+              {awaitingReview ? "Awaiting your review" : run.status}
             </span>
             <button className="button secondary" type="button">
               <Pause size={15} /> Pause
             </button>
-            {outputReady && (
+            {awaitingReview && (
               <button className="button primary" type="button">
                 <Pencil size={15} /> Review draft
               </button>
@@ -86,17 +88,19 @@ export default async function AgentRunPage({ params }: Props) {
             <div className="surface-card purple-panel p-5">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="section-title text-deep">
-                  {outputReady ? "Output ready for review" : "Output in progress"}
+                  {awaitingReview ? "Output ready for review" : exported ? "Draft exported" : "Output in progress"}
                 </h2>
                 <span className="mono text-xs font-semibold text-deep">{scoreLabel}</span>
               </div>
               <p className="mt-3 text-sm leading-6 text-muted">
-                {outputReady
+                {awaitingReview
                   ? "Score, why-line, talking points, related context, and draft are ready for SDR review."
+                  : exported
+                    ? "The reviewed draft has been exported for use in existing sales tools."
                   : "Signal is still building the score, related context, and draft eligibility decision."}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                {outputReady && (
+                {awaitingReview && (
                   <>
                     <button className="button primary" type="button">
                       <Copy size={14} /> Copy reviewed draft
