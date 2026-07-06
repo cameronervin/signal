@@ -98,6 +98,21 @@ async def test_fixture_geocode_returns_no_data_for_unsupported_location() -> Non
 
 
 @pytest.mark.asyncio
+async def test_fixture_geocode_returns_no_data_for_unmatched_address() -> None:
+    client = PublicDataClient(PublicDataClientConfig(use_fixtures=True))
+
+    result = await client.enrich(_lead(property_address="999 Missing Pl"))
+
+    assert result.enrichment.market == ""
+    assert result.enrichment.coordinates is None
+    assert result.enrichment.geo_confidence is None
+    assert any(
+        fact.label == "Address resolution" and fact.value == "unresolved"
+        for fact in result.enrichment.sources
+    )
+
+
+@pytest.mark.asyncio
 async def test_live_geocode_provider_failure_uses_sanitized_fixture_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -127,6 +142,41 @@ async def test_live_geocode_provider_failure_uses_sanitized_fixture_fallback(
 
 
 @pytest.mark.asyncio
+async def test_live_geocode_no_data_fallback_requires_matching_fixture_address(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class NoDataResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> list[object]:
+            return []
+
+    class NoDataAsyncClient:
+        def __init__(self, *, timeout: float) -> None:
+            self.timeout = timeout
+
+        async def __aenter__(self) -> "NoDataAsyncClient":
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+        async def get(self, *args: object, **kwargs: object) -> NoDataResponse:
+            return NoDataResponse()
+
+    monkeypatch.setattr(public_data.httpx, "AsyncClient", NoDataAsyncClient)
+    client = PublicDataClient(PublicDataClientConfig(use_fixtures=False))
+
+    result = await client.enrich(_lead(property_address="999 Missing Pl"))
+
+    assert result.enrichment.coordinates is None
+    assert result.enrichment.geo_confidence is None
+    assert "geocoding fixture fallback" in result.warnings
+    assert "geocoding: fixture fallback" in result.degraded_reasons
+
+
+@pytest.mark.asyncio
 async def test_live_domain_dns_failure_uses_sanitized_fixture_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -150,3 +200,41 @@ async def test_live_domain_dns_failure_uses_sanitized_fixture_fallback(
     assert "domain-quality fixture fallback" in result.warnings
     assert "domain_quality: fixture fallback" in result.degraded_reasons
     assert all("operator.example" not in warning for warning in result.warnings)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("dns_error", "expected_status"),
+    [
+        (public_data.dns.resolver.NXDOMAIN, "invalid"),
+        (public_data.dns.resolver.NoAnswer, "unknown"),
+    ],
+)
+async def test_live_domain_negative_dns_results_do_not_use_fixture_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+    dns_error: type[Exception],
+    expected_status: str,
+) -> None:
+    async def fixture_live_geocode(
+        self: PublicDataClient,
+        lead: LeadCreate,
+        retrieved_at: datetime,
+    ) -> object:
+        return self._fixture_geocode(lead, retrieved_at)
+
+    async def negative_resolve(domain: str, record_type: str) -> object:
+        raise dns_error
+
+    monkeypatch.setattr(PublicDataClient, "_live_geocode", fixture_live_geocode)
+    monkeypatch.setattr(public_data.dns.asyncresolver, "resolve", negative_resolve)
+    client = PublicDataClient(PublicDataClientConfig(use_fixtures=False))
+
+    result = await client.enrich(_lead(email="contact@missing-domain.example"))
+
+    assert result.enrichment.domain_status == expected_status
+    assert "domain-quality fixture fallback" not in result.warnings
+    assert "domain_quality: fixture fallback" not in result.degraded_reasons
+    assert any(
+        fact.label == "Domain quality" and fact.value == expected_status
+        for fact in result.enrichment.sources
+    )

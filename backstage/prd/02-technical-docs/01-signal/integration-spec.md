@@ -94,8 +94,9 @@ Current fixture behavior includes a warning-only path where local context and
 trigger context are unavailable. Those optional no-data states become gate
 warnings and agent-run degraded reasons while still allowing scoring and draft
 generation when address, company, country, and domain hard gates pass.
-Fixture geocoding only resolves explicit supported city/state keys; unsupported
-locations return no coordinates so the address hard gate suppresses drafting.
+Fixture geocoding only resolves explicit supported street/city/state keys;
+unsupported or unmatched locations return no coordinates so the address hard
+gate suppresses drafting.
 
 The shared fixture path can be selected explicitly, or when a required key is
 missing, a provider times out, a response schema changes, a rate limit is hit, or

@@ -7,6 +7,7 @@ from typing import Literal
 
 import dns.asyncresolver
 import dns.exception
+import dns.resolver
 import httpx
 from pydantic import BaseModel, Field, SecretStr
 
@@ -420,11 +421,11 @@ PERSONAL_DOMAINS = {
     "aol.com",
 }
 
-FIXTURE_COORDINATES: dict[tuple[str, str], tuple[float, float]] = {
-    ("austin", "tx"): (30.2672, -97.7431),
-    ("arlington", "tx"): (32.7357, -97.1081),
-    ("charlotte", "nc"): (35.2271, -80.8431),
-    ("raleigh", "nc"): (35.7796, -78.6382),
+FIXTURE_COORDINATES: dict[tuple[str, str, str], tuple[float, float]] = {
+    ("100 main st", "austin", "tx"): (30.2672, -97.7431),
+    ("123 market st", "austin", "tx"): (30.2672, -97.7431),
+    ("123 market st", "charlotte", "nc"): (35.2271, -80.8431),
+    ("123 market st", "raleigh", "nc"): (35.7796, -78.6382),
 }
 
 
@@ -572,7 +573,11 @@ class PublicDataClient:
     def _fixture_geocode(self, lead: LeadCreate, retrieved_at: datetime) -> _GeoResult:
         market = f"{lead.city}, {lead.state}"
         supported_country = lead.country.upper() in {"US", "USA", "UNITED STATES"}
-        location_key = (lead.city.lower(), lead.state.lower())
+        location_key = (
+            normalize_lookup_key(lead.property_address),
+            normalize_lookup_key(lead.city),
+            normalize_lookup_key(lead.state),
+        )
         coordinates = (
             FIXTURE_COORDINATES.get(location_key) if supported_country else None
         )
@@ -583,7 +588,7 @@ class PublicDataClient:
             coordinates=coordinates,
             geo_confidence=confidence,
             census_geo_id=(
-                f"fixture-{location_key[0]}-{location_key[1]}"
+                f"fixture-{location_key[1]}-{location_key[2]}"
                 if coordinates
                 else None
             ),
@@ -798,8 +803,14 @@ class PublicDataClient:
         elif "." not in domain:
             status = "invalid"
         else:
-            answers = await dns.asyncresolver.resolve(domain, "MX")
-            status = "corporate" if answers else "unknown"
+            try:
+                answers = await dns.asyncresolver.resolve(domain, "MX")
+            except dns.resolver.NXDOMAIN:
+                status = "invalid"
+            except dns.resolver.NoAnswer:
+                status = "unknown"
+            else:
+                status = "corporate" if answers else "unknown"
         return {
             "domain_status": status,
             "facts": [

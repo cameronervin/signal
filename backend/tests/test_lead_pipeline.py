@@ -185,6 +185,29 @@ async def test_pipeline_suppresses_draft_for_unsupported_fixture_location() -> N
 
 
 @pytest.mark.asyncio
+async def test_pipeline_suppresses_draft_for_unmatched_fixture_address() -> None:
+    service = LeadService(InMemorySignalRepository())
+    lead = LeadCreate(
+        contact_name="Demo Contact",
+        email="contact@operator.example",
+        company="Regional Property Operator",
+        role="VP Leasing",
+        property_address="999 Missing Pl",
+        city="Austin",
+        state="TX",
+        country="US",
+    )
+
+    result = await service.create_and_enrich(lead)
+
+    assert result.gates.status == "failed"
+    assert result.score.tier == "C"
+    assert result.draft is None
+    assert "address did not resolve" in result.gates.failures
+    assert result.enrichment.coordinates is None
+
+
+@pytest.mark.asyncio
 async def test_create_lead_accepts_fresh_input_contract() -> None:
     app = create_app()
     repository = InMemorySignalRepository()
