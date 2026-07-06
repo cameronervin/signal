@@ -211,7 +211,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ steps.context.outputs.pr_number }}
         run: |
-          git -c "http.https://github.com/.extraheader=AUTHORIZATION: bearer $GH_TOKEN" \
+          auth_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" \
             fetch --no-tags origin "+refs/pull/$PR_NUMBER/head:pr-$PR_NUMBER"
           git checkout "pr-$PR_NUMBER"
 
@@ -323,7 +324,8 @@ jobs:
           git add -A
           git commit -m "fix(agents): address PR ${PR_NUMBER} feedback"
           # Safe because the context step rejects forks and non-codex branches.
-          git -c "http.https://github.com/.extraheader=AUTHORIZATION: bearer $GH_TOKEN" push origin "HEAD:${HEAD_REF}"
+          auth_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" push origin "HEAD:${HEAD_REF}"
           gh pr edit "$PR_NUMBER" --remove-label "agent:needs-fix,ci:failed,agent:blocked" || true
           gh pr edit "$PR_NUMBER" --add-label "agent:fix-pass-${NEXT_PASS},agent:reviewing,review:codex" || true
           write_loop_result "completed" ""

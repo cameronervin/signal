@@ -123,9 +123,10 @@ jobs:
           ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
           BRANCH: ${{ steps.issue.outputs.branch }}
         run: |
-          if git -c "http.https://github.com/.extraheader=AUTHORIZATION: bearer $GH_TOKEN" \
+          auth_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          if git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" \
             ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            git -c "http.https://github.com/.extraheader=AUTHORIZATION: bearer $GH_TOKEN" fetch origin "$BRANCH"
+            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" fetch origin "$BRANCH"
             git checkout -B "$BRANCH" "origin/$BRANCH"
           else
             git checkout -b "$BRANCH"
@@ -174,7 +175,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "chore(agents): implement issue ${ISSUE_NUMBER}"
-          git -c "http.https://github.com/.extraheader=AUTHORIZATION: bearer $GH_TOKEN" push --set-upstream origin "$BRANCH"
+          auth_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" push --set-upstream origin "$BRANCH"
           PR_URL="$(gh pr create \
             --title "Loop #${ISSUE_NUMBER}: ${ISSUE_TITLE}" \
             --body "Closes #${ISSUE_NUMBER}" \
