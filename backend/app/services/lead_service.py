@@ -135,6 +135,7 @@ class LeadService:
             execution_mode=execution_mode,
             dispatch=dispatch,
             activity_log=result.get("activity_log", []),
+            degraded_reasons=result.get("degraded_reasons", []),
         )
         response = response.model_copy(update={"run": run})
         await self.repository.save_lead(response)
@@ -273,12 +274,11 @@ class LeadService:
         execution_mode: ExecutionMode,
         dispatch: WorkerDispatch | None,
         activity_log: list[str],
+        degraded_reasons: list[str],
     ) -> AgentRunResponse:
-        degraded_reasons = (
-            ["draft_suppressed: hard gate failed"]
-            if response.gates.status == "failed"
-            else []
-        )
+        degraded_reasons = [*degraded_reasons]
+        if response.gates.status == "failed":
+            degraded_reasons.append("draft_suppressed: hard gate failed")
         if execution_mode == "worker" and self.worker_dispatcher is None:
             degraded_reasons.append("worker_dispatch_unavailable: eager fallback")
 

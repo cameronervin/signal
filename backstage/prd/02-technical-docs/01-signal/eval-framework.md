@@ -60,6 +60,8 @@ The deterministic scoring calibration suite lives in
   rationale.
 - Bounded recent-trigger and related-context bonuses with a final score cap of
   100.
+- `SIGNAL_SCORING_CONFIG_PATH` can point at an alternate JSON rubric and affect
+  runtime tiering.
 - Hard-gate failure behavior that forces C-tier, zero scored totals, and draft
   suppression regardless of high enrichment values.
 

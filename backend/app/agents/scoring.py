@@ -1,5 +1,11 @@
-from dataclasses import dataclass
+from __future__ import annotations
 
+import json
+from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
+
+from app.core.config import get_settings
 from app.schemas.lead import (
     Enrichment,
     GateResult,
@@ -18,36 +24,6 @@ PERSONAL_DOMAINS = {
     "aol.com",
 }
 
-TIER_THRESHOLDS = {
-    "A": 75,
-    "B": 50,
-}
-
-BONUS_POINTS = {
-    "recent_trigger": 10,
-    "related_context": 10,
-}
-
-SENIORITY_POINTS: dict[str, int] = {
-    "chief": 15,
-    "cfo": 15,
-    "ceo": 15,
-    "coo": 15,
-    "vp": 15,
-    "vice president": 15,
-    "director": 12,
-    "regional": 10,
-    "manager": 7,
-}
-
-ASSET_TYPE_POINTS = {
-    "multifamily": 10,
-    "student": 10,
-    "sfr": 10,
-    "unclear": 4,
-    "commercial": 2,
-}
-
 
 @dataclass(frozen=True)
 class Bucket:
@@ -63,98 +39,47 @@ class RubricComponent:
     source_refs: tuple[str, ...] = ()
 
 
-COMPANY_FIT_COMPONENTS = {
-    "portfolio_scale": RubricComponent(
-        name="portfolio_scale",
-        max_points=25,
-        rationale="Company unit estimate indicates portfolio scale.",
-        source_refs=("Company units",),
-    ),
-    "contact_seniority": RubricComponent(
-        name="contact_seniority",
-        max_points=15,
-        rationale="Contact role suggests buying or evaluation influence.",
-    ),
-    "asset_type_fit": RubricComponent(
-        name="asset_type_fit",
-        max_points=10,
-        rationale="Property and company signals fit the v1 multifamily focus.",
-        source_refs=("Asset type fit",),
-    ),
-    "company_momentum": RubricComponent(
-        name="company_momentum",
-        max_points=10,
-        rationale="Recent trigger or fallback company context supports urgency.",
-        source_refs=("Trigger event",),
-    ),
-}
-
-MARKET_OPPORTUNITY_COMPONENTS = {
-    "renter_share": RubricComponent(
-        name="renter_share",
-        max_points=12,
-        rationale="Higher renter share increases market opportunity.",
-        source_refs=("Renter share",),
-    ),
-    "rent_level_trend": RubricComponent(
-        name="rent_level_trend",
-        max_points=10,
-        rationale="Rent growth supports active leasing-market pressure.",
-        source_refs=("Rent growth",),
-    ),
-    "population_household_growth": RubricComponent(
-        name="population_household_growth",
-        max_points=8,
-        rationale="Household growth contributes to demand signal.",
-        source_refs=("Household growth",),
-    ),
-    "labor_market_tightness": RubricComponent(
-        name="labor_market_tightness",
-        max_points=5,
-        rationale="Lower unemployment supports leasing demand stability.",
-        source_refs=("Labor market",),
-    ),
-    "walkability_density": RubricComponent(
-        name="walkability_density",
-        max_points=5,
-        rationale="Local walkability or density indicates market fit.",
-        source_refs=("Walkability",),
-    ),
-}
-
-BONUS_COMPONENTS = {
-    "recent_trigger_bonus": RubricComponent(
-        name="recent_trigger_bonus",
-        max_points=10,
-        rationale="Recent trigger adds a bounded urgency bonus.",
-        source_refs=("Trigger event",),
-    ),
-    "related_context_bonus": RubricComponent(
-        name="related_context_bonus",
-        max_points=10,
-        rationale="Related inbound context adds a bounded urgency bonus.",
-    ),
-}
+@dataclass(frozen=True)
+class ScoringRubric:
+    tier_thresholds: dict[Tier, int]
+    gate_failed_score: int
+    bonuses: dict[str, int]
+    seniority_points: dict[str, int]
+    asset_type_points: dict[str, int]
+    portfolio_buckets: tuple[Bucket, ...]
+    portfolio_fallback_points: int
+    market_buckets: dict[str, tuple[Bucket, ...]]
+    market_fallback_points: dict[str, int]
+    components: dict[str, RubricComponent]
 
 
-def evaluate_gates(lead: LeadCreate, enrichment: Enrichment) -> GateResult:
+def evaluate_gates(
+    lead: LeadCreate,
+    enrichment: Enrichment,
+    warnings: list[str] | None = None,
+) -> GateResult:
     failures: list[str] = []
-    warnings: list[str] = []
-    domain = lead.email.split("@")[-1].lower()
+    gate_warnings: list[str] = [*(warnings or [])]
 
-    if domain in PERSONAL_DOMAINS:
-        failures.append("personal email domain")
     if lead.country.upper() not in {"US", "USA", "UNITED STATES"}:
         failures.append("non-US property")
-    if not enrichment.market:
+    if (
+        not enrichment.market
+        or enrichment.coordinates is None
+        or enrichment.geo_confidence is None
+    ):
         failures.append("address did not resolve")
-    if (enrichment.company_units or 0) < 10000:
-        warnings.append("sub-scale portfolio")
+    if enrichment.domain_status != "corporate":
+        failures.append("corporate domain not verified")
+    if enrichment.company_units is None or enrichment.asset_type_fit == "unclear":
+        failures.append("company plausibility unresolved")
+    elif enrichment.company_units < 10000:
+        gate_warnings.append("sub-scale portfolio")
 
     return GateResult(
         status="failed" if failures else "passed",
         failures=failures,
-        warnings=warnings,
+        warnings=gate_warnings,
     )
 
 
@@ -164,10 +89,12 @@ def score_lead(
     enrichment: Enrichment,
     *,
     related_context_count: int = 0,
+    rubric: ScoringRubric | None = None,
 ) -> ScoreBreakdown:
+    active_rubric = rubric or load_default_scoring_rubric()
     if gates.status == "failed":
         return ScoreBreakdown(
-            total=0,
+            total=active_rubric.gate_failed_score,
             tier="C",
             company_fit=0,
             market_opportunity=0,
@@ -176,51 +103,57 @@ def score_lead(
             components=[
                 ScoreComponent(
                     name="gates",
-                    points=0,
+                    points=active_rubric.gate_failed_score,
                     rationale="Hard gate failure forces C-tier and suppresses draft.",
                 )
             ],
         )
 
-    portfolio = _portfolio_points(enrichment.company_units or 0)
-    seniority = _seniority_points(lead.role or "")
-    asset_fit = _asset_type_points(enrichment.asset_type_fit)
-    momentum = 10 if enrichment.recent_trigger else 4
+    portfolio = _portfolio_points(enrichment.company_units or 0, active_rubric)
+    seniority = _seniority_points(lead.role or "", active_rubric)
+    asset_fit = _asset_type_points(enrichment.asset_type_fit, active_rubric)
+    momentum = (
+        active_rubric.components["company_momentum"].max_points
+        if enrichment.recent_trigger
+        else 4
+    )
     company_fit = min(60, portfolio + seniority + asset_fit + momentum)
 
     renter = _bucket(
         enrichment.renter_share or 0,
-        [Bucket(0.6, 12), Bucket(0.5, 9), Bucket(0.4, 6)],
-        3,
+        active_rubric.market_buckets["renter_share"],
+        active_rubric.market_fallback_points["renter_share"],
     )
     rent = _bucket(
         (enrichment.rent_growth_yoy or 0) / 100,
-        [Bucket(0.08, 10), Bucket(0.05, 8), Bucket(0.02, 5)],
-        2,
+        active_rubric.market_buckets["rent_level_trend"],
+        active_rubric.market_fallback_points["rent_level_trend"],
     )
     growth = _bucket(
         (enrichment.household_growth or 0) / 100,
-        [Bucket(0.04, 8), Bucket(0.025, 6), Bucket(0.01, 4)],
-        1,
+        active_rubric.market_buckets["population_household_growth"],
+        active_rubric.market_fallback_points["population_household_growth"],
     )
     labor = _bucket(
         1 - ((enrichment.unemployment_rate or 6) / 10),
-        [Bucket(0.67, 5), Bucket(0.55, 3)],
-        1,
+        active_rubric.market_buckets["labor_market_tightness"],
+        active_rubric.market_fallback_points["labor_market_tightness"],
     )
     density = _bucket(
         float(enrichment.walkability_score or 0),
-        [Bucket(70, 5), Bucket(55, 3), Bucket(40, 2)],
-        1,
+        active_rubric.market_buckets["walkability_density"],
+        active_rubric.market_fallback_points["walkability_density"],
     )
     market = min(40, renter + rent + growth + labor + density)
 
-    recent_bonus = BONUS_POINTS["recent_trigger"] if enrichment.recent_trigger else 0
+    recent_bonus = (
+        active_rubric.bonuses["recent_trigger"] if enrichment.recent_trigger else 0
+    )
     related_bonus = (
-        BONUS_POINTS["related_context"] if related_context_count > 0 else 0
+        active_rubric.bonuses["related_context"] if related_context_count > 0 else 0
     )
     total = min(100, company_fit + market + recent_bonus + related_bonus)
-    tier = _tier(total)
+    tier = _tier(total, active_rubric)
     why_line = _why_line(
         tier=tier,
         enrichment=enrichment,
@@ -246,66 +179,119 @@ def score_lead(
         multipliers=multipliers,
         why_line=why_line,
         components=[
-            _component("portfolio_scale", portfolio),
-            _component("contact_seniority", seniority),
-            _component("asset_type_fit", asset_fit),
-            _component("company_momentum", momentum),
-            _component("renter_share", renter),
-            _component("rent_level_trend", rent),
-            _component("population_household_growth", growth),
-            _component("labor_market_tightness", labor),
-            _component("walkability_density", density),
-            _component("recent_trigger_bonus", recent_bonus),
-            _component("related_context_bonus", related_bonus),
+            _component("portfolio_scale", portfolio, active_rubric),
+            _component("contact_seniority", seniority, active_rubric),
+            _component("asset_type_fit", asset_fit, active_rubric),
+            _component("company_momentum", momentum, active_rubric),
+            _component("renter_share", renter, active_rubric),
+            _component("rent_level_trend", rent, active_rubric),
+            _component("population_household_growth", growth, active_rubric),
+            _component("labor_market_tightness", labor, active_rubric),
+            _component("walkability_density", density, active_rubric),
+            _component("recent_trigger_bonus", recent_bonus, active_rubric),
+            _component("related_context_bonus", related_bonus, active_rubric),
         ],
     )
 
 
-def _portfolio_points(units: int) -> int:
-    if units >= 75000:
-        return 25
-    if units >= 40000:
-        return 21
-    if units >= 15000:
-        return 14
-    return 6
+@lru_cache
+def load_default_scoring_rubric() -> ScoringRubric:
+    return load_scoring_rubric(get_settings().scoring_config_path)
 
 
-def _seniority_points(role: str) -> int:
+def load_scoring_rubric(config_path: str | Path) -> ScoringRubric:
+    path = _resolve_config_path(config_path)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    components = {
+        name: RubricComponent(
+            name=name,
+            max_points=int(config["max_points"]),
+            rationale=str(config["rationale"]),
+            source_refs=tuple(config.get("source_refs", [])),
+        )
+        for name, config in data["components"].items()
+    }
+    return ScoringRubric(
+        tier_thresholds={
+            "A": int(data["tier_thresholds"]["A"]),
+            "B": int(data["tier_thresholds"]["B"]),
+            "C": int(data["tier_thresholds"].get("C", 0)),
+        },
+        gate_failed_score=int(data["gate_failed_score"]),
+        bonuses={key: int(value) for key, value in data["bonuses"].items()},
+        seniority_points={
+            key: int(value) for key, value in data["seniority_points"].items()
+        },
+        asset_type_points={
+            key: int(value) for key, value in data["asset_type_points"].items()
+        },
+        portfolio_buckets=_load_buckets(data["portfolio_scale"]["buckets"]),
+        portfolio_fallback_points=int(data["portfolio_scale"]["fallback_points"]),
+        market_buckets={
+            name: _load_buckets(config["buckets"])
+            for name, config in data["market_buckets"].items()
+        },
+        market_fallback_points={
+            name: int(config["fallback_points"])
+            for name, config in data["market_buckets"].items()
+        },
+        components=components,
+    )
+
+
+def _resolve_config_path(config_path: str | Path) -> Path:
+    path = Path(config_path)
+    if path.is_absolute():
+        return path
+    cwd_path = Path.cwd() / path
+    if cwd_path.exists():
+        return cwd_path
+    backend_root = Path(__file__).resolve().parents[2]
+    return backend_root / path
+
+
+def _load_buckets(raw_buckets: list[dict[str, object]]) -> tuple[Bucket, ...]:
+    return tuple(
+        Bucket(threshold=float(bucket["threshold"]), points=int(bucket["points"]))
+        for bucket in raw_buckets
+    )
+
+
+def _portfolio_points(units: int, rubric: ScoringRubric) -> int:
+    return _bucket(units, rubric.portfolio_buckets, rubric.portfolio_fallback_points)
+
+
+def _seniority_points(role: str, rubric: ScoringRubric) -> int:
     normalized = role.lower()
-    for token, points in SENIORITY_POINTS.items():
+    for token, points in rubric.seniority_points.items():
         if token in normalized:
             return points
     return 4
 
 
-def _asset_type_points(asset_type: str | None) -> int:
+def _asset_type_points(asset_type: str | None, rubric: ScoringRubric) -> int:
     if asset_type is None:
-        return ASSET_TYPE_POINTS["unclear"]
-    return ASSET_TYPE_POINTS.get(asset_type, ASSET_TYPE_POINTS["unclear"])
+        return rubric.asset_type_points["unclear"]
+    return rubric.asset_type_points.get(asset_type, rubric.asset_type_points["unclear"])
 
 
-def _bucket(value: float, thresholds: list[Bucket], fallback: int) -> int:
+def _bucket(value: float, thresholds: tuple[Bucket, ...], fallback: int) -> int:
     for bucket in thresholds:
         if value >= bucket.threshold:
             return bucket.points
     return fallback
 
 
-def _tier(score: int) -> Tier:
-    if score >= TIER_THRESHOLDS["A"]:
+def _tier(score: int, rubric: ScoringRubric) -> Tier:
+    if score >= rubric.tier_thresholds["A"]:
         return "A"
-    if score >= TIER_THRESHOLDS["B"]:
+    if score >= rubric.tier_thresholds["B"]:
         return "B"
     return "C"
 
 
-def _component(name: str, points: int) -> ScoreComponent:
-    config = (
-        COMPANY_FIT_COMPONENTS.get(name)
-        or MARKET_OPPORTUNITY_COMPONENTS.get(name)
-        or BONUS_COMPONENTS[name]
-    )
+def _component(name: str, points: int, rubric: ScoringRubric) -> ScoreComponent:
+    config = rubric.components[name]
     return ScoreComponent(
         name=config.name,
         points=min(points, config.max_points),

@@ -31,7 +31,7 @@ Core backend settings use fixture-first demo defaults:
 | `SIGNAL_API_BASE_URL` | `http://127.0.0.1:8000` | Backend origin for local clients and docs. |
 | `SIGNAL_FRONTEND_ORIGIN` | `http://localhost:3000` | Primary browser origin allowed by CORS. |
 | `SIGNAL_EXTRA_CORS_ORIGINS` | `http://127.0.0.1:3000` | Additional explicit browser origins. |
-| `SIGNAL_SCORING_CONFIG_PATH` | `app/agents/scoring.py` | Current scoring source path until external config lands. |
+| `SIGNAL_SCORING_CONFIG_PATH` | `app/agents/scoring-rubric.v1.json` | Versioned scoring rubric loaded at runtime. |
 | `SIGNAL_MAX_AGENT_RETRIES` | `2` | Bounded agent retry count. |
 | `SIGNAL_PROVIDER_RETRY_COUNT` | `2` | Bounded live-provider retry count. |
 | `SIGNAL_PROVIDER_TIMEOUT_SECONDS` | `8` | Live-provider timeout budget. |

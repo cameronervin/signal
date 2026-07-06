@@ -47,6 +47,16 @@ OpenAI-compatible gateway clients while keeping Signal domain language neutral.
 - Agents consume normalized facts, not raw provider payloads.
 - Every fact used in scoring, talking points, or drafts must become a
   `SourceFact`.
+- The implemented adapter suite normalizes geocoding, demographic, economic,
+  local-context, company-context, trigger-context, and domain-quality categories
+  into one enrichment result consumed by the deterministic graph node.
+- Geocoding and DNS/MX domain quality have live-capable paths when fixture mode
+  is disabled; provider errors, timeouts, no-data results, or schema mismatches
+  fall back to fixture-normalized values or explicit no-data states with
+  sanitized degraded reasons.
+- Demographic, economic, local-context, company-context, and trigger-context
+  categories are fixture-normalized in the current slice and should move behind
+  cache-backed live adapters before pilot use.
 - Live adapters must have fixture-backed tests.
 - Provider timeouts, missing keys, rate limits, and schema changes return
   warnings, cached values, fixture values, or no-data states, not unhandled
@@ -79,6 +89,14 @@ Fixture fallback must cover:
 - Hard-gate-failed lead with no draft.
 - Missing-trigger lead.
 - Warning-only lead that can still produce a draft.
+
+Current fixture behavior includes a warning-only path where local context and
+trigger context are unavailable. Those optional no-data states become gate
+warnings and agent-run degraded reasons while still allowing scoring and draft
+generation when address, company, country, and domain hard gates pass.
+Fixture geocoding only resolves explicit supported street/city/state keys;
+unsupported or unmatched locations return no coordinates so the address hard
+gate suppresses drafting.
 
 The shared fixture path can be selected explicitly, or when a required key is
 missing, a provider times out, a response schema changes, a rate limit is hit, or

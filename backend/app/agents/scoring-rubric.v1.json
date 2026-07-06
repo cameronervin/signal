@@ -1,0 +1,137 @@
+{
+  "version": "2026-07-06",
+  "tier_thresholds": {
+    "A": 75,
+    "B": 50,
+    "C": 0
+  },
+  "gate_failed_score": 0,
+  "bonuses": {
+    "recent_trigger": 10,
+    "related_context": 10
+  },
+  "seniority_points": {
+    "chief": 15,
+    "cfo": 15,
+    "ceo": 15,
+    "coo": 15,
+    "vp": 15,
+    "vice president": 15,
+    "director": 12,
+    "regional": 10,
+    "manager": 7
+  },
+  "asset_type_points": {
+    "multifamily": 10,
+    "student": 10,
+    "sfr": 10,
+    "unclear": 4,
+    "commercial": 2
+  },
+  "portfolio_scale": {
+    "fallback_points": 6,
+    "buckets": [
+      { "threshold": 75000, "points": 25 },
+      { "threshold": 40000, "points": 21 },
+      { "threshold": 15000, "points": 14 }
+    ]
+  },
+  "market_buckets": {
+    "renter_share": {
+      "fallback_points": 3,
+      "buckets": [
+        { "threshold": 0.6, "points": 12 },
+        { "threshold": 0.5, "points": 9 },
+        { "threshold": 0.4, "points": 6 }
+      ]
+    },
+    "rent_level_trend": {
+      "fallback_points": 2,
+      "buckets": [
+        { "threshold": 0.08, "points": 10 },
+        { "threshold": 0.05, "points": 8 },
+        { "threshold": 0.02, "points": 5 }
+      ]
+    },
+    "population_household_growth": {
+      "fallback_points": 1,
+      "buckets": [
+        { "threshold": 0.04, "points": 8 },
+        { "threshold": 0.025, "points": 6 },
+        { "threshold": 0.01, "points": 4 }
+      ]
+    },
+    "labor_market_tightness": {
+      "fallback_points": 1,
+      "buckets": [
+        { "threshold": 0.67, "points": 5 },
+        { "threshold": 0.55, "points": 3 }
+      ]
+    },
+    "walkability_density": {
+      "fallback_points": 1,
+      "buckets": [
+        { "threshold": 70, "points": 5 },
+        { "threshold": 55, "points": 3 },
+        { "threshold": 40, "points": 2 }
+      ]
+    }
+  },
+  "components": {
+    "portfolio_scale": {
+      "max_points": 25,
+      "rationale": "Company unit estimate indicates portfolio scale.",
+      "source_refs": ["Company units"]
+    },
+    "contact_seniority": {
+      "max_points": 15,
+      "rationale": "Contact role suggests buying or evaluation influence.",
+      "source_refs": []
+    },
+    "asset_type_fit": {
+      "max_points": 10,
+      "rationale": "Property and company signals fit the v1 multifamily focus.",
+      "source_refs": ["Asset type fit"]
+    },
+    "company_momentum": {
+      "max_points": 10,
+      "rationale": "Recent trigger or fallback company context supports urgency.",
+      "source_refs": ["Trigger event"]
+    },
+    "renter_share": {
+      "max_points": 12,
+      "rationale": "Higher renter share increases market opportunity.",
+      "source_refs": ["Renter share"]
+    },
+    "rent_level_trend": {
+      "max_points": 10,
+      "rationale": "Rent growth supports active leasing-market pressure.",
+      "source_refs": ["Rent growth"]
+    },
+    "population_household_growth": {
+      "max_points": 8,
+      "rationale": "Household growth contributes to demand signal.",
+      "source_refs": ["Household growth"]
+    },
+    "labor_market_tightness": {
+      "max_points": 5,
+      "rationale": "Lower unemployment supports leasing demand stability.",
+      "source_refs": ["Unemployment rate"]
+    },
+    "walkability_density": {
+      "max_points": 5,
+      "rationale": "Local walkability or density indicates market fit.",
+      "source_refs": ["Walkability score"]
+    },
+    "recent_trigger_bonus": {
+      "max_points": 10,
+      "rationale": "Recent trigger adds a bounded urgency bonus.",
+      "source_refs": ["Trigger event"]
+    },
+    "related_context_bonus": {
+      "max_points": 10,
+      "rationale": "Related inbound context adds a bounded urgency bonus.",
+      "source_refs": []
+    }
+  }
+}

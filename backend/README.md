@@ -20,7 +20,7 @@ defaults for local and demo reliability. Key knobs:
 | `SIGNAL_API_BASE_URL` | `http://127.0.0.1:8000` | API origin advertised to local clients and docs. |
 | `SIGNAL_FRONTEND_ORIGIN` | `http://localhost:3000` | Primary allowed frontend origin for CORS. |
 | `SIGNAL_EXTRA_CORS_ORIGINS` | `http://127.0.0.1:3000` | Comma-separated additional explicit CORS origins. |
-| `SIGNAL_SCORING_CONFIG_PATH` | `app/agents/scoring.py` | Scoring configuration source path for the current scaffold. |
+| `SIGNAL_SCORING_CONFIG_PATH` | `app/agents/scoring-rubric.v1.json` | Versioned scoring rubric loaded at runtime. |
 | `SIGNAL_MAX_AGENT_RETRIES` | `2` | Bounded agent retry count. |
 | `SIGNAL_PROVIDER_RETRY_COUNT` | `2` | Bounded public-provider retry count. |
 | `SIGNAL_PROVIDER_TIMEOUT_SECONDS` | `8` | Provider call timeout budget. |

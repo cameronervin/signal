@@ -1,7 +1,15 @@
+import json
+from pathlib import Path
+
 import pytest
 
 from app.agents.fixtures import demo_enrichment
-from app.agents.scoring import evaluate_gates, score_lead
+from app.agents.scoring import (
+    evaluate_gates,
+    load_default_scoring_rubric,
+    score_lead,
+)
+from app.core.config import get_settings
 from app.repositories.memory import InMemorySignalRepository
 from app.schemas.lead import LeadCreate, ScoreBreakdown
 from app.services.lead_service import LeadService
@@ -36,10 +44,10 @@ async def test_demo_fixture_scores_match_documented_calibration() -> None:
         for handle, lead in leads.items()
     } == {
         "a_tier": ("A", 60, 40, 100),
-        "b_tier": ("B", 42, 27, 69),
-        "c_tier": ("C", 24, 9, 33),
+        "b_tier": ("B", 42, 23, 65),
+        "c_tier": ("C", 24, 23, 47),
         "warning_only": ("B", 32, 40, 72),
-        "missing_trigger": ("B", 32, 27, 59),
+        "missing_trigger": ("B", 32, 23, 55),
         "hard_gate_failed": ("C", 0, 0, 0),
     }
 
@@ -54,7 +62,7 @@ async def test_demo_fixture_scores_match_documented_calibration() -> None:
         "labor_market_tightness": 5,
         "walkability_density": 5,
         "recent_trigger_bonus": 10,
-        "related_context_bonus": 0,
+        "related_context_bonus": 10,
     }
     assert _component_points(leads["b_tier"]) == {
         "portfolio_scale": 21,
@@ -63,15 +71,15 @@ async def test_demo_fixture_scores_match_documented_calibration() -> None:
         "company_momentum": 4,
         "renter_share": 6,
         "rent_level_trend": 5,
-        "population_household_growth": 8,
-        "labor_market_tightness": 5,
-        "walkability_density": 3,
+        "population_household_growth": 6,
+        "labor_market_tightness": 1,
+        "walkability_density": 5,
         "recent_trigger_bonus": 0,
         "related_context_bonus": 0,
     }
     assert _component_points(leads["c_tier"])["portfolio_scale"] == 6
-    assert _component_points(leads["c_tier"])["renter_share"] == 3
-    assert leads["warning_only"].gates.warnings == ["sub-scale portfolio"]
+    assert _component_points(leads["c_tier"])["renter_share"] == 6
+    assert leads["warning_only"].gates.warnings == ["trigger context unavailable"]
     assert leads["warning_only"].draft is not None
     assert leads["missing_trigger"].enrichment.recent_trigger is None
     assert leads["missing_trigger"].draft is not None
@@ -119,6 +127,39 @@ def test_bonus_points_are_bounded_and_total_score_is_capped() -> None:
     assert score.multipliers == ["recent_trigger:+10", "related_context:+10"]
 
 
+def test_scoring_config_path_loads_runtime_rubric(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    config = json.loads(Path("app/agents/scoring-rubric.v1.json").read_text())
+    config["tier_thresholds"]["A"] = 101
+    custom_config = tmp_path / "scoring-rubric.test.json"
+    custom_config.write_text(json.dumps(config), encoding="utf-8")
+    monkeypatch.setenv("SIGNAL_SCORING_CONFIG_PATH", str(custom_config))
+    get_settings.cache_clear()
+    load_default_scoring_rubric.cache_clear()
+
+    lead = LeadCreate(
+        contact_name="Demo Contact",
+        email="contact@operator.example",
+        company="National Property Operator",
+        role="Chief Revenue Officer",
+        property_address="100 Market St",
+        city="Austin",
+        state="TX",
+        country="US",
+    )
+    enrichment = demo_enrichment(lead.company, lead.city, lead.state)
+    score = score_lead(lead, evaluate_gates(lead, enrichment), enrichment)
+
+    assert get_settings().scoring_config_path == str(custom_config)
+    assert score.total == 100
+    assert score.tier == "B"
+
+    get_settings.cache_clear()
+    load_default_scoring_rubric.cache_clear()
+
+
 @pytest.mark.asyncio
 async def test_hard_gate_failure_forces_c_tier_and_suppresses_draft() -> None:
     service = LeadService(InMemorySignalRepository())
@@ -136,7 +177,7 @@ async def test_hard_gate_failure_forces_c_tier_and_suppresses_draft() -> None:
     result = await service.create_and_enrich(lead)
 
     assert result.gates.status == "failed"
-    assert result.gates.failures == ["personal email domain"]
+    assert result.gates.failures == ["corporate domain not verified"]
     assert result.score.tier == "C"
     assert result.score.total == 0
     assert result.score.company_fit == 0

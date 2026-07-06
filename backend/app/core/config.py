@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     litellm_gateway_url: str | None = None
     litellm_gateway_key: SecretStr | None = None
     llm_model: str | None = None
-    scoring_config_path: str = "app/agents/scoring.py"
+    scoring_config_path: str = "app/agents/scoring-rubric.v1.json"
     max_agent_retries: int = Field(default=2, ge=0, le=5)
     provider_retry_count: int = Field(default=2, ge=0, le=5)
     provider_timeout_seconds: float = Field(default=8.0, gt=0, le=60)

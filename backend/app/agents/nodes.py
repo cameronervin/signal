@@ -1,20 +1,41 @@
-from app.agents.fixtures import demo_enrichment
 from app.agents.scoring import evaluate_gates, score_lead
 from app.agents.state import SignalState
+from app.core.config import get_settings
+from app.integrations.public_data import PublicDataClient, PublicDataClientConfig
 from app.schemas.lead import DraftEmail, RelatedLead
 
 
 async def deterministic_enrichment_node(state: SignalState) -> dict:
     lead = state["lead"]
-    enrichment = demo_enrichment(lead.company, lead.city, lead.state)
-    gates = evaluate_gates(lead, enrichment)
+    settings = get_settings()
+    client = PublicDataClient(
+        PublicDataClientConfig(
+            use_fixtures=settings.use_fixtures,
+            news_api_key=(
+                settings.news_api_key.get_secret_value()
+                if settings.news_api_key is not None
+                else None
+            ),
+            fred_api_key=(
+                settings.fred_api_key.get_secret_value()
+                if settings.fred_api_key is not None
+                else None
+            ),
+            timeout_seconds=settings.provider_timeout_seconds,
+        )
+    )
+    result = await client.enrich(lead)
+    enrichment = result.enrichment
+    gates = evaluate_gates(lead, enrichment, result.warnings)
     flags = [*gates.failures, *gates.warnings]
     return {
         "enrichment": enrichment,
         "gates": gates,
         "flags": flags,
+        "degraded_reasons": result.degraded_reasons,
         "activity_log": [
             *state.get("activity_log", []),
+            *result.activity_entries,
             "deterministic_enrichment: completed",
         ],
     }
@@ -24,7 +45,13 @@ async def agent_scoring_and_drafting_node(state: SignalState) -> dict:
     lead = state["lead"]
     gates = state["gates"]
     enrichment = state["enrichment"]
-    score = score_lead(lead, gates, enrichment)
+    related_leads = state.get("related_leads", [])
+    score = score_lead(
+        lead,
+        gates,
+        enrichment,
+        related_context_count=len(related_leads),
+    )
     talking_points = _talking_points(enrichment)
     draft = (
         None
@@ -44,21 +71,23 @@ async def agent_scoring_and_drafting_node(state: SignalState) -> dict:
 
 async def knowledge_graph_builder_node(state: SignalState) -> dict:
     lead = state["lead"]
-    related = [
-        RelatedLead(
-            lead_id="demo-related-001",
-            label=f"{lead.company} related inbound",
-            reason="Same company appeared in fixture history",
-            relationship_type="company",
-            score_impact="Related context is available for SDR review.",
+    enrichment = state["enrichment"]
+    related = []
+    if enrichment.company_units and enrichment.company_units >= 50000:
+        related.append(
+            RelatedLead(
+                lead_id="demo-related-001",
+                label=f"{lead.company} related inbound",
+                reason="Same company appeared in fixture history",
+                relationship_type="company",
+                score_impact="Related context adds bounded scoring urgency.",
+            )
         )
-    ]
     return {
         "related_leads": related,
         "activity_log": [
             *state.get("activity_log", []),
             "knowledge_graph_builder: completed",
-            "human_review: awaiting approval",
         ],
     }
 
