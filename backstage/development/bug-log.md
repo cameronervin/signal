@@ -7,3 +7,4 @@ Track reproduced bugs here.
 | 2026-07-05 | B-001 | Initial scaffold | Closed | No known product bugs yet |
 | 2026-07-06 | B-002 | Comma-separated `SIGNAL_EXTRA_CORS_ORIGINS` failed settings startup parsing | Closed | Marked the list field with Pydantic Settings `NoDecode` and added env-backed regression coverage |
 | 2026-07-06 | B-003 | Blank optional provider and LLM env values failed settings startup or key-presence checks | Closed | Normalized blank optional values to unset and added env-backed regression coverage |
+| 2026-07-06 | B-004 | Demo seed reset endpoint was mounted by default | Closed | Added explicit `SIGNAL_ENABLE_DEMO_SEED_ENDPOINT` route mounting and regression coverage |

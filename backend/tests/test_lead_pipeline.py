@@ -1,6 +1,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.core.config import Settings
 from app.main import create_app
 from app.repositories.memory import InMemorySignalRepository
 from app.schemas.lead import LeadCreate
@@ -239,7 +240,10 @@ async def test_seed_demo_leads_resets_stable_fixture_set() -> None:
 async def test_seed_demo_leads_endpoint_returns_stable_run_handles() -> None:
     repository = InMemorySignalRepository()
     service = LeadService(repository)
-    app = create_app(lead_service=service)
+    app = create_app(
+        settings=Settings(enable_demo_seed_endpoint=True),
+        lead_service=service,
+    )
 
     async with AsyncClient(
         transport=ASGITransport(app=app),
@@ -262,6 +266,37 @@ async def test_seed_demo_leads_endpoint_returns_stable_run_handles() -> None:
         "gate_status": "passed",
         "draft_available": True,
     }
+
+
+@pytest.mark.asyncio
+async def test_seed_demo_leads_endpoint_is_not_mounted_by_default() -> None:
+    repository = InMemorySignalRepository()
+    service = LeadService(repository)
+    app = create_app(lead_service=service)
+
+    transient = await service.create_and_enrich(
+        LeadCreate(
+            contact_name="Transient Contact",
+            email="transient@operator.example",
+            company="Regional Property Operator",
+            role="VP Leasing",
+            property_address="123 Market St",
+            city="Austin",
+            state="TX",
+            country="US",
+        )
+    )
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://testserver",
+    ) as client:
+        response = await client.post("/api/v1/leads/seed")
+        openapi_response = await client.get("/openapi.json")
+
+    assert response.status_code == 405
+    assert "/api/v1/leads/seed" not in openapi_response.json()["paths"]
+    assert await repository.get_lead(transient.id) is not None
 
 
 class RecordingDispatcher:

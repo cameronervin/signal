@@ -80,6 +80,7 @@ def test_settings_cover_demo_safe_backend_configuration() -> None:
     assert settings.request_timeout_seconds > 0
     assert settings.agent_execution_mode == "inline"
     assert settings.celery_agent_queue == "signal-agent-runs"
+    assert settings.enable_demo_seed_endpoint is False
     assert settings.has_llm_key is False
 
     assert Settings(openai_api_key="test-key").has_llm_key is True

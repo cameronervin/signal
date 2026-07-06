@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1.router import api_router
+from app.api.v1.router import build_api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.services.lead_service import LeadService, get_lead_service
@@ -44,7 +44,12 @@ def create_app(
             return lead_service
 
         app.dependency_overrides[get_lead_service] = override_lead_service
-    app.include_router(api_router, prefix="/api/v1")
+    app.include_router(
+        build_api_router(
+            include_demo_seed_routes=app_settings.enable_demo_seed_endpoint,
+        ),
+        prefix="/api/v1",
+    )
     return app
 
 

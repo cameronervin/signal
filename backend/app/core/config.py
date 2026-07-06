@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     request_timeout_seconds: float = Field(default=15.0, gt=0, le=120)
     agent_execution_mode: Literal["inline", "eager", "worker"] = "inline"
     celery_agent_queue: str = "signal-agent-runs"
+    enable_demo_seed_endpoint: bool = False
 
     @property
     def cors_origins(self) -> list[str]:

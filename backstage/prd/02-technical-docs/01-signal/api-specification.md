@@ -36,6 +36,7 @@ Core backend settings use fixture-first demo defaults:
 | `SIGNAL_PROVIDER_RETRY_COUNT` | `2` | Bounded live-provider retry count. |
 | `SIGNAL_PROVIDER_TIMEOUT_SECONDS` | `8` | Live-provider timeout budget. |
 | `SIGNAL_REQUEST_TIMEOUT_SECONDS` | `15` | General backend request timeout budget. |
+| `SIGNAL_ENABLE_DEMO_SEED_ENDPOINT` | `false` | Explicitly mounts the destructive demo seed endpoint for local/demo runs. |
 
 Optional provider/LLM settings are `SIGNAL_NEWS_API_KEY`,
 `SIGNAL_FRED_API_KEY`, `SIGNAL_OPENAI_API_KEY`,
@@ -125,6 +126,8 @@ Lead detail includes:
 
 Behavior:
 
+- Mounted only when `SIGNAL_ENABLE_DEMO_SEED_ENDPOINT=true`; otherwise the
+  route is unavailable.
 - Resets deterministic fixture leads for A-tier, B-tier, C-tier, warning-only,
   missing-trigger, and hard-gate-failed examples.
 - Does not require live public API or LLM uptime.
