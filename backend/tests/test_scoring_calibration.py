@@ -183,3 +183,27 @@ async def test_hard_gate_failure_forces_c_tier_and_suppresses_draft() -> None:
     assert result.score.company_fit == 0
     assert result.score.market_opportunity == 0
     assert result.draft is None
+
+
+@pytest.mark.asyncio
+async def test_client_source_cannot_claim_seeded_related_context() -> None:
+    service = LeadService(InMemorySignalRepository())
+    lead = LeadCreate(
+        contact_name="Demo Contact",
+        email="contact@operator.example",
+        company="National Property Operator",
+        role="VP Leasing",
+        property_address="100 Market St",
+        city="Austin",
+        state="TX",
+        country="US",
+        source="demo_seed",
+    )
+
+    result = await service.create_and_enrich(lead)
+
+    assert result.run is not None
+    assert result.run.trigger == "api_insert"
+    assert result.related_leads == []
+    assert _component_points(result)["related_context_bonus"] == 0
+    assert "related_context:+10" not in result.score.multipliers

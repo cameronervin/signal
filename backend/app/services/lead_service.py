@@ -111,6 +111,7 @@ class LeadService:
         initial_state: SignalState = {
             "lead_id": lead_id,
             "run_id": run_id,
+            "trigger": trigger,
             "lead": lead,
             "activity_log": [f"{trigger}: lead received"],
         }

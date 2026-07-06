@@ -1,4 +1,4 @@
-from typing import NotRequired, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 from app.schemas.lead import (
     DraftEmail,
@@ -13,6 +13,7 @@ from app.schemas.lead import (
 class SignalState(TypedDict):
     lead_id: str
     run_id: str
+    trigger: Literal["api_insert", "demo_seed"]
     lead: LeadCreate
     gates: NotRequired[GateResult]
     enrichment: NotRequired[Enrichment]

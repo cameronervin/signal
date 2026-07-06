@@ -2,7 +2,7 @@ from app.agents.scoring import evaluate_gates, score_lead
 from app.agents.state import SignalState
 from app.core.config import get_settings
 from app.integrations.public_data import PublicDataClient, PublicDataClientConfig
-from app.schemas.lead import DraftEmail, LeadCreate, RelatedLead
+from app.schemas.lead import DraftEmail, RelatedLead
 
 
 async def deterministic_enrichment_node(state: SignalState) -> dict:
@@ -49,7 +49,7 @@ async def agent_scoring_and_drafting_node(state: SignalState) -> dict:
         lead,
         gates,
         enrichment,
-        related_context_count=seeded_related_context_count(lead),
+        related_context_count=seeded_related_context_count(state),
     )
     talking_points = _talking_points(enrichment)
     draft = (
@@ -68,9 +68,10 @@ async def agent_scoring_and_drafting_node(state: SignalState) -> dict:
     }
 
 
-def seeded_related_context_count(lead: LeadCreate) -> int:
+def seeded_related_context_count(state: SignalState) -> int:
+    lead = state["lead"]
     if (
-        lead.source == "demo_seed"
+        state["trigger"] == "demo_seed"
         and normalize_related_context_key(lead.company)
         == "national property operator"
     ):
@@ -82,7 +83,7 @@ async def knowledge_graph_builder_node(state: SignalState) -> dict:
     lead = state["lead"]
     related = []
     if (
-        lead.source == "demo_seed"
+        state["trigger"] == "demo_seed"
         and normalize_related_context_key(lead.company)
         == "national property operator"
     ):

@@ -194,14 +194,14 @@ def demo_enrichment(company: str, city: str, state: str) -> Enrichment:
             ),
             SourceFact(
                 source="Fixture market context",
-                label="Labor market",
+                label="Unemployment rate",
                 value=f"{unemployment_rate:.1f}% unemployment",
                 retrieved_at=retrieved_at,
                 confidence="fallback",
             ),
             SourceFact(
                 source="Fixture local context",
-                label="Walkability",
+                label="Walkability score",
                 value=str(walkability_score),
                 retrieved_at=retrieved_at,
                 confidence="fallback",
