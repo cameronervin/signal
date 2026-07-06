@@ -1,4 +1,11 @@
-from app.schemas.lead import Enrichment, GateResult, LeadCreate, ScoreBreakdown, Tier
+from app.schemas.lead import (
+    Enrichment,
+    GateResult,
+    LeadCreate,
+    ScoreBreakdown,
+    ScoreComponent,
+    Tier,
+)
 
 PERSONAL_DOMAINS = {
     "gmail.com",
@@ -54,9 +61,15 @@ def score_lead(
             tier="C",
             company_fit=0,
             market_opportunity=0,
-            bonuses=0,
+            multipliers=[],
             why_line=f"Gate failed: {', '.join(gates.failures)}",
-            components={"gates": 0},
+            components=[
+                ScoreComponent(
+                    name="gates",
+                    points=0,
+                    rationale="Hard gate failure forces C-tier and suppresses draft.",
+                )
+            ],
         )
 
     portfolio = _portfolio_points(enrichment.company_units or 0)
@@ -88,26 +101,74 @@ def score_lead(
     total = min(100, company_fit + market + bonuses)
     tier = _tier(total)
     why_line = _why_line(enrichment, portfolio, seniority, bonuses)
+    multipliers = (
+        ["recent_trigger:+10"] if enrichment.recent_trigger else ["no_multiplier"]
+    )
 
     return ScoreBreakdown(
         total=total,
         tier=tier,
         company_fit=company_fit,
         market_opportunity=market,
-        bonuses=bonuses,
+        multipliers=multipliers,
         why_line=why_line,
-        components={
-            "portfolio_scale": portfolio,
-            "seniority": seniority,
-            "asset_type_fit": asset_fit,
-            "momentum": momentum,
-            "renter_share": renter,
-            "rent_growth": rent,
-            "household_growth": growth,
-            "labor_market": labor,
-            "walkability_density": density,
-            "trigger_bonus": bonuses,
-        },
+        components=[
+            ScoreComponent(
+                name="portfolio_scale",
+                points=portfolio,
+                rationale="Company unit estimate indicates portfolio scale.",
+                source_refs=["Company units"],
+            ),
+            ScoreComponent(
+                name="seniority",
+                points=seniority,
+                rationale="Contact role suggests buying or evaluation influence.",
+            ),
+            ScoreComponent(
+                name="asset_type_fit",
+                points=asset_fit,
+                rationale="Property and company signals fit the v1 multifamily focus.",
+            ),
+            ScoreComponent(
+                name="momentum",
+                points=momentum,
+                rationale="Recent trigger or fallback market context supports urgency.",
+                source_refs=["Trigger event"],
+            ),
+            ScoreComponent(
+                name="renter_share",
+                points=renter,
+                rationale="Higher renter share increases market opportunity.",
+                source_refs=["Renter share"],
+            ),
+            ScoreComponent(
+                name="rent_growth",
+                points=rent,
+                rationale="Rent growth supports active leasing-market pressure.",
+                source_refs=["Rent growth"],
+            ),
+            ScoreComponent(
+                name="household_growth",
+                points=growth,
+                rationale="Household growth contributes to demand signal.",
+            ),
+            ScoreComponent(
+                name="labor_market",
+                points=labor,
+                rationale="Lower unemployment supports leasing demand stability.",
+            ),
+            ScoreComponent(
+                name="walkability_density",
+                points=density,
+                rationale="Fixture local-context signal indicates density fit.",
+            ),
+            ScoreComponent(
+                name="trigger_bonus",
+                points=bonuses,
+                rationale="Recent trigger adds a bounded urgency bonus.",
+                source_refs=["Trigger event"],
+            ),
+        ],
     )
 
 
