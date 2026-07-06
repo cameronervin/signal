@@ -77,8 +77,14 @@ Responsibilities:
 - Evaluate hard gates and warnings.
 - Emit degraded-provider notes when live data falls back to cache or fixtures.
 
-The node should use live public APIs when configured, cached data when
-available, and fixtures for demo reliability.
+The implemented node calls the public-data adapter suite and consumes its
+normalized enrichment result. Address resolution, company plausibility, country
+support, and corporate-domain quality drive hard gates from normalized fields.
+Optional no-data states, such as unavailable local context or trigger context,
+become warnings and degraded reasons while preserving draft generation when hard
+gates pass. The current live-capable paths cover geocoding and DNS/MX domain
+quality when fixture mode is disabled; the other categories are
+fixture-normalized until cache-backed live adapters are added.
 
 ## Node 2 - LLM Scoring And Drafting Agent
 

@@ -79,11 +79,14 @@ class LeadService:
                 ),
             ],
             activity_log=result.get("activity_log", []),
-            degraded_reasons=(
-                ["draft_suppressed: hard gate failed"]
-                if response.gates.status == "failed"
-                else []
-            ),
+            degraded_reasons=[
+                *result.get("degraded_reasons", []),
+                *(
+                    ["draft_suppressed: hard gate failed"]
+                    if response.gates.status == "failed"
+                    else []
+                ),
+            ],
         )
         await self.repository.save_lead(response)
         await self.repository.save_agent_run(run)

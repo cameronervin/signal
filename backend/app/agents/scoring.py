@@ -7,15 +7,6 @@ from app.schemas.lead import (
     Tier,
 )
 
-PERSONAL_DOMAINS = {
-    "gmail.com",
-    "yahoo.com",
-    "hotmail.com",
-    "outlook.com",
-    "icloud.com",
-    "aol.com",
-}
-
 SENIORITY_POINTS = {
     "chief": 15,
     "cfo": 15,
@@ -29,24 +20,33 @@ SENIORITY_POINTS = {
 }
 
 
-def evaluate_gates(lead: LeadCreate, enrichment: Enrichment) -> GateResult:
+def evaluate_gates(
+    lead: LeadCreate,
+    enrichment: Enrichment,
+    warnings: list[str] | None = None,
+) -> GateResult:
     failures: list[str] = []
-    warnings: list[str] = []
-    domain = lead.email.split("@")[-1].lower()
+    gate_warnings: list[str] = [*(warnings or [])]
 
-    if domain in PERSONAL_DOMAINS:
-        failures.append("personal email domain")
     if lead.country.upper() not in {"US", "USA", "UNITED STATES"}:
         failures.append("non-US property")
-    if not enrichment.market:
+    if (
+        not enrichment.market
+        or enrichment.coordinates is None
+        or enrichment.geo_confidence is None
+    ):
         failures.append("address did not resolve")
-    if (enrichment.company_units or 0) < 10000:
-        warnings.append("sub-scale portfolio")
+    if enrichment.domain_status != "corporate":
+        failures.append("corporate domain not verified")
+    if enrichment.company_units is None or enrichment.asset_type_fit == "unclear":
+        failures.append("company plausibility unresolved")
+    elif enrichment.company_units < 10000:
+        gate_warnings.append("sub-scale portfolio")
 
     return GateResult(
         status="failed" if failures else "passed",
         failures=failures,
-        warnings=warnings,
+        warnings=gate_warnings,
     )
 
 

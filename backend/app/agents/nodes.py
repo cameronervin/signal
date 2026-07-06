@@ -1,19 +1,43 @@
-from app.agents.fixtures import demo_enrichment
 from app.agents.scoring import evaluate_gates, score_lead
 from app.agents.state import SignalState
+from app.core.config import get_settings
+from app.integrations.public_data import PublicDataClient, PublicDataClientConfig
 from app.schemas.lead import DraftEmail, RelatedLead
 
 
 async def deterministic_enrichment_node(state: SignalState) -> dict:
     lead = state["lead"]
-    enrichment = demo_enrichment(lead.company, lead.city, lead.state)
-    gates = evaluate_gates(lead, enrichment)
+    settings = get_settings()
+    client = PublicDataClient(
+        PublicDataClientConfig(
+            use_fixtures=settings.use_fixtures,
+            news_api_key=(
+                settings.news_api_key.get_secret_value()
+                if settings.news_api_key is not None
+                else None
+            ),
+            fred_api_key=(
+                settings.fred_api_key.get_secret_value()
+                if settings.fred_api_key is not None
+                else None
+            ),
+            timeout_seconds=settings.provider_timeout_seconds,
+        )
+    )
+    result = await client.enrich(lead)
+    enrichment = result.enrichment
+    gates = evaluate_gates(lead, enrichment, result.warnings)
     flags = [*gates.failures, *gates.warnings]
     return {
         "enrichment": enrichment,
         "gates": gates,
         "flags": flags,
-        "activity_log": ["deterministic_enrichment: completed"],
+        "degraded_reasons": result.degraded_reasons,
+        "activity_log": [
+            *state.get("activity_log", []),
+            *result.activity_entries,
+            "deterministic_enrichment: completed",
+        ],
     }
 
 
