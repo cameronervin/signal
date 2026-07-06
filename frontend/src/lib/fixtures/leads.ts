@@ -225,6 +225,35 @@ export const leads: FixtureLead[] = [
     }
   },
   {
+    id: "lead-elena-ramos",
+    name: "Elena Ramos",
+    email: "elena@rivergate-housing.example",
+    role: "Leasing Operations Manager",
+    company: "Rivergate Housing",
+    market: "Raleigh, NC",
+    units: 72000,
+    gates: { status: "passed", failures: [] },
+    score: {
+      total: 73,
+      tier: "B",
+      whyLine: "Good portfolio fit · draft pending source verification"
+    },
+    flags: [],
+    talkingPoints: [
+      "Portfolio scale supports prioritization value.",
+      "Local demand signals are useful, but the draft is waiting on source verification.",
+      "Best reviewed after the cited source set is complete."
+    ],
+    marketSignals: [
+      { label: "Renter", value: "47%" },
+      { label: "Rent YoY", value: "+3.6%" },
+      { label: "Unemployment", value: "3.4%" },
+      { label: "HH growth", value: "+3.2%" }
+    ],
+    related: [],
+    draft: null
+  },
+  {
     id: "lead-jenna-cole",
     name: "Jenna Cole",
     email: "jenna@ridgeview-communities.example",

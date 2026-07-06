@@ -12,6 +12,7 @@ Source of truth: `backstage/design/README.md` and the design handoff.
 | `brand-tint` | `#EEEBFE` | Badges, highlighted personalization |
 | `brand-tint-2` | `#F5F3FE` | Source chip surfaces |
 | `border-purple` | `#DDD5FB` | Purple borders |
+| `source-border` | `#C9BEF7` | Source chip borders |
 | `sidebar-icon-active` | `#B9A6FF` | Active sidebar icons |
 | `sidebar-icon-idle` | `#8E88B0` | Idle sidebar icons |
 | `surface-0` | `#FFFFFF` | Cards and top bar |
@@ -24,10 +25,14 @@ Source of truth: `backstage/design/README.md` and the design handoff.
 | `ink-400` | `#9AA39E` | Muted text |
 | `border` | `#EAEEEC` | Card borders |
 | `row-border` | `#F2F4F3` | Table row dividers |
+| `control-border` | `#E4E8E6` | Inputs and secondary controls |
 | `track` | `#EEF1F0` | Meters and progress tracks |
 | `tier-a` | `#6D4DF6` | A-tier |
 | `tier-b` | `#F5A623` | B-tier |
 | `tier-c` | `#98A29C` | C-tier |
+| `tier-c-text` | `#5A635E` | C-tier text |
+| `tier-c-bg` | `#F0F2F1` | C-tier badge background |
+| `tier-c-border` | `#E1E5E3` | C-tier badge border |
 | `amber-text` | `#9A6207` | Warning and in-progress text |
 | `amber-bg` | `#FEF3DA` | Warning and in-progress fills |
 | `amber-border` | `#F7E2B0` | Warning borders |
@@ -37,6 +42,13 @@ Source of truth: `backstage/design/README.md` and the design handoff.
 | `danger-panel` | `#FDF5F5` | Gate failure panels |
 | `danger-border` | `#F6D2D3` | Danger borders |
 | `success-text` | `#0B6B45` | Market signal and good-link text |
+| `success-soft` | `#EDF8F2` | Soft success surfaces |
+| `graph-edge` | `#D3E7DC` | Knowledge graph connector lines |
+| `muted-chev` | `#C7CDC9` | Muted chevrons |
+| `soft-purple-row` | `#FAF9FE` | A-tier table row tint |
+| `row-dimmed` | `#FCFCFB` | Low-priority or blocked row background |
+| `card-shadow` | `0 1px 2px rgba(15, 22, 19, 0.04), 0 18px 40px rgba(15, 22, 19, 0.05)` | Elevated cards |
+| `button-shadow` | `0 2px 6px rgba(109, 77, 246, 0.28)` | Primary button shadow |
 
 ## Type
 
