@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PipelineStepper } from "@/components/ui/PipelineStepper";
-import { getAgentRun } from "@/lib/fixtures/leads";
+import { getAgentRun, getLead } from "@/lib/fixtures/leads";
 
 interface Props {
   params: Promise<{ runId: string }>;
@@ -16,6 +16,10 @@ export default async function AgentRunPage({ params }: Props) {
   if (!run) {
     notFound();
   }
+  const lead = run.leadId ? getLead(run.leadId) : undefined;
+  const reviewStep = run.steps.find((step) => step.name === "Human review");
+  const outputReady = Boolean(lead?.draft && reviewStep && reviewStep.status !== "pending");
+  const scoreLabel = outputReady && lead ? `${lead.score.total} · ${lead.score.tier}` : "Pending";
 
   const stepDetails = run.steps.map((step, index) => ({
     ...step,
@@ -37,13 +41,17 @@ export default async function AgentRunPage({ params }: Props) {
             <Link className="button secondary" href="/agents">
               <ChevronLeft size={16} /> Back
             </Link>
-            <span className="status-pill warning">Awaiting your review</span>
+            <span className={`status-pill ${outputReady ? "warning" : "muted"}`}>
+              {outputReady ? "Awaiting your review" : run.status}
+            </span>
             <button className="button secondary" type="button">
               <Pause size={15} /> Pause
             </button>
-            <button className="button primary" type="button">
-              <Pencil size={15} /> Review draft
-            </button>
+            {outputReady && (
+              <button className="button primary" type="button">
+                <Pencil size={15} /> Review draft
+              </button>
+            )}
           </div>
         }
       />
@@ -77,22 +85,32 @@ export default async function AgentRunPage({ params }: Props) {
             </div>
             <div className="surface-card purple-panel p-5">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="section-title text-deep">Output ready for review</h2>
-                <span className="mono text-xs font-semibold text-deep">92 · A</span>
+                <h2 className="section-title text-deep">
+                  {outputReady ? "Output ready for review" : "Output in progress"}
+                </h2>
+                <span className="mono text-xs font-semibold text-deep">{scoreLabel}</span>
               </div>
               <p className="mt-3 text-sm leading-6 text-muted">
-                Score, why-line, talking points, related context, and draft are ready for SDR review.
+                {outputReady
+                  ? "Score, why-line, talking points, related context, and draft are ready for SDR review."
+                  : "Signal is still building the score, related context, and draft eligibility decision."}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <button className="button primary" type="button">
-                  <Copy size={14} /> Copy reviewed draft
-                </button>
-                <button className="button purple" type="button">
-                  <Pencil size={14} /> Edit draft
-                </button>
-                <Link className="button purple" href="/leads/lead-sarah-chen">
-                  View lead
-                </Link>
+                {outputReady && (
+                  <>
+                    <button className="button primary" type="button">
+                      <Copy size={14} /> Copy reviewed draft
+                    </button>
+                    <button className="button purple" type="button">
+                      <Pencil size={14} /> Edit draft
+                    </button>
+                  </>
+                )}
+                {lead && (
+                  <Link className="button purple" href={`/leads/${lead.id}`}>
+                    View lead
+                  </Link>
+                )}
               </div>
             </div>
           </div>

@@ -288,6 +288,7 @@ export const agentRuns: FixtureAgentRun[] = [
     runId: "run-8842",
     agent: "Outreach Agent",
     kind: "Draft review",
+    leadId: "lead-sarah-chen",
     lead: "Sarah Chen · Meridian Residential",
     started: "2m",
     stage: "Human review",
@@ -301,8 +302,8 @@ export const agentRuns: FixtureAgentRun[] = [
         summary: "Score 92, A-tier, draft generated with cited sources."
       },
       { name: "Knowledge graph", status: "done", summary: "Related company context attached." },
-      { name: "Human review", status: "active", summary: "Awaiting SDR approval before outreach." },
-      { name: "Send", status: "pending", summary: "Runs only after approval." }
+      { name: "Human review", status: "active", summary: "Awaiting SDR review before copy or export." },
+      { name: "Export", status: "pending", summary: "Runs only after human review." }
     ],
     activityLog: [
       "11:42:01 api_insert received",
@@ -317,6 +318,7 @@ export const agentRuns: FixtureAgentRun[] = [
     runId: "run-9011",
     agent: "Enrichment Agent",
     kind: "Lead enrichment",
+    leadId: "lead-marcus-webb",
     lead: "Marcus Webb · Northstar Living",
     started: "9m",
     stage: "Scoring",
@@ -334,19 +336,20 @@ export const agentRuns: FixtureAgentRun[] = [
     runId: "run-7750",
     agent: "Outreach Agent",
     kind: "Draft review",
+    leadId: "lead-david-okafor",
     lead: "David Okafor · Sunhaven Residential",
     started: "1h",
-    stage: "Sent",
+    stage: "Exported",
     stageIndex: 4,
-    status: "Sent",
+    status: "Exported",
     steps: [
       { name: "Deterministic enrichment", status: "done", summary: "Public data resolved." },
       { name: "Agent scoring and drafting", status: "done", summary: "Score 71, B-tier, draft generated." },
       { name: "Knowledge graph", status: "done", summary: "Related context attached." },
       { name: "Human review", status: "done", summary: "Approved by SDR." },
-      { name: "Send", status: "done", summary: "Touch logged to the lead timeline." }
+      { name: "Export", status: "done", summary: "Draft copied or exported for use in existing sales tools." }
     ],
-    activityLog: ["10:18:01 api_insert received", "10:18:08 review approved", "10:18:12 send completed"]
+    activityLog: ["10:18:01 api_insert received", "10:18:08 review approved", "10:18:12 draft exported"]
   },
   {
     runId: "run-next-release",

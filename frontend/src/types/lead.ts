@@ -39,6 +39,7 @@ export interface FixtureAgentRun {
   runId: string;
   agent: string;
   kind: string;
+  leadId?: string;
   lead: string;
   started: string;
   stage: string;
