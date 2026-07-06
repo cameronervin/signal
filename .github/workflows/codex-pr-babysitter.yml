@@ -25,7 +25,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: signal-pr-fix-${{ inputs.pr_number || github.event.pull_request.number || github.event.issue.number || github.event.workflow_run.head_branch || github.run_id }}
+  group: signal-pr-fix-${{ inputs.pr_number || github.event.pull_request.head.ref || github.event.issue.number || github.event.workflow_run.head_branch || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -163,7 +163,7 @@ jobs:
 
           next_pass=$((current_pass + 1))
           if [[ "$CI_FAILURE" == "true" ]]; then
-            gh pr edit "$PR_NUMBER" --add-label "agent:needs-fix,ci:failed" --remove-label "agent:blocked" || true
+            gh pr edit "$PR_NUMBER" --add-label "ci:failed" --remove-label "agent:blocked" || true
           else
             gh pr edit "$PR_NUMBER" --add-label "agent:needs-fix" --remove-label "agent:blocked" || true
           fi
