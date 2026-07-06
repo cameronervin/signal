@@ -75,8 +75,8 @@ Before running them, add these repository Actions secrets:
   review.
 - `Codex PR review` runs automatically for PRs labeled `review:codex`,
   reconciles clear reviews after CI success, and can be manually dispatched.
-- `Codex PR automerge` merges only low-risk agent PRs after Codex review,
-  backend, and frontend checks pass.
+- `Codex PR automerge` merges only low-risk agent PRs after the `backend`,
+  `frontend`, and Codex `review` status checks pass.
 - `Codex PR babysitter` runs on failed `CI`, `agent:needs-fix`, trusted
   `@codex fix` comments, or manual dispatch, with a two-pass budget.
 - `Project label sync` maps issue and PR labels to the GitHub Project fields.
@@ -131,5 +131,6 @@ product behavior changes, and leave loop evidence in `.codex-run/loop-result.jso
 
 `main` is protected. Low-risk agent PRs require the `backend`, `frontend`, and
 Codex `review` status checks, required conversation resolution, admin
-enforcement, and force-push/deletion blocks. High-risk labels still require
-human review before merge.
+enforcement, and force-push/deletion blocks. Required human pull request
+reviews are not enabled for the low-risk agent path. High-risk labels still
+require human review before merge.
