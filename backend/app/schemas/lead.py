@@ -6,7 +6,7 @@ from pydantic import BaseModel, EmailStr, Field
 from app.schemas.run import AgentRunResponse
 
 Tier = Literal["A", "B", "C"]
-GateStatus = Literal["passed", "failed"]
+GateStatus = Literal["pending", "passed", "failed"]
 DraftReviewStatus = Literal["needs_review", "copied", "exported"]
 FactConfidence = Literal["high", "medium", "low", "fallback"]
 GeoConfidence = Literal["high", "medium", "low"]

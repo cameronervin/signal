@@ -9,7 +9,15 @@ from app.agents.graph import run_signal_pipeline
 from app.agents.state import SignalState
 from app.core.config import get_settings
 from app.repositories.memory import InMemorySignalRepository
-from app.schemas.lead import LeadCreate, LeadResponse, SeedLeadResult, SeedLeadsResponse
+from app.schemas.lead import (
+    Enrichment,
+    GateResult,
+    LeadCreate,
+    LeadResponse,
+    ScoreBreakdown,
+    SeedLeadResult,
+    SeedLeadsResponse,
+)
 from app.schemas.run import AgentRunResponse, AgentStep, ExecutionMode
 
 
@@ -87,6 +95,14 @@ class LeadService:
         trigger: Literal["api_insert", "demo_seed"],
         execution_mode: ExecutionMode,
     ) -> LeadResponse:
+        if execution_mode == "worker" and self.worker_dispatcher is not None:
+            return await self._queue_worker_run(
+                lead,
+                lead_id=lead_id,
+                run_id=run_id,
+                trigger=trigger,
+            )
+
         dispatch = await self._dispatch_worker_run(
             lead_id=lead_id,
             run_id=run_id,
@@ -124,6 +140,109 @@ class LeadService:
         await self.repository.save_lead(response)
         await self.repository.save_agent_run(run)
         return response
+
+    async def _queue_worker_run(
+        self,
+        lead: LeadCreate,
+        *,
+        lead_id: str,
+        run_id: str,
+        trigger: Literal["api_insert", "demo_seed"],
+    ) -> LeadResponse:
+        response = self._build_queued_lead_response(
+            lead=lead,
+            lead_id=lead_id,
+            run_id=run_id,
+            trigger=trigger,
+        )
+        await self.repository.save_lead(response)
+        await self.repository.save_agent_run(response.run)
+
+        dispatch = await self._dispatch_worker_run(
+            lead_id=lead_id,
+            run_id=run_id,
+            execution_mode="worker",
+        )
+        if dispatch is None:
+            return response
+
+        run = response.run.model_copy(
+            update={
+                "task_id": dispatch.task_id,
+                "worker_queue": dispatch.queue,
+                "activity_log": [
+                    *response.run.activity_log,
+                    "worker_dispatch: queued",
+                ],
+            }
+        )
+        response = response.model_copy(update={"run": run})
+        await self.repository.save_lead(response)
+        await self.repository.save_agent_run(run)
+        return response
+
+    def _build_queued_lead_response(
+        self,
+        *,
+        lead: LeadCreate,
+        lead_id: str,
+        run_id: str,
+        trigger: Literal["api_insert", "demo_seed"],
+    ) -> LeadResponse:
+        run = AgentRunResponse(
+            run_id=run_id,
+            lead_id=lead_id,
+            status="queued",
+            trigger=trigger,
+            execution_mode="worker",
+            current_stage="queued",
+            steps=[
+                AgentStep(
+                    stage="deterministic_enrichment",
+                    name="Deterministic enrichment",
+                    status="pending",
+                    summary="Waiting for worker execution.",
+                ),
+                AgentStep(
+                    stage="agent_scoring_and_drafting",
+                    name="Agent scoring and drafting",
+                    status="pending",
+                    summary="Waiting for worker execution.",
+                ),
+                AgentStep(
+                    stage="knowledge_graph",
+                    name="Knowledge graph",
+                    status="pending",
+                    summary="Waiting for worker execution.",
+                ),
+                AgentStep(
+                    stage="human_review",
+                    name="Human review",
+                    status="pending",
+                    summary="Awaiting agent output before SDR review.",
+                ),
+            ],
+            activity_log=[f"{trigger}: lead received"],
+        )
+        return LeadResponse(
+            id=lead_id,
+            input=lead,
+            gates=GateResult(status="pending"),
+            enrichment=Enrichment(market=f"{lead.city}, {lead.state}"),
+            score=ScoreBreakdown(
+                total=0,
+                tier="C",
+                company_fit=0,
+                market_opportunity=0,
+                why_line="Agent run queued; score pending.",
+            ),
+            talking_points=[],
+            flags=[],
+            draft=None,
+            related_leads=[],
+            run_id=run_id,
+            run=run,
+        )
 
     async def _dispatch_worker_run(
         self,

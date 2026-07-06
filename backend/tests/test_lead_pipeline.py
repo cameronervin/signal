@@ -265,23 +265,40 @@ async def test_seed_demo_leads_endpoint_returns_stable_run_handles() -> None:
 
 
 class RecordingDispatcher:
-    def __init__(self) -> None:
+    def __init__(self, repository: InMemorySignalRepository | None = None) -> None:
         self.calls: list[tuple[str, str, str]] = []
+        self.repository = repository
+        self.saved_before_dispatch = False
 
     async def dispatch_agent_run(self, *, lead_id: str, run_id: str) -> WorkerDispatch:
         self.calls.append((lead_id, run_id, "agent-runs"))
+        if self.repository is not None:
+            self.saved_before_dispatch = (
+                await self.repository.get_lead(lead_id) is not None
+                and await self.repository.get_agent_run(run_id) is not None
+            )
         return WorkerDispatch(task_id=f"task_{run_id}", queue="agent-runs")
 
 
 @pytest.mark.asyncio
-async def test_worker_execution_mode_records_identifier_only_dispatch() -> None:
+async def test_worker_execution_mode_persists_queued_state_before_dispatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     repository = InMemorySignalRepository()
-    dispatcher = RecordingDispatcher()
+    dispatcher = RecordingDispatcher(repository)
     service = LeadService(
         repository,
         execution_mode="worker",
         worker_dispatcher=dispatcher,
         worker_queue="agent-runs",
+    )
+
+    async def fail_inline_pipeline(_: object) -> object:
+        raise AssertionError("worker dispatch must not run the pipeline inline")
+
+    monkeypatch.setattr(
+        "app.services.lead_service.run_signal_pipeline",
+        fail_inline_pipeline,
     )
     lead = LeadCreate(
         contact_name="Demo Contact",
@@ -298,10 +315,17 @@ async def test_worker_execution_mode_records_identifier_only_dispatch() -> None:
     stored_run = await repository.get_agent_run(result.run_id)
 
     assert dispatcher.calls == [(result.id, result.run_id, "agent-runs")]
+    assert dispatcher.saved_before_dispatch is True
     assert stored_run is not None
     assert result.run == stored_run
+    assert result.gates.status == "pending"
+    assert result.score.why_line == "Agent run queued; score pending."
+    assert result.draft is None
+    assert stored_run.status == "queued"
     assert stored_run.execution_mode == "worker"
     assert stored_run.task_id == f"task_{result.run_id}"
     assert stored_run.worker_queue == "agent-runs"
     assert stored_run.activity_log[0] == "api_insert: lead received"
+    assert stored_run.activity_log[-1] == "worker_dispatch: queued"
+    assert all(step.status == "pending" for step in stored_run.steps)
     assert all("@" not in entry for entry in stored_run.activity_log)
