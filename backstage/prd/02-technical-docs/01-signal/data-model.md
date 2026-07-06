@@ -25,6 +25,8 @@ eligibility, and run state.
 
 `Enrichment` contains normalized facts from public APIs, cache, or fixtures.
 Agents and UI consume normalized fields, not raw provider payloads.
+The deterministic enrichment node receives one normalized adapter result and
+stores only display-safe field values plus `SourceFact` citations.
 
 | Field | Type | Source |
 | --- | --- | --- |
@@ -76,6 +78,8 @@ Hard gate failures:
 - Property is non-US, cannot geocode, or cannot be mapped to a usable market.
 
 Hard gate failures force C-tier and suppress drafts.
+Warnings include optional adapter no-data states, such as unavailable local
+context or trigger context, and do not suppress drafts when hard gates pass.
 
 ## Score
 
@@ -137,3 +141,6 @@ The activity log may show provider categories and stages, but must not include
 raw emails, prompt text, draft bodies, secrets, tokens, or raw provider payloads.
 Celery broker payloads should carry only identifiers and minimal metadata needed
 to re-load this state through the repository boundary.
+Adapter degraded reasons use provider categories and fallback/no-data states
+only, for example fixture fallback or optional category unavailable, without
+raw payload details.

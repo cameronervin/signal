@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
+import dns.asyncresolver
+import dns.exception
+import dns.resolver
 import httpx
 from pydantic import BaseModel, Field, SecretStr
 
-from app.schemas.lead import SourceFact
+from app.schemas.lead import Enrichment, LeadCreate, SourceFact
 
 ProviderCategory = Literal[
     "geocoding",
@@ -382,10 +385,58 @@ class PublicDataClientConfig:
     use_fixtures: bool = True
     news_api_key: str | None = None
     fred_api_key: str | None = None
+    timeout_seconds: float = 8.0
+    cache_ttl_seconds: int = 86_400
+
+
+@dataclass(frozen=True)
+class PublicEnrichmentResult:
+    enrichment: Enrichment
+    warnings: list[str] = field(default_factory=list)
+    degraded_reasons: list[str] = field(default_factory=list)
+    activity_entries: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class _GeoResult:
+    market: str
+    coordinates: tuple[float, float] | None
+    geo_confidence: str | None
+    census_geo_id: str | None
+    facts: list[SourceFact]
+
+
+@dataclass(frozen=True)
+class _CompanyResult:
+    company_units: int | None
+    asset_type_fit: str
+    facts: list[SourceFact]
+
+
+PERSONAL_DOMAINS = {
+    "gmail.com",
+    "yahoo.com",
+    "hotmail.com",
+    "outlook.com",
+    "icloud.com",
+    "aol.com",
+}
+
+FIXTURE_COORDINATES: dict[tuple[str, str, str], tuple[float, float]] = {
+    ("100 main st", "austin", "tx"): (30.2672, -97.7431),
+    ("100 market st", "austin", "tx"): (30.2672, -97.7431),
+    ("200 market st", "dallas", "tx"): (32.7767, -96.7970),
+    ("300 market st", "boise", "id"): (43.6150, -116.2023),
+    ("400 market st", "austin", "tx"): (30.2672, -97.7431),
+    ("500 market st", "dallas", "tx"): (32.7767, -96.7970),
+    ("123 market st", "austin", "tx"): (30.2672, -97.7431),
+    ("123 market st", "charlotte", "nc"): (35.2271, -80.8431),
+    ("123 market st", "raleigh", "nc"): (35.7796, -78.6382),
+}
 
 
 class PublicDataClient:
-    """Container for public-data adapters shared by enrichment services."""
+    """Normalizes public-data categories into display-safe enrichment facts."""
 
     def __init__(
         self,
@@ -397,3 +448,547 @@ class PublicDataClient:
         self.config = config
         self.cache = cache or InMemoryPublicDataCache()
         self.fixture_store = fixture_store or PublicDataFixtureStore()
+
+    async def enrich(self, lead: LeadCreate) -> PublicEnrichmentResult:
+        retrieved_at = utc_now()
+        warnings: list[str] = []
+        degraded_reasons: list[str] = []
+
+        geo = await self._geocode(lead, retrieved_at, warnings, degraded_reasons)
+        demographics = self._fixture_demographics(lead, retrieved_at)
+        economics = self._fixture_economics(lead, retrieved_at)
+        local_context = self._fixture_local_context(lead, retrieved_at)
+        company = self._fixture_company_context(lead.company, retrieved_at)
+        trigger = self._fixture_trigger_context(
+            lead,
+            company.company_units,
+            retrieved_at,
+        )
+        domain = await self._domain_quality(
+            lead,
+            retrieved_at,
+            warnings,
+            degraded_reasons,
+        )
+
+        if local_context["walkability_score"] is None:
+            warnings.append("local context unavailable")
+            degraded_reasons.append("local_context: fixture no-data")
+        if trigger["recent_trigger"] is None:
+            warnings.append("trigger context unavailable")
+            degraded_reasons.append("trigger_context: fixture no-data")
+
+        sources = [
+            *geo.facts,
+            *demographics["facts"],
+            *economics["facts"],
+            *local_context["facts"],
+            *company.facts,
+            *trigger["facts"],
+            *domain["facts"],
+        ]
+        return PublicEnrichmentResult(
+            enrichment=Enrichment(
+                market=geo.market,
+                coordinates=geo.coordinates,
+                geo_confidence=geo.geo_confidence,
+                census_geo_id=geo.census_geo_id,
+                renter_share=demographics["renter_share"],
+                median_rent=economics["median_rent"],
+                rent_growth_yoy=economics["rent_growth_yoy"],
+                household_growth=demographics["household_growth"],
+                unemployment_rate=economics["unemployment_rate"],
+                walkability_score=local_context["walkability_score"],
+                company_units=company.company_units,
+                asset_type_fit=company.asset_type_fit,
+                recent_trigger=trigger["recent_trigger"],
+                domain_status=domain["domain_status"],
+                sources=sources,
+            ),
+            warnings=warnings,
+            degraded_reasons=degraded_reasons,
+            activity_entries=[
+                "public_data: geocoding normalized",
+                "public_data: demographics normalized",
+                "public_data: economics normalized",
+                "public_data: local_context normalized",
+                "public_data: company_context normalized",
+                "public_data: trigger_context normalized",
+                "public_data: domain_quality normalized",
+            ],
+        )
+
+    async def _geocode(
+        self,
+        lead: LeadCreate,
+        retrieved_at: datetime,
+        warnings: list[str],
+        degraded_reasons: list[str],
+    ) -> _GeoResult:
+        if self.config.use_fixtures:
+            return self._fixture_geocode(lead, retrieved_at)
+        lookup_key = self._geocode_lookup_key(lead)
+        cached = self.cache.get("geocoding", "nominatim", lookup_key)
+        if cached is not None:
+            return self._geo_from_normalized(
+                cached.response.model_copy(update={"cache_hit": True}),
+                lead,
+            )
+        try:
+            result = await self._live_geocode(lead, retrieved_at)
+        except (httpx.HTTPError, KeyError, TypeError, ValueError):
+            warnings.append("geocoding fixture fallback")
+            degraded_reasons.append("geocoding: fixture fallback")
+            return self._fixture_geocode(lead, retrieved_at)
+        self.cache.set(
+            self._normalized_geocode_result(lookup_key, result),
+            ttl_seconds=self.config.cache_ttl_seconds,
+            refresh_policy="ttl",
+        )
+        return result
+
+    async def _live_geocode(
+        self,
+        lead: LeadCreate,
+        retrieved_at: datetime,
+    ) -> _GeoResult:
+        query = self._geocode_lookup_key(lead)
+        async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
+            response = await client.get(
+                "https://nominatim.openstreetmap.org/search",
+                params={"q": query, "format": "jsonv2", "limit": "1"},
+                headers={"User-Agent": "signal-public-data/1.0"},
+            )
+            response.raise_for_status()
+        payload = response.json()
+        if not isinstance(payload, list) or not payload:
+            raise ValueError("no geocoding result")
+        first = payload[0]
+        latitude = float(first["lat"])
+        longitude = float(first["lon"])
+        return _GeoResult(
+            market=f"{lead.city}, {lead.state}",
+            coordinates=(latitude, longitude),
+            geo_confidence="high",
+            census_geo_id=None,
+            facts=[
+                _fact(
+                    source="geocoding",
+                    label="Address resolution",
+                    value="resolved",
+                    retrieved_at=retrieved_at,
+                    confidence="high",
+                )
+            ],
+        )
+
+    def _geocode_lookup_key(self, lead: LeadCreate) -> str:
+        return ", ".join(
+            [
+                lead.property_address,
+                lead.city,
+                lead.state,
+                lead.country,
+            ]
+        )
+
+    def _normalized_geocode_result(
+        self,
+        lookup_key: str,
+        result: _GeoResult,
+    ) -> NormalizedPublicDataResult:
+        latitude: float | None = None
+        longitude: float | None = None
+        if result.coordinates is not None:
+            latitude, longitude = result.coordinates
+        return NormalizedPublicDataResult(
+            provider_category="geocoding",
+            lookup_key=lookup_key,
+            source="nominatim",
+            data={
+                "market": result.market,
+                "latitude": latitude,
+                "longitude": longitude,
+                "geo_confidence": result.geo_confidence,
+                "census_geo_id": result.census_geo_id,
+            },
+            facts=result.facts,
+        )
+
+    def _geo_from_normalized(
+        self,
+        result: NormalizedPublicDataResult,
+        lead: LeadCreate,
+    ) -> _GeoResult:
+        latitude = result.data.get("latitude")
+        longitude = result.data.get("longitude")
+        coordinates = (
+            (float(latitude), float(longitude))
+            if latitude is not None and longitude is not None
+            else None
+        )
+        market = result.data.get("market")
+        geo_confidence = result.data.get("geo_confidence")
+        census_geo_id = result.data.get("census_geo_id")
+        market_value = (
+            str(market) if isinstance(market, str) else f"{lead.city}, {lead.state}"
+        )
+        census_geo_id_value = (
+            str(census_geo_id) if isinstance(census_geo_id, str) else None
+        )
+        return _GeoResult(
+            market=market_value,
+            coordinates=coordinates,
+            geo_confidence=(
+                str(geo_confidence) if isinstance(geo_confidence, str) else None
+            ),
+            census_geo_id=census_geo_id_value,
+            facts=result.facts,
+        )
+
+    def _fixture_geocode(self, lead: LeadCreate, retrieved_at: datetime) -> _GeoResult:
+        market = f"{lead.city}, {lead.state}"
+        supported_country = lead.country.upper() in {"US", "USA", "UNITED STATES"}
+        location_key = (
+            normalize_lookup_key(lead.property_address),
+            normalize_lookup_key(lead.city),
+            normalize_lookup_key(lead.state),
+        )
+        coordinates = (
+            FIXTURE_COORDINATES.get(location_key) if supported_country else None
+        )
+        confidence = "high" if coordinates else None
+        value = "resolved" if coordinates else "unresolved"
+        return _GeoResult(
+            market=market if coordinates else "",
+            coordinates=coordinates,
+            geo_confidence=confidence,
+            census_geo_id=(
+                f"fixture-{location_key[1]}-{location_key[2]}"
+                if coordinates
+                else None
+            ),
+            facts=[
+                _fact(
+                    source="geocoding",
+                    label="Address resolution",
+                    value=value,
+                    retrieved_at=retrieved_at,
+                    confidence="high" if coordinates else "low",
+                )
+            ],
+        )
+
+    def _fixture_demographics(
+        self,
+        lead: LeadCreate,
+        retrieved_at: datetime,
+    ) -> dict[str, object]:
+        city_key = lead.city.lower()
+        renter_share = 0.61 if city_key in {"austin", "arlington"} else 0.48
+        household_growth = 4.4 if city_key in {"austin", "raleigh"} else 2.8
+        return {
+            "renter_share": renter_share,
+            "household_growth": household_growth,
+            "facts": [
+                _fact(
+                    source="demographics",
+                    label="Renter share",
+                    value=f"{renter_share:.0%}",
+                    retrieved_at=retrieved_at,
+                    confidence="high",
+                ),
+                _fact(
+                    source="demographics",
+                    label="Household growth",
+                    value=f"{household_growth:.1f}%",
+                    retrieved_at=retrieved_at,
+                    confidence="medium",
+                ),
+            ],
+        }
+
+    def _fixture_economics(
+        self,
+        lead: LeadCreate,
+        retrieved_at: datetime,
+    ) -> dict[str, object]:
+        city_key = lead.city.lower()
+        rent_growth = 8.1 if city_key in {"austin", "charlotte"} else 3.4
+        median_rent = 1840 if city_key in {"austin", "raleigh"} else 1525
+        unemployment_rate = 3.2 if city_key in {"austin", "raleigh"} else 4.6
+        return {
+            "median_rent": median_rent,
+            "rent_growth_yoy": rent_growth,
+            "unemployment_rate": unemployment_rate,
+            "facts": [
+                _fact(
+                    source="economics",
+                    label="Median rent",
+                    value=f"${median_rent:,}",
+                    retrieved_at=retrieved_at,
+                    confidence="medium",
+                ),
+                _fact(
+                    source="economics",
+                    label="Rent growth",
+                    value=f"{rent_growth:.1f}% YoY",
+                    retrieved_at=retrieved_at,
+                    confidence="medium",
+                ),
+                _fact(
+                    source="economics",
+                    label="Unemployment rate",
+                    value=f"{unemployment_rate:.1f}%",
+                    retrieved_at=retrieved_at,
+                    confidence="medium",
+                ),
+            ],
+        }
+
+    def _fixture_local_context(
+        self,
+        lead: LeadCreate,
+        retrieved_at: datetime,
+    ) -> dict[str, object]:
+        city_key = lead.city.lower()
+        walkability_score = None if city_key == "raleigh" else 72
+        return {
+            "walkability_score": walkability_score,
+            "facts": [
+                _fact(
+                    source="local_context",
+                    label="Walkability score",
+                    value=(
+                        str(walkability_score)
+                        if walkability_score is not None
+                        else "No local context available"
+                    ),
+                    retrieved_at=retrieved_at,
+                    confidence="fallback" if walkability_score is None else "medium",
+                )
+            ],
+        }
+
+    def _fixture_company_context(
+        self,
+        company: str,
+        retrieved_at: datetime,
+    ) -> _CompanyResult:
+        company_units = _company_units(company)
+        asset_type_fit = "multifamily" if company_units else "unclear"
+        value = f"{company_units:,}" if company_units is not None else "unresolved"
+        return _CompanyResult(
+            company_units=company_units,
+            asset_type_fit=asset_type_fit,
+            facts=[
+                _fact(
+                    source="company_context",
+                    label="Company units",
+                    value=value,
+                    retrieved_at=retrieved_at,
+                    confidence="fallback",
+                ),
+                _fact(
+                    source="company_context",
+                    label="Asset type fit",
+                    value=asset_type_fit,
+                    retrieved_at=retrieved_at,
+                    confidence="fallback",
+                ),
+            ],
+        )
+
+    def _fixture_trigger_context(
+        self,
+        lead: LeadCreate,
+        company_units: int | None,
+        retrieved_at: datetime,
+    ) -> dict[str, object]:
+        recent_trigger = (
+            f"{lead.company} announced regional portfolio expansion"
+            if (
+                company_units
+                and company_units >= 50000
+                and lead.city.lower() != "raleigh"
+            )
+            else None
+        )
+        return {
+            "recent_trigger": recent_trigger,
+            "facts": [
+                _fact(
+                    source="trigger_context",
+                    label="Trigger event",
+                    value=recent_trigger or "No recent trigger found",
+                    retrieved_at=retrieved_at,
+                    confidence="medium" if recent_trigger else "fallback",
+                )
+            ],
+        }
+
+    def _fixture_domain_quality(
+        self,
+        lead: LeadCreate,
+        retrieved_at: datetime,
+    ) -> dict[str, object]:
+        domain = lead.email.split("@")[-1].lower()
+        if domain in PERSONAL_DOMAINS:
+            status = "personal"
+        elif "." not in domain:
+            status = "invalid"
+        else:
+            status = "corporate"
+        return {
+            "domain_status": status,
+            "facts": [
+                _fact(
+                    source="domain_quality",
+                    label="Domain quality",
+                    value=status,
+                    retrieved_at=retrieved_at,
+                    confidence="medium",
+                )
+            ],
+        }
+
+    async def _domain_quality(
+        self,
+        lead: LeadCreate,
+        retrieved_at: datetime,
+        warnings: list[str],
+        degraded_reasons: list[str],
+    ) -> dict[str, object]:
+        if self.config.use_fixtures:
+            return self._fixture_domain_quality(lead, retrieved_at)
+        domain = self._domain_lookup_key(lead)
+        cached = self.cache.get("domain_quality", "dns_mx", domain)
+        if cached is not None:
+            return self._domain_from_normalized(
+                cached.response.model_copy(update={"cache_hit": True})
+            )
+        try:
+            result = await self._live_domain_quality(lead, retrieved_at)
+        except (dns.exception.DNSException, TimeoutError, OSError):
+            warnings.append("domain quality unavailable")
+            degraded_reasons.append("domain_quality: provider unavailable")
+            return self._unknown_domain_quality(retrieved_at)
+        self.cache.set(
+            self._normalized_domain_result(domain, result),
+            ttl_seconds=self.config.cache_ttl_seconds,
+            refresh_policy="ttl",
+        )
+        return result
+
+    async def _live_domain_quality(
+        self,
+        lead: LeadCreate,
+        retrieved_at: datetime,
+    ) -> dict[str, object]:
+        domain = self._domain_lookup_key(lead)
+        if domain in PERSONAL_DOMAINS:
+            status = "personal"
+        elif "." not in domain:
+            status = "invalid"
+        else:
+            try:
+                answers = await dns.asyncresolver.resolve(domain, "MX")
+            except dns.resolver.NXDOMAIN:
+                status = "invalid"
+            except dns.resolver.NoAnswer:
+                status = "unknown"
+            else:
+                status = "corporate" if answers else "unknown"
+        return {
+            "domain_status": status,
+            "facts": [
+                _fact(
+                    source="domain_quality",
+                    label="Domain quality",
+                    value=status,
+                    retrieved_at=retrieved_at,
+                    confidence="high" if status == "corporate" else "medium",
+                )
+            ],
+        }
+
+    def _domain_lookup_key(self, lead: LeadCreate) -> str:
+        return lead.email.split("@")[-1].lower()
+
+    def _unknown_domain_quality(self, retrieved_at: datetime) -> dict[str, object]:
+        return {
+            "domain_status": "unknown",
+            "facts": [
+                _fact(
+                    source="domain_quality",
+                    label="Domain quality",
+                    value="unknown",
+                    retrieved_at=retrieved_at,
+                    confidence="low",
+                )
+            ],
+        }
+
+    def _normalized_domain_result(
+        self,
+        lookup_key: str,
+        result: dict[str, object],
+    ) -> NormalizedPublicDataResult:
+        domain_status = result.get("domain_status")
+        return NormalizedPublicDataResult(
+            provider_category="domain_quality",
+            lookup_key=lookup_key,
+            source="dns_mx",
+            data={
+                "domain_status": (
+                    domain_status if isinstance(domain_status, str) else "unknown"
+                )
+            },
+            facts=[
+                fact
+                for fact in result.get("facts", [])
+                if isinstance(fact, SourceFact)
+            ],
+        )
+
+    def _domain_from_normalized(
+        self,
+        result: NormalizedPublicDataResult,
+    ) -> dict[str, object]:
+        domain_status = result.data.get("domain_status")
+        return {
+            "domain_status": (
+                domain_status if isinstance(domain_status, str) else "unknown"
+            ),
+            "facts": result.facts,
+        }
+
+
+def _fact(
+    *,
+    source: str,
+    label: str,
+    value: str,
+    retrieved_at: datetime,
+    confidence: str,
+    url: str | None = None,
+) -> SourceFact:
+    return SourceFact(
+        source=source,
+        label=label,
+        value=value,
+        url=url,
+        retrieved_at=retrieved_at,
+        confidence=confidence,
+    )
+
+
+def _company_units(company: str) -> int | None:
+    normalized = company.lower()
+    if any(token in normalized for token in ("residential", "living", "property")):
+        return 85000
+    if any(token in normalized for token in ("homes", "communities")):
+        return 42000
+    if any(token in normalized for token in ("housing", "apartments", "portfolio")):
+        return 12000
+    return None

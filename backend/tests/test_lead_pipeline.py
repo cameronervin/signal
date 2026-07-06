@@ -59,6 +59,7 @@ async def test_pipeline_scores_and_drafts_gate_passed_lead() -> None:
     assert stored_run.worker_queue is None
     assert stored_run.degraded_reasons == []
     assert stored_run.steps[0].stage == "deterministic_enrichment"
+    assert "api_insert: lead received" in stored_run.activity_log
     assert all("@" not in entry for entry in stored_run.activity_log)
 
 
@@ -107,6 +108,105 @@ async def test_pipeline_suppresses_draft_for_gate_failed_lead() -> None:
     assert result.draft is None
     assert "non-US property" in result.flags
     assert result.score.components[0].name == "gates"
+
+
+@pytest.mark.asyncio
+async def test_pipeline_allows_draft_when_optional_adapters_degrade() -> None:
+    repository = InMemorySignalRepository()
+    service = LeadService(repository)
+    lead = LeadCreate(
+        contact_name="Demo Contact",
+        email="contact@operator.example",
+        company="Regional Property Operator",
+        role="Director of Leasing",
+        property_address="123 Market St",
+        city="Raleigh",
+        state="NC",
+        country="US",
+    )
+
+    result = await service.create_and_enrich(lead)
+    stored_run = await repository.get_agent_run(result.run_id)
+
+    assert result.gates.status == "passed"
+    assert result.draft is not None
+    assert "local context unavailable" in result.flags
+    assert "trigger context unavailable" in result.flags
+    assert stored_run is not None
+    assert stored_run.degraded_reasons == [
+        "local_context: fixture no-data",
+        "trigger_context: fixture no-data",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_pipeline_gate_fails_for_unverified_company_and_domain() -> None:
+    service = LeadService(InMemorySignalRepository())
+    lead = LeadCreate(
+        contact_name="Demo Contact",
+        email="contact@gmail.com",
+        company="Unverified Consulting",
+        role="Property Manager",
+        property_address="123 Market St",
+        city="Austin",
+        state="TX",
+        country="US",
+    )
+
+    result = await service.create_and_enrich(lead)
+
+    assert result.gates.status == "failed"
+    assert result.score.tier == "C"
+    assert result.draft is None
+    assert "corporate domain not verified" in result.gates.failures
+    assert "company plausibility unresolved" in result.gates.failures
+
+
+@pytest.mark.asyncio
+async def test_pipeline_suppresses_draft_for_unsupported_fixture_location() -> None:
+    service = LeadService(InMemorySignalRepository())
+    lead = LeadCreate(
+        contact_name="Demo Contact",
+        email="contact@operator.example",
+        company="Regional Property Operator",
+        role="VP Leasing",
+        property_address="999 Missing Pl",
+        city="Unsupported",
+        state="TX",
+        country="US",
+    )
+
+    result = await service.create_and_enrich(lead)
+
+    assert result.gates.status == "failed"
+    assert result.score.tier == "C"
+    assert result.draft is None
+    assert "address did not resolve" in result.gates.failures
+    assert result.enrichment.coordinates is None
+    assert result.enrichment.geo_confidence is None
+
+
+@pytest.mark.asyncio
+async def test_pipeline_suppresses_draft_for_unmatched_fixture_address() -> None:
+    service = LeadService(InMemorySignalRepository())
+    lead = LeadCreate(
+        contact_name="Demo Contact",
+        email="contact@operator.example",
+        company="Regional Property Operator",
+        role="VP Leasing",
+        property_address="999 Missing Pl",
+        city="Austin",
+        state="TX",
+        country="US",
+    )
+
+    result = await service.create_and_enrich(lead)
+
+    assert result.gates.status == "failed"
+    assert result.score.tier == "C"
+    assert result.draft is None
+    assert "address did not resolve" in result.gates.failures
+    assert result.enrichment.coordinates is None
 
 
 @pytest.mark.asyncio
