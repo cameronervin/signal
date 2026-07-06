@@ -141,10 +141,23 @@ jobs:
             echo "::notice::Skipping automerge for PR #$PR_NUMBER: $reason."
           fi
 
-      - name: Merge PR
+      - name: Require agent GitHub token
         if: ${{ steps.policy.outputs.should_merge == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
+          AGENT_GITHUB_TOKEN: ${{ secrets.AGENT_GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          if [ -z "$AGENT_GITHUB_TOKEN" ]; then
+            gh pr comment "$PR_NUMBER" --body "Codex automerge is blocked because AGENT_GITHUB_TOKEN is not configured. Add the repository secret, then rerun Codex PR automerge."
+            echo "::error::AGENT_GITHUB_TOKEN is required for autonomous merges."
+            exit 1
+          fi
+
+      - name: Merge PR
+        if: ${{ steps.policy.outputs.should_merge == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: |
           gh pr comment "$PR_NUMBER" --body "Codex automerge is merging this low-risk agent PR after clear AI review and passing required checks."

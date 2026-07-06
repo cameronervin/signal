@@ -118,6 +118,14 @@ Keep high-risk work human-reviewed:
 `Codex PR automerge` is the only workflow allowed to merge code. Implementation
 and fix-pass agents must never merge their own work.
 
+Autonomous publish, fix-publish, and merge steps require the repository secret
+`AGENT_GITHUB_TOKEN`. The default Actions `GITHUB_TOKEN` is intentionally not
+used for those steps because GitHub suppresses follow-up PR workflows from
+branches and PRs created by the default token.
+Issue and fix-publish jobs refuse autonomous patches that touch
+`.github/workflows/`, `.github/scripts/`, or `.github/codex/prompts/`; those
+control-plane changes need a trusted maintainer path.
+
 ## Safe Operating Cadence
 
 Start with one or two ready issues at a time. The manifest caps concurrent issue

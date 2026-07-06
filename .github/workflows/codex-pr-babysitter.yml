@@ -320,9 +320,41 @@ jobs:
           name: pr-fix-patch-${{ needs.fix.outputs.pr_number }}-${{ needs.fix.outputs.next_pass }}
           path: .codex-run/
 
-      - name: Commit and push fix pass
+      - name: Require agent GitHub token
         env:
           GH_TOKEN: ${{ github.token }}
+          AGENT_GITHUB_TOKEN: ${{ secrets.AGENT_GITHUB_TOKEN }}
+          PR_NUMBER: ${{ needs.fix.outputs.pr_number }}
+        run: |
+          if [ -z "$AGENT_GITHUB_TOKEN" ]; then
+            gh pr edit "$PR_NUMBER" --add-label "agent:blocked" || true
+            gh pr comment "$PR_NUMBER" --body "Codex fix pass needs AGENT_GITHUB_TOKEN to push fixes that trigger CI and Codex review. Add the repository secret, then retry the fix pass."
+            echo "::error::AGENT_GITHUB_TOKEN is required for autonomous fix-pass publishing."
+            exit 1
+          fi
+
+      - name: Reject autonomous control-plane patch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.fix.outputs.pr_number }}
+        run: |
+          if grep -Eq '^(\.github/workflows/|\.github/scripts/|\.github/codex/prompts/)' .codex-run/changed-files.txt; then
+            blocked_files="$(grep -E '^(\.github/workflows/|\.github/scripts/|\.github/codex/prompts/)' .codex-run/changed-files.txt | sed 's/^/- `/' | sed 's/$/`/')"
+            gh pr edit "$PR_NUMBER" --remove-label "agent:needs-fix,agent:working" --add-label "agent:needs-human,review:human" || true
+            comment_file="$(mktemp)"
+            {
+              echo "Codex fix pass produced control-plane changes that require a trusted maintainer path before publishing with AGENT_GITHUB_TOKEN:"
+              echo
+              echo "$blocked_files"
+            } > "$comment_file"
+            gh pr comment "$PR_NUMBER" --body-file "$comment_file"
+            echo "::error::Autonomous fix-pass publish refused control-plane changes."
+            exit 1
+          fi
+
+      - name: Commit and push fix pass
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ needs.fix.outputs.pr_number }}
           HEAD_REF: ${{ needs.fix.outputs.head_ref }}
