@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SearchInput } from "@/components/ui/SearchInput";
+import { routes } from "@/lib/constants/routes";
 import { agentRuns } from "@/lib/fixtures/leads";
 
 export default function AgentsPage() {
@@ -76,7 +77,7 @@ export default function AgentsPage() {
                   {cells}
                 </div>
               ) : (
-                <Link key={run.runId} href={`/agents/${run.runId}`} className="table-row agent-grid">
+                <Link key={run.runId} href={routes.agentRun(run.runId)} className="table-row agent-grid">
                   {cells}
                 </Link>
               );

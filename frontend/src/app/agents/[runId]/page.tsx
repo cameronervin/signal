@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PipelineStepper } from "@/components/ui/PipelineStepper";
+import { routes } from "@/lib/constants/routes";
 import { getAgentRun, getLead } from "@/lib/fixtures/leads";
 
 interface Props {
@@ -41,7 +42,7 @@ export default async function AgentRunPage({ params }: Props) {
         subtitle={`${run.runId} · Working ${run.lead}`}
         actions={
           <div className="flex flex-wrap gap-2">
-            <Link className="button secondary" href="/agents">
+            <Link className="button secondary" href={routes.agents}>
               <ChevronLeft size={16} /> Back
             </Link>
             <span className={`status-pill ${awaitingReview ? "warning" : "muted"}`}>
@@ -126,7 +127,7 @@ export default async function AgentRunPage({ params }: Props) {
                   </>
                 )}
                 {lead && (
-                  <Link className="button purple" href={`/leads/${lead.id}`}>
+                  <Link className="button purple" href={routes.leadDetail(lead.id)}>
                     View lead
                   </Link>
                 )}
