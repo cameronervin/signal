@@ -2,9 +2,6 @@
 
 Base path: `/api/v1`
 
-These contracts describe the fresh target spec. Existing implementation may need
-follow-up slices to match the full contract.
-
 ## Health
 
 `GET /health`
@@ -18,33 +15,7 @@ Response:
 }
 ```
 
-The FastAPI app factory wires the v1 router under `/api/v1`, keeps OpenAPI
-available at `/openapi.json`, and applies explicit CORS origins from
-`SIGNAL_FRONTEND_ORIGIN` plus comma-separated `SIGNAL_EXTRA_CORS_ORIGINS`.
-Wildcard CORS is not part of the supported configuration.
-
-Core backend settings use fixture-first demo defaults:
-
-| Setting | Default | Notes |
-| --- | --- | --- |
-| `SIGNAL_USE_FIXTURES` | `true` | Keeps local/demo paths independent of live provider uptime. |
-| `SIGNAL_API_BASE_URL` | `http://127.0.0.1:8000` | Backend origin for local clients and docs. |
-| `SIGNAL_FRONTEND_ORIGIN` | `http://localhost:3000` | Primary browser origin allowed by CORS. |
-| `SIGNAL_EXTRA_CORS_ORIGINS` | `http://127.0.0.1:3000` | Additional explicit browser origins. |
-| `SIGNAL_SCORING_CONFIG_PATH` | `app/agents/scoring.py` | Current scoring source path until external config lands. |
-| `SIGNAL_MAX_AGENT_RETRIES` | `2` | Bounded agent retry count. |
-| `SIGNAL_PROVIDER_RETRY_COUNT` | `2` | Bounded live-provider retry count. |
-| `SIGNAL_PROVIDER_TIMEOUT_SECONDS` | `8` | Live-provider timeout budget. |
-| `SIGNAL_REQUEST_TIMEOUT_SECONDS` | `15` | General backend request timeout budget. |
-| `SIGNAL_ENABLE_DEMO_SEED_ENDPOINT` | `false` | Explicitly mounts the destructive demo seed endpoint for local/demo runs. |
-
-Optional provider/LLM settings are `SIGNAL_NEWS_API_KEY`,
-`SIGNAL_FRED_API_KEY`, `SIGNAL_OPENAI_API_KEY`,
-`SIGNAL_LITELLM_GATEWAY_URL`, `SIGNAL_LITELLM_GATEWAY_KEY`, and
-`SIGNAL_LLM_MODEL`. Credential values are secret inputs; app code may use only
-presence checks for health or capability branching.
-
-## Create Lead And Trigger Pipeline
+## Create Lead
 
 `POST /leads`
 
@@ -54,122 +25,36 @@ Request:
 {
   "contact_name": "Demo Contact",
   "email": "contact@operator.example",
-  "company": "Regional Housing Operator",
+  "company": "Multifamily Operator",
+  "role": "VP Leasing",
   "property_address": "100 Main St",
   "city": "Austin",
   "state": "TX",
-  "country": "US",
-  "source": "demo_request"
+  "country": "US"
 }
 ```
 
 Behavior:
 
 - Validates input.
-- Creates a lead id and agent run id.
-- Triggers the LangGraph enrichment, LLM scoring/drafting, and graph context
-  pipeline through the configured execution mode:
-  - `inline`/`eager`: executes immediately for deterministic local/demo/test
-    paths.
-  - `worker`: enqueues a Celery task with identifier-only payload and exposes
-    progress through agent-run APIs.
-- Persists normalized lead, enrichment, score, draft, related context, task id,
-  execution mode, and run state in the v1 repository boundary as they become
-  available.
-- Returns the lead response with the current run summary in `run`. The current
-  implementation completes fixture-backed inline/eager output before returning.
-  Worker-mode service calls record identifier-only dispatch metadata on the run
-  while preserving eager fixture fallback when no broker dispatcher is
-  installed; the full Celery worker module remains a planned infrastructure
-  slice.
+- Creates lead and run ids.
+- Invokes the LangGraph pipeline.
+- Persists the enriched lead and run in the v1 repository.
+- Returns the full lead response.
 
 Response: `201 LeadResponse`
-
-Validation errors return `422` with field-specific details. Unhandled provider
-or LLM outages should not turn a valid lead into a 5xx response when cached,
-fixture, warning, or fallback output can be returned safely.
 
 ## List Leads
 
 `GET /leads`
 
-Query params:
-
-| Param | Type | Notes |
-| --- | --- | --- |
-| `tier` | A/B/C optional | Filter by tier |
-| `status` | string optional | Filter by gate or review status |
-| `q` | string optional | Search contact, company, market, or why-line |
-
-Returns leads sorted by tier priority, score descending, and submitted time.
+Returns leads sorted by tier then score.
 
 ## Get Lead
 
 `GET /leads/{lead_id}`
 
-Returns one lead detail record or `404`.
-
-Lead detail includes:
-
-- Original input.
-- Enrichment facts and source facts.
-- Gates and flags.
-- Score breakdown and why-line.
-- Talking points.
-- Draft when gate-passed.
-- Related-lead context.
-- Current run summary.
-
-## Seed Demo Leads
-
-`POST /leads/seed`
-
-Behavior:
-
-- Mounted only when `SIGNAL_ENABLE_DEMO_SEED_ENDPOINT=true`; otherwise the
-  route is unavailable.
-- Resets deterministic fixture leads for A-tier, B-tier, C-tier, warning-only,
-  missing-trigger, and hard-gate-failed examples.
-- Does not require live public API or LLM uptime.
-- Returns stable handles, lead ids, run ids, tiers, gate status, and draft
-  availability. Current stable handles are `a_tier`, `b_tier`, `c_tier`,
-  `warning_only`, `missing_trigger`, and `hard_gate_failed`; lead ids use
-  `seed_<handle>` and run ids use `seed_run_<handle>`.
-
-Response: `SeedLeadsResponse`
-
-This endpoint is intended for demo and local development only.
-
-## Draft Copy State
-
-`POST /leads/{lead_id}/draft/copy`
-
-Behavior:
-
-- Records that the reviewed draft was copied into the SDR's existing sales
-  tools.
-- Does not send email.
-- Sets draft `review_status` to `copied`.
-- Returns updated lead review state.
-
-Response: `LeadResponse`
-
-Gate-failed leads or leads with no draft return `409`.
-
-## Draft Export State
-
-`POST /leads/{lead_id}/draft/export`
-
-Behavior:
-
-- Records that the reviewed draft was exported into an existing sales workflow.
-- Does not send email.
-- Sets draft `review_status` to `exported`.
-- Returns updated lead review state.
-
-Response: `LeadResponse`
-
-Gate-failed leads or leads with no draft return `409`.
+Returns one lead or 404.
 
 ## List Agent Runs
 
@@ -181,15 +66,11 @@ Returns current and historical v1 runs.
 
 `GET /agent-runs/{run_id}`
 
-Returns one run or `404`.
+Returns one run or 404.
 
-Run detail includes deterministic enrichment, LLM scoring/drafting, graph build,
-human review, execution mode, task id, queue name, and degraded-provider steps.
+## Planned Endpoints
 
-## Planned Beyond V1
-
-- Read-only CRM or PMS context import.
-- Production auth and RBAC.
-- Durable storage.
-- Approval workflow with audit logs.
-- Live send or cadence behavior after compliance review.
+- `POST /leads/seed` for demo fixture reset.
+- `POST /agent-runs/{run_id}/approve` for human review.
+- `POST /agent-runs/{run_id}/pause` for run control.
+- `GET /analytics/summary` for dashboard KPIs.

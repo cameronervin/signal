@@ -29,7 +29,6 @@ export const leads: FixtureLead[] = [
     ],
     related: [{ label: "Related inbound", reason: "Same company appeared in fixture history" }],
     draft: {
-      review_status: "needs_review",
       subject: "Improving leasing response in Austin",
       body:
         "Hi Sarah,\n\nI noticed Meridian Residential announced regional portfolio expansion. Public market data also points to 61% renter share and 8.1% rent growth in Austin.\n\nSignal flagged this as a strong fit because leasing teams can use faster response, cleaner prioritization, and better follow-up visibility when inbound demand spikes.\n\nWould it be worth comparing how your team is handling those leads today?",
@@ -68,7 +67,6 @@ export const leads: FixtureLead[] = [
     ],
     related: [],
     draft: {
-      review_status: "needs_review",
       subject: "Leasing response visibility in Charlotte",
       body:
         "Hi Marcus,\n\nSignal flagged Charlotte as a strong opportunity market based on renter density and labor conditions. For a portfolio at Northstar Living's scale, faster inbound triage can help reps focus on the leads most likely to convert.\n\nWould it be useful to compare your current speed-to-lead workflow against this market signal?",
@@ -106,7 +104,6 @@ export const leads: FixtureLead[] = [
     ],
     related: [],
     draft: {
-      review_status: "needs_review",
       subject: "Inbound leasing prioritization in Seattle",
       body:
         "Hi Robert,\n\nSignal flagged your Seattle lead as a solid fit based on portfolio scale and local renter demand. The main opportunity is helping leasing teams separate urgent inbound requests from lower-fit inquiries without adding manual research.\n\nWould a quick workflow comparison be useful?",
@@ -144,7 +141,6 @@ export const leads: FixtureLead[] = [
     ],
     related: [{ label: "Fixture history", reason: "Same market appeared in recent inbound" }],
     draft: {
-      review_status: "needs_review",
       subject: "Prioritizing repeat inbound in Arlington",
       body:
         "Hi Priya,\n\nSignal flagged Copperline Homes because Arlington combines high renter density with repeat inbound activity. Those two signals often make response speed and lead routing more important.\n\nWould it be useful to compare how your team decides which leasing inquiries get worked first?",
@@ -182,7 +178,6 @@ export const leads: FixtureLead[] = [
     ],
     related: [],
     draft: {
-      review_status: "exported",
       subject: "Leasing triage for Nashville demand",
       body:
         "Hi David,\n\nSignal flagged Sunhaven Residential as a solid fit because Nashville demand is strong and your portfolio has enough scale for lead triage to create leverage.\n\nWould a short comparison of current inbound routing be useful?",
@@ -220,7 +215,6 @@ export const leads: FixtureLead[] = [
     ],
     related: [],
     draft: {
-      review_status: "needs_review",
       subject: "A faster way to sort Phoenix leasing inquiries",
       body:
         "Hi Lin,\n\nSignal marked Havenbridge Living as a good fit because the portfolio scale makes prioritization valuable, even in a flatter rent-growth market.\n\nWould it be useful to see how top-fit inbound leads are separated from lower-fit inquiries?",
@@ -229,35 +223,6 @@ export const leads: FixtureLead[] = [
         { source: "FRED", label: "Rent growth", value: "1.1% YoY" }
       ]
     }
-  },
-  {
-    id: "lead-demo-pending",
-    name: "Demo Contact B",
-    email: "demo-contact-b@regional-operator-b.example",
-    role: "Leasing Operations Manager",
-    company: "Regional Operator B",
-    market: "Raleigh, NC",
-    units: 72000,
-    gates: { status: "passed", failures: [] },
-    score: {
-      total: 73,
-      tier: "B",
-      whyLine: "Good portfolio fit · draft pending source verification"
-    },
-    flags: [],
-    talkingPoints: [
-      "Portfolio scale supports prioritization value.",
-      "Local demand signals are useful, but the draft is waiting on source verification.",
-      "Best reviewed after the cited source set is complete."
-    ],
-    marketSignals: [
-      { label: "Renter", value: "47%" },
-      { label: "Rent YoY", value: "+3.6%" },
-      { label: "Unemployment", value: "3.4%" },
-      { label: "HH growth", value: "+3.2%" }
-    ],
-    related: [],
-    draft: null
   },
   {
     id: "lead-jenna-cole",
@@ -287,7 +252,6 @@ export const leads: FixtureLead[] = [
     ],
     related: [],
     draft: {
-      review_status: "copied",
       subject: "Sorting inbound leasing requests in Denver",
       body:
         "Hi Jenna,\n\nSignal flagged Ridgeview Communities because Denver renter density still points to meaningful leasing demand. The opportunity may be in routing the right inquiries to the right team member faster.\n\nWould a short workflow comparison be useful?",
@@ -324,13 +288,11 @@ export const agentRuns: FixtureAgentRun[] = [
     runId: "run-8842",
     agent: "Outreach Agent",
     kind: "Draft review",
-    leadId: "lead-sarah-chen",
     lead: "Sarah Chen · Meridian Residential",
     started: "2m",
     stage: "Human review",
     stageIndex: 3,
-    status: "awaiting_review",
-    statusLabel: "Awaiting you",
+    status: "Awaiting you",
     steps: [
       { name: "Deterministic enrichment", status: "done", summary: "Public data and domain checks completed." },
       {
@@ -339,8 +301,8 @@ export const agentRuns: FixtureAgentRun[] = [
         summary: "Score 92, A-tier, draft generated with cited sources."
       },
       { name: "Knowledge graph", status: "done", summary: "Related company context attached." },
-      { name: "Human review", status: "pending", summary: "Awaiting SDR review before copy or export." },
-      { name: "Export", status: "pending", summary: "Runs only after human review." }
+      { name: "Human review", status: "active", summary: "Awaiting SDR approval before outreach." },
+      { name: "Send", status: "pending", summary: "Runs only after approval." }
     ],
     activityLog: [
       "11:42:01 api_insert received",
@@ -355,16 +317,14 @@ export const agentRuns: FixtureAgentRun[] = [
     runId: "run-9011",
     agent: "Enrichment Agent",
     kind: "Lead enrichment",
-    leadId: "lead-marcus-webb",
     lead: "Marcus Webb · Northstar Living",
     started: "9m",
     stage: "Scoring",
     stageIndex: 2,
-    status: "running",
-    statusLabel: "In progress",
+    status: "In progress",
     steps: [
       { name: "Deterministic enrichment", status: "done", summary: "Public data resolved." },
-      { name: "Agent scoring and drafting", status: "running", summary: "Building score and draft." },
+      { name: "Agent scoring and drafting", status: "active", summary: "Building score and draft." },
       { name: "Knowledge graph", status: "pending", summary: "Waiting on score output." },
       { name: "Human review", status: "pending", summary: "Not ready." }
     ],
@@ -374,60 +334,19 @@ export const agentRuns: FixtureAgentRun[] = [
     runId: "run-7750",
     agent: "Outreach Agent",
     kind: "Draft review",
-    leadId: "lead-david-okafor",
     lead: "David Okafor · Sunhaven Residential",
     started: "1h",
-    stage: "Exported",
+    stage: "Sent",
     stageIndex: 4,
-    status: "completed",
-    statusLabel: "Exported",
+    status: "Sent",
     steps: [
       { name: "Deterministic enrichment", status: "done", summary: "Public data resolved." },
       { name: "Agent scoring and drafting", status: "done", summary: "Score 71, B-tier, draft generated." },
       { name: "Knowledge graph", status: "done", summary: "Related context attached." },
       { name: "Human review", status: "done", summary: "Approved by SDR." },
-      { name: "Export", status: "done", summary: "Draft copied or exported for use in existing sales tools." }
+      { name: "Send", status: "done", summary: "Touch logged to the lead timeline." }
     ],
-    activityLog: ["10:18:01 api_insert received", "10:18:08 review approved", "10:18:12 draft exported"]
-  },
-  {
-    runId: "run-6600",
-    agent: "Gate Review Agent",
-    kind: "Gate failed",
-    leadId: "lead-tom-whitaker",
-    lead: "Demo Contact C · Unverified Operator",
-    started: "1h",
-    stage: "Gate failed",
-    stageIndex: 1,
-    status: "completed",
-    statusLabel: "Gate failed",
-    steps: [
-      { name: "Deterministic enrichment", status: "done", summary: "Domain and company checks completed." },
-      { name: "Agent scoring and drafting", status: "skipped", summary: "Draft suppressed because hard gates failed." },
-      { name: "Knowledge graph", status: "skipped", summary: "Skipped for gate-failed lead." },
-      { name: "Human review", status: "skipped", summary: "No draft review required." }
-    ],
-    activityLog: ["10:05:01 api_insert received", "10:05:04 hard gates failed", "10:05:04 draft suppressed"]
-  },
-  {
-    runId: "run-5510",
-    agent: "Review Agent",
-    kind: "Draft review",
-    leadId: "lead-jenna-cole",
-    lead: "Demo Contact D · Regional Operator D",
-    started: "45m",
-    stage: "Copied",
-    stageIndex: 4,
-    status: "completed",
-    statusLabel: "Copied",
-    steps: [
-      { name: "Deterministic enrichment", status: "done", summary: "Public data resolved." },
-      { name: "Agent scoring and drafting", status: "done", summary: "Score 64, B-tier, draft generated." },
-      { name: "Knowledge graph", status: "done", summary: "Related context attached." },
-      { name: "Human review", status: "done", summary: "Approved by SDR." },
-      { name: "Copy", status: "done", summary: "Draft copied for use in existing sales tools." }
-    ],
-    activityLog: ["10:33:01 api_insert received", "10:33:08 review completed", "10:33:12 draft copied"]
+    activityLog: ["10:18:01 api_insert received", "10:18:08 review approved", "10:18:12 send completed"]
   },
   {
     runId: "run-next-release",
@@ -437,8 +356,7 @@ export const agentRuns: FixtureAgentRun[] = [
     started: "-",
     stage: "Human approval policy",
     stageIndex: 0,
-    status: "queued",
-    statusLabel: "Next release",
+    status: "Next release",
     disabled: true,
     steps: [],
     activityLog: []

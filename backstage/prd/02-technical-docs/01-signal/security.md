@@ -1,71 +1,31 @@
 # Security
 
-Signal handles lead, enrichment, scoring, and draft outreach data. Treat it as
-sensitive even when running as a take-home demo.
+Signal handles lead and outreach data. Treat it as sensitive even in a demo.
 
 ## Rules
 
-- Validate inbound lead input with Pydantic.
+- Validate all input with Pydantic.
 - Keep CORS origins explicit.
-- Store API keys and LLM credentials in environment variables only.
-- Do not log full emails, raw request bodies, draft bodies, prompts, tokens,
-  secrets, or raw provider payloads.
-- Structured backend logs must pass through the sanitizer in
-  `backend/app/core/logging.py`, which redacts sensitive field names and masks
-  email addresses before JSON output.
-- Public-data adapters must return sanitized `ProviderWarning` reason codes and
-  normalized facts only; do not expose raw provider payloads, request keys,
-  secrets, tokens, prompts, full emails, or provider stack traces in warnings,
-  logs, cache records, fixtures, or API responses.
-- Do not trust client-supplied score, tier, gate status, source facts, run
-  state, or draft eligibility.
+- Store API keys in environment variables only.
+- Do not log full emails, raw request bodies, draft bodies, prompts, tokens, or
+  raw provider payloads.
+- Do not trust client-supplied score, tier, gate status, or draft text.
 - Do not generate drafts for hard-gate-failed leads.
-- Keep outbound behavior behind human review.
-- V1 may copy/export reviewed draft text but must not send email.
+- Keep outbound actions behind human review.
 
 ## Data Minimization
 
 V1 stores only:
 
-- Lead input needed for enrichment and ranking.
+- Lead input.
 - Normalized enrichment facts.
-- Source facts used for scoring, talking points, and drafts.
-- Gate results and flags.
-- Score breakdown.
-- Draft content only for gate-passed leads.
-- Related-lead context.
-- Agent run status, activity log, and degraded-provider notes.
+- Scoring breakdown.
+- Flags.
+- Draft if gates pass.
+- Run status and activity log.
 
-Do not add new contact, resident, or account history fields without updating the
-data model and explaining the sales workflow value.
-
-## LLM Safety
-
-- Route agent LLM calls through the configured provider abstraction.
-- Store LiteLLM gateway URLs, gateway keys, direct-provider keys, and model
-  settings in environment variables or secret storage only.
-- LLM key presence is exposed as a boolean settings property only; real
-  credential values must not appear in logs, docs, fixtures, or tests.
-- Do not put provider-specific credentials or real provider payloads in
-  fixtures, prompts, code comments, docs, tests, or logs.
-- Pass only the minimum lead and source-fact context needed for scoring and
-  drafting.
-- Prompt the model to avoid unsupported claims.
-- Require citations for personalization claims.
-- Fall back to generic copy when source facts are insufficient.
-- Do not log prompts, completions, draft bodies, or token payloads.
-
-## Worker And Broker Safety
-
-- Celery payloads must be identifier-only or minimal metadata; do not serialize
-  raw lead emails, raw request bodies, prompts, draft bodies, source payloads, or
-  provider payloads through the broker.
-- Worker logs may include ids, stage names, counts, queue names, execution mode,
-  and sanitized error types only.
-- The v1 worker is limited to agent run execution. Do not add scheduling,
-  cadence, follow-up, or live-send behavior.
-- Broker/result-backend URLs are secrets and must be masked or omitted from
-  logs.
+Do not add new contact enrichment fields without updating the data model and
+explaining the sales workflow value.
 
 ## Production Gaps
 
@@ -73,9 +33,6 @@ Before production use:
 
 - Add auth and role-based access.
 - Replace in-memory persistence with a durable database.
-- Add audit logs for approve/copy/export and any future send action.
-- Add provider timeout, retry, and rate-limit policies.
-- Add production worker operations runbook, dead-letter/retry monitoring, and
-  gateway cost/rate controls.
-- Add retention policy for lead, enrichment, and draft data.
-- Complete compliance review before live send or autonomous follow-up.
+- Add audit logs for approve/send actions.
+- Add provider timeout and retry policies.
+- Add retention policy for lead and draft data.

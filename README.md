@@ -29,7 +29,6 @@ The first build is intentionally demo-safe:
 backend/      FastAPI API, LangGraph pipeline, public API adapters, tests
 frontend/     Next.js SDR workspace and typed fixture adapters
 backstage/    Product specs, architecture, API docs, setup guides, decisions
-.agents/      Agent rules, commands, skills, and modern build-loop templates
 AGENTS.md     Primary instructions for coding agents working in this repo
 ```
 
@@ -55,9 +54,9 @@ Frontend app: `http://localhost:3000`
 
 1. Read `AGENTS.md`.
 2. Read the relevant files in `backstage/prd/` and `backstage/architecture/`.
-3. Pick the matching loop in `.agents/loops/`.
-4. Implement in small, tested slices.
-5. Update docs after behavior changes.
+3. Implement in small, tested slices.
+4. Update docs after behavior changes.
+5. Run the relevant backend and frontend verification commands.
 
 The repo should not contain third-party brand references. Keep product copy and
 documentation centered on Signal.

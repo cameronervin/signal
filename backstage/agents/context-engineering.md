@@ -24,9 +24,9 @@ Do not pass raw provider payloads or long prompt history.
 - Keep the draft reviewable and human-controlled.
 - Prefer concise operational copy over broad marketing claims.
 
-## Loop Controls
+## Iteration Controls
 
-The v1 graph is bounded. If future tool loops are added:
+The v1 graph is bounded. If future repeated tool steps are added:
 
 - Define max iterations.
 - Detect repeated tool calls.

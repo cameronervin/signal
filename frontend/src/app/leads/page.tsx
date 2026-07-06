@@ -6,7 +6,6 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { ScoreMeter } from "@/components/ui/ScoreMeter";
 import { TierBadge } from "@/components/ui/TierBadge";
-import { routes } from "@/lib/constants/routes";
 import { leads } from "@/lib/fixtures/leads";
 
 export default function LeadsPage() {
@@ -54,7 +53,7 @@ export default function LeadsPage() {
             {sortedLeads.map((lead) => (
               <Link
                 key={lead.id}
-                href={routes.leadDetail(lead.id)}
+                href={`/leads/${lead.id}`}
                 className={`table-row lead-grid ${lead.score.tier === "A" ? "tier-a-row" : ""} ${
                   lead.gates.status === "failed" ? "dimmed" : ""
                 }`}
@@ -62,29 +61,26 @@ export default function LeadsPage() {
                 <TierBadge tier={lead.score.tier} />
                 <span>
                   <strong className="block text-sm">{lead.name}</strong>
-                  <span className="text-xs font-semibold text-muted">{lead.role}</span>
+                  <span className="text-xs font-semibold text-[var(--ink-600)]">{lead.role}</span>
                 </span>
-                <span className="text-sm font-semibold text-subtle">{lead.company}</span>
+                <span className="text-sm font-semibold text-[var(--ink-500)]">{lead.company}</span>
                 <span className="text-sm">{lead.market}</span>
                 <span className="mono text-sm">{lead.units ? `${Math.round(lead.units / 1000)}k` : "-"}</span>
                 <ScoreMeter score={lead.score.total} tier={lead.score.tier} />
-                <span className="text-sm text-muted">{lead.score.whyLine}</span>
+                <span className="text-sm text-[var(--ink-600)]">{lead.score.whyLine}</span>
                 <span>
                   {lead.gates.status === "failed" ? (
                     <Flag>Review flags</Flag>
-                  ) : lead.draft?.review_status === "needs_review" ? (
+                  ) : (
                     <span className="button secondary small">
                       <Copy aria-hidden="true" size={14} /> Copy draft
                     </span>
-                  ) : lead.draft ? (
-                    <span className="status-pill muted">
-                      {lead.draft.review_status === "copied" ? "Copied" : "Exported"}
-                    </span>
-                  ) : (
-                    <span className="status-pill muted">Draft pending</span>
                   )}
                 </span>
-                <ChevronRight className={lead.gates.status === "failed" ? "chevron-muted" : "chevron-soft"} size={18} />
+                <ChevronRight
+                  size={18}
+                  color={lead.gates.status === "failed" ? "var(--muted-chev)" : "var(--ink-400)"}
+                />
               </Link>
             ))}
           </div>
