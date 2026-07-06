@@ -101,6 +101,30 @@ def test_settings_parse_comma_separated_extra_cors_origins_from_env(
     assert "http://localhost:3100" in settings.cors_origins
 
 
+def test_settings_treat_blank_optional_provider_env_values_as_unset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for key in (
+        "SIGNAL_NEWS_API_KEY",
+        "SIGNAL_FRED_API_KEY",
+        "SIGNAL_OPENAI_API_KEY",
+        "SIGNAL_LITELLM_GATEWAY_URL",
+        "SIGNAL_LITELLM_GATEWAY_KEY",
+        "SIGNAL_LLM_MODEL",
+    ):
+        monkeypatch.setenv(key, "")
+
+    settings = Settings()
+
+    assert settings.news_api_key is None
+    assert settings.fred_api_key is None
+    assert settings.openai_api_key is None
+    assert settings.litellm_gateway_url is None
+    assert settings.litellm_gateway_key is None
+    assert settings.llm_model is None
+    assert settings.has_llm_key is False
+
+
 def test_structured_logging_sanitizes_sensitive_values() -> None:
     sanitized = sanitize_log_event(
         None,

@@ -40,7 +40,31 @@ class Settings(BaseSettings):
 
     @property
     def has_llm_key(self) -> bool:
-        return self.openai_api_key is not None or self.litellm_gateway_key is not None
+        return self._has_secret_value(self.openai_api_key) or self._has_secret_value(
+            self.litellm_gateway_key
+        )
+
+    @staticmethod
+    def _has_secret_value(value: SecretStr | None) -> bool:
+        return value is not None and bool(value.get_secret_value().strip())
+
+    @field_validator(
+        "news_api_key",
+        "fred_api_key",
+        "openai_api_key",
+        "litellm_gateway_url",
+        "litellm_gateway_key",
+        "llm_model",
+        mode="before",
+    )
+    @classmethod
+    def normalize_blank_optional_values(cls, value: object) -> object:
+        if isinstance(value, SecretStr):
+            return value if value.get_secret_value().strip() else None
+        if isinstance(value, str):
+            stripped = value.strip()
+            return stripped or None
+        return value
 
     @field_validator("extra_cors_origins", mode="before")
     @classmethod
