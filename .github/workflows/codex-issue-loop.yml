@@ -303,6 +303,8 @@ jobs:
           PR_URL="$(gh pr create \
             --title "Loop #${ISSUE_NUMBER}: ${ISSUE_TITLE}" \
             --body "Closes #${ISSUE_NUMBER}" \
+            --head "$BRANCH" \
+            --base "$DEFAULT_BRANCH" \
             --label "review:codex" \
             --label "agent:reviewing")"
           PR_NUMBER="${PR_URL##*/}"
@@ -348,4 +350,22 @@ jobs:
           if [ -n "$ISSUE_NUMBER" ]; then
             gh issue edit "$ISSUE_NUMBER" --remove-label "agent:working" --add-label "agent:blocked" || true
             gh issue comment "$ISSUE_NUMBER" --body "Codex issue loop failed in GitHub Actions. Check the workflow run logs before retrying."
+          fi
+
+  report-publish-failure:
+    needs: [implement, publish]
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Report publish failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ needs.implement.outputs.issue_number }}
+        run: |
+          if [ -n "$ISSUE_NUMBER" ]; then
+            gh issue edit "$ISSUE_NUMBER" --remove-label "agent:working" --add-label "agent:blocked" || true
+            gh issue comment "$ISSUE_NUMBER" --body "Codex issue loop created an implementation patch but failed while publishing the PR. Check the workflow run logs before retrying."
           fi
