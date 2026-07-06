@@ -49,8 +49,7 @@ async def test_pipeline_scores_and_drafts_gate_passed_lead() -> None:
     assert result.draft.review_status == "needs_review"
     assert result.draft.talking_points
     assert result.score.why_line
-    assert result.related_leads
-    assert result.related_leads[0].relationship_type == "company"
+    assert result.related_leads == []
     assert stored_run is not None
     assert stored_run.run_id == result.run_id
     assert result.run == stored_run

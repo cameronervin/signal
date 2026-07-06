@@ -67,8 +67,9 @@ in an average market may still deserve attention.
 
 Bonuses are bounded by a max score of 100.
 
-The graph attaches qualifying related context before scoring. The scorer accepts
-that related-context count as an explicit input and caps the bonus at +10.
+The graph attaches qualifying explicit fixture history before scoring. The
+scorer accepts that related-context count as an explicit input and caps the
+bonus at +10.
 
 ## Tiers
 

@@ -71,9 +71,12 @@ async def agent_scoring_and_drafting_node(state: SignalState) -> dict:
 
 async def knowledge_graph_builder_node(state: SignalState) -> dict:
     lead = state["lead"]
-    enrichment = state["enrichment"]
     related = []
-    if enrichment.company_units and enrichment.company_units >= 50000:
+    if (
+        lead.source == "demo_seed"
+        and normalize_related_context_key(lead.company)
+        == "national property operator"
+    ):
         related.append(
             RelatedLead(
                 lead_id="demo-related-001",
@@ -90,6 +93,10 @@ async def knowledge_graph_builder_node(state: SignalState) -> dict:
             "knowledge_graph_builder: completed",
         ],
     }
+
+
+def normalize_related_context_key(value: str) -> str:
+    return " ".join(value.strip().lower().split())
 
 
 def _talking_points(enrichment) -> list[str]:
