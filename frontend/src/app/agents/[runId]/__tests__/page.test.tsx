@@ -29,6 +29,15 @@ describe("AgentRunPage", () => {
     expect(screen.queryByRole("button", { name: /copy reviewed draft/i })).not.toBeInTheDocument();
   });
 
+  it("preserves copied runs as terminal states", async () => {
+    render(await AgentRunPage({ params: Promise.resolve({ runId: "run-5510" }) }));
+
+    expect(screen.getByText("Copied")).toBeInTheDocument();
+    expect(screen.getByText("Draft copied")).toBeInTheDocument();
+    expect(screen.queryByText("Output in progress")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /copy reviewed draft/i })).not.toBeInTheDocument();
+  });
+
   it("shows completed no-draft runs instead of progress or review actions", async () => {
     render(await AgentRunPage({ params: Promise.resolve({ runId: "run-6600" }) }));
 

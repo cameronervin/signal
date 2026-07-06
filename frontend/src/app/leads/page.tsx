@@ -71,9 +71,13 @@ export default function LeadsPage() {
                 <span>
                   {lead.gates.status === "failed" ? (
                     <Flag>Review flags</Flag>
-                  ) : lead.draft ? (
+                  ) : lead.draft?.review_status === "needs_review" ? (
                     <span className="button secondary small">
                       <Copy aria-hidden="true" size={14} /> Copy draft
+                    </span>
+                  ) : lead.draft ? (
+                    <span className="status-pill muted">
+                      {lead.draft.review_status === "copied" ? "Copied" : "Exported"}
                     </span>
                   ) : (
                     <span className="status-pill muted">Draft pending</span>

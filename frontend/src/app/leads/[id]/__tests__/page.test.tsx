@@ -19,6 +19,14 @@ describe("LeadDetailPage", () => {
     expect(screen.queryByRole("button", { name: /export/i })).not.toBeInTheDocument();
   });
 
+  it("withholds copy and export controls after a draft has already been copied", async () => {
+    render(await LeadDetailPage({ params: Promise.resolve({ id: "lead-jenna-cole" }) }));
+
+    expect(screen.getByText("Copied")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /copy/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /export/i })).not.toBeInTheDocument();
+  });
+
   it("keeps gate-failed leads in a no-draft state", async () => {
     render(await LeadDetailPage({ params: Promise.resolve({ id: "lead-tom-whitaker" }) }));
 

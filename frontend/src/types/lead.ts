@@ -1,5 +1,6 @@
 export type Tier = "A" | "B" | "C";
 export type GateStatus = "passed" | "failed";
+export type DraftReviewStatus = "needs_review" | "copied" | "exported";
 export type RunStatus = "queued" | "running" | "awaiting_review" | "completed" | "failed";
 export type StepStatus = "pending" | "running" | "done" | "failed" | "skipped";
 
@@ -34,6 +35,7 @@ export interface FixtureLead {
     subject: string;
     body: string;
     sources: SourceFact[];
+    review_status: DraftReviewStatus;
   } | null;
 }
 

@@ -17,10 +17,11 @@ export default async function AgentRunPage({ params }: Props) {
     notFound();
   }
   const lead = run.leadId ? getLead(run.leadId) : undefined;
-  const exported = run.steps.some((step) => step.name === "Export" && step.status === "done");
+  const copied = lead?.draft?.review_status === "copied";
+  const exported = lead?.draft?.review_status === "exported";
   const completedWithoutDraft = Boolean(lead && !lead.draft && run.status === "completed");
-  const awaitingReview = Boolean(lead?.draft && run.status === "awaiting_review");
-  const outputResolved = Boolean(lead && (awaitingReview || exported || completedWithoutDraft));
+  const awaitingReview = Boolean(lead?.draft?.review_status === "needs_review" && run.status === "awaiting_review");
+  const outputResolved = Boolean(lead && (awaitingReview || copied || exported || completedWithoutDraft));
   const scoreLabel = outputResolved && lead ? `${lead.score.total} · ${lead.score.tier}` : "Pending";
 
   const stepDetails = run.steps.map((step, index) => ({
@@ -92,7 +93,9 @@ export default async function AgentRunPage({ params }: Props) {
                 <h2 className="section-title text-deep">
                   {awaitingReview
                     ? "Output ready for review"
-                    : exported
+                    : copied
+                      ? "Draft copied"
+                      : exported
                       ? "Draft exported"
                       : completedWithoutDraft
                         ? "No draft generated"
@@ -103,7 +106,9 @@ export default async function AgentRunPage({ params }: Props) {
               <p className="mt-3 text-sm leading-6 text-muted">
                 {awaitingReview
                   ? "Score, why-line, talking points, related context, and draft are ready for SDR review."
-                  : exported
+                  : copied
+                    ? "The reviewed draft has been copied for use in existing sales tools."
+                    : exported
                     ? "The reviewed draft has been exported for use in existing sales tools."
                     : completedWithoutDraft
                       ? "This run completed without a draft because draft eligibility was not met."

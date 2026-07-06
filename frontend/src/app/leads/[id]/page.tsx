@@ -21,6 +21,7 @@ export default async function LeadDetailPage({ params }: Props) {
 
   const failed = lead.gates.status === "failed";
   const draft = lead.draft;
+  const draftNeedsReview = draft?.review_status === "needs_review";
 
   return (
     <>
@@ -160,7 +161,13 @@ export default async function LeadDetailPage({ params }: Props) {
               <div className="surface-card flex flex-col p-5">
                 <div className="flex items-center justify-between">
                   <h2 className="section-title">Drafted email</h2>
-                  <span className="status-pill">Review and copy</span>
+                  <span className="status-pill">
+                    {draft.review_status === "needs_review"
+                      ? "Review and copy"
+                      : draft.review_status === "copied"
+                        ? "Copied"
+                        : "Exported"}
+                  </span>
                 </div>
                 <div className="draft-meta">
                   <span><strong>To:</strong> {lead.email}</span>
@@ -174,13 +181,15 @@ export default async function LeadDetailPage({ params }: Props) {
                     <SourceChip key={`${source.source}-${source.label}`} source={source} />
                   ))}
                 </div>
-                <div className="mt-auto flex justify-between pt-5">
-                  <button className="button secondary" type="button"><RefreshCw size={15} /> Regenerate</button>
-                  <div className="flex gap-2">
-                    <button className="button secondary" type="button"><Copy size={15} /> Copy</button>
-                    <button className="button primary" type="button"><Download size={15} /> Export</button>
+                {draftNeedsReview && (
+                  <div className="mt-auto flex justify-between pt-5">
+                    <button className="button secondary" type="button"><RefreshCw size={15} /> Regenerate</button>
+                    <div className="flex gap-2">
+                      <button className="button secondary" type="button"><Copy size={15} /> Copy</button>
+                      <button className="button primary" type="button"><Download size={15} /> Export</button>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             ) : (
               <div className="surface-card flex min-h-80 flex-col items-center justify-center p-8 text-center">
