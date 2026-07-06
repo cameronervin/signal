@@ -19,8 +19,10 @@ if [[ "$current_pass" -ge "$max_passes" ]]; then
   apply_pr_labels "$pr_number" "agent:blocked" "agent:needs-fix"
   gh pr comment "$pr_number" --body "Codex fix pass budget is exhausted after $max_passes attempts. Marking this PR blocked for human review."
   if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-    echo "should_run=false" >> "$GITHUB_OUTPUT"
-    echo "next_pass=$current_pass" >> "$GITHUB_OUTPUT"
+    {
+      echo "should_run=false"
+      echo "next_pass=$current_pass"
+    } >> "$GITHUB_OUTPUT"
   fi
   echo "Fix budget exhausted for PR #$pr_number"
   exit 0
@@ -35,9 +37,11 @@ fi
 apply_pr_labels "$pr_number" "$labels_to_add" "agent:blocked"
 
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-  echo "should_run=true" >> "$GITHUB_OUTPUT"
-  echo "next_pass=$next_pass" >> "$GITHUB_OUTPUT"
-  echo "head_ref=$head_ref" >> "$GITHUB_OUTPUT"
+  {
+    echo "should_run=true"
+    echo "next_pass=$next_pass"
+    echo "head_ref=$head_ref"
+  } >> "$GITHUB_OUTPUT"
 fi
 
 echo "Prepared fix pass $next_pass for PR #$pr_number"

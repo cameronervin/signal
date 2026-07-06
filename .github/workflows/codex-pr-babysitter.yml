@@ -65,26 +65,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install toolchains and dependencies
-        run: |
-          corepack enable
-          corepack prepare pnpm@10.0.0 --activate
-          pnpm install --frozen-lockfile
-          python -m pip install --upgrade pip uv
-          cd backend && uv sync --frozen
-
-      - name: Capture PR context
+      - name: Capture and validate PR context
         id: context
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
           DISPATCH_PR_NUMBER: ${{ inputs.pr_number }}
           ISSUE_PR_NUMBER: ${{ github.event.issue.number }}
           EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -101,19 +87,41 @@ jobs:
             exit 0
           fi
 
-          HEAD_REF="$(gh pr view "$PR_NUMBER" --json headRefName --jq '.headRefName')"
+          mkdir -p .codex-run
+          gh pr view "$PR_NUMBER" \
+            --json number,title,body,labels,author,baseRefName,headRefName,headRepository,headRepositoryOwner,isCrossRepository,commits,files,reviews,comments,url \
+            > .codex-run/pr.json
+          gh pr diff "$PR_NUMBER" > .codex-run/pr.diff
+
+          HEAD_REF="$(jq -r '.headRefName' .codex-run/pr.json)"
+          HEAD_REPOSITORY="$(jq -r '.headRepository.nameWithOwner' .codex-run/pr.json)"
+          IS_CROSS_REPOSITORY="$(jq -r '.isCrossRepository' .codex-run/pr.json)"
+          HAS_CODEX_REVIEW="$(jq -r 'any(.labels[]?; .name == "review:codex")' .codex-run/pr.json)"
+          HAS_AGENT_FIX="$(jq -r 'any(.labels[]?; .name == "agent:needs-fix")' .codex-run/pr.json)"
+          HAS_AGENT_REVIEW="$(jq -r 'any(.labels[]?; .name == "agent:reviewing")' .codex-run/pr.json)"
+
+          if [[ "$IS_CROSS_REPOSITORY" != "false" || "$HEAD_REPOSITORY" != "$GITHUB_REPOSITORY" ]]; then
+            echo "::notice::Skipping Codex fix pass for PR #$PR_NUMBER because the head repository is not the base repository."
+            echo "should_continue=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$HEAD_REF" != codex/* ]]; then
+            echo "::notice::Skipping Codex fix pass for PR #$PR_NUMBER because the head branch is not agent-owned."
+            echo "should_continue=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$HAS_CODEX_REVIEW" != "true" || ( "$HAS_AGENT_FIX" != "true" && "$HAS_AGENT_REVIEW" != "true" ) ]]; then
+            echo "::notice::Skipping Codex fix pass for PR #$PR_NUMBER because it is not an agent loop PR."
+            echo "should_continue=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           {
             echo "should_continue=true"
             echo "pr_number=$PR_NUMBER"
             echo "head_ref=$HEAD_REF"
+            echo "head_repository=$HEAD_REPOSITORY"
           } >> "$GITHUB_OUTPUT"
-          git fetch --no-tags origin "+refs/pull/$PR_NUMBER/head:pr-$PR_NUMBER"
-          git checkout "pr-$PR_NUMBER"
-          mkdir -p .codex-run
-          gh pr view "$PR_NUMBER" \
-            --json number,title,body,labels,author,baseRefName,headRefName,commits,files,reviews,comments,url \
-            > .codex-run/pr.json
-          gh pr diff "$PR_NUMBER" > .codex-run/pr.diff
 
       - name: Prepare fix pass budget
         id: fixpass
@@ -123,6 +131,33 @@ jobs:
           PR_NUMBER: ${{ steps.context.outputs.pr_number }}
           CI_FAILURE: ${{ github.event_name == 'workflow_run' }}
         run: bash .github/scripts/prepare-fix-pass.sh
+
+      - name: Checkout trusted PR head
+        if: ${{ steps.fixpass.outputs.should_run == 'true' }}
+        env:
+          PR_NUMBER: ${{ steps.context.outputs.pr_number }}
+        run: |
+          git fetch --no-tags origin "+refs/pull/$PR_NUMBER/head:pr-$PR_NUMBER"
+          git checkout "pr-$PR_NUMBER"
+
+      - uses: actions/setup-node@v4
+        if: ${{ steps.fixpass.outputs.should_run == 'true' }}
+        with:
+          node-version: 24
+
+      - uses: actions/setup-python@v5
+        if: ${{ steps.fixpass.outputs.should_run == 'true' }}
+        with:
+          python-version: "3.12"
+
+      - name: Install toolchains and dependencies
+        if: ${{ steps.fixpass.outputs.should_run == 'true' }}
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.0.0 --activate
+          pnpm install --frozen-lockfile
+          python -m pip install --upgrade pip uv
+          cd backend && uv sync --frozen
 
       - name: Check OpenAI key
         id: openai
@@ -174,6 +209,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "fix(agents): address PR ${PR_NUMBER} feedback"
+          # Safe because the context step rejects forks and non-codex branches.
           git push origin "HEAD:${HEAD_REF}"
           source .github/scripts/agent-loop-common.sh
           apply_pr_labels "$PR_NUMBER" \
