@@ -10,6 +10,8 @@ Read:
 - `AGENTS.md`
 - `.codex-run/pr.json`
 - `.codex-run/pr.diff`
+- `.agents/loops/_loop-contract.md`
+- `.agents/loops/manifest.yml`
 - The PR title, body, review comments, unresolved threads, and CI failures
 - The original linked issue
 - Relevant loop and rule files under `.agents/`
@@ -28,6 +30,18 @@ Read:
 
 - Do not change scoring weights or thresholds unless the PR already carries
   explicit human approval for that change.
-- Do not bypass the human review gate.
+- Do not bypass product, outreach, high-risk, or automerge policy gates.
 - Do not resolve review comments by deleting coverage or weakening assertions.
-- Do not merge the PR.
+- Do not merge the PR; only the automerge workflow may merge.
+
+## Final Output
+
+Report what was fixed, what was verified, and what still needs a human.
+
+End with:
+
+```text
+LOOP_STATUS: completed | blocked
+DOCS_UPDATED: yes | no | not-needed
+BLOCKERS: none | <short blocker>
+```

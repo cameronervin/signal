@@ -24,6 +24,10 @@ as evidence, not as a prerequisite.
   generate the docs now.
 - Prefer the repo's existing documentation and agent-loop conventions. Never
   archive, rename, or delete existing docs unless the user explicitly asks.
+- If a coherent PRD/spec set already exists and the product owner asks for a
+  whole new spec, ask whether to move the existing contents to a versioned
+  folder such as `backstage/prd/v1/` and create the new spec in
+  `backstage/prd/v2/` before replacing files in place.
 
 ## Phase 1: Repo Discovery
 

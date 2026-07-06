@@ -1,8 +1,8 @@
 # Agent Loop Board
 
 Signal uses GitHub as the durable state machine for agentic coding loops.
-Codex threads should run finite loops, create or update pull requests, and then
-stop. Labels, milestones, reviews, and CI decide what happens next.
+Issues queue work, labels carry state, pull requests carry review/fix context,
+CI verifies changes, and workflow artifacts preserve loop evidence.
 
 GitHub Project: `Signal Agent Loop Development`
 
@@ -12,19 +12,18 @@ GitHub Project: `Signal Agent Loop Development`
 
 The project has an `Agent Status` field with kanban states. GitHub's public API
 does not currently expose project view creation, so the visual board view must
-be created in the GitHub UI and grouped by `Agent Status`. Track that UI-only
-setup in issue `#6`.
+be created in the GitHub UI and grouped by `Agent Status`.
 
 ## Board Columns
 
 | Column | Meaning | Primary labels |
 | --- | --- | --- |
-| Intake | Work exists but has not been shaped for an agent | `agent:needs-human` |
+| Intake | Work exists but has not been shaped or approved for an agent | `agent:needs-human` |
 | Ready | A bounded loop can start | `agent:ready` |
-| Working | An implementation agent is active | `agent:working` |
-| Review | A PR is open and under Codex or human review | `agent:reviewing`, `review:codex`, `review:human` |
+| Working | An implementation or fix agent is active | `agent:working` |
+| Review | A PR is open and under Codex or human review | `agent:reviewing`, `review:codex`, `review:codex-clear`, `review:human` |
 | Needs Fix | Review comments or CI failures need another pass | `agent:needs-fix`, `ci:failed` |
-| Blocked | Work cannot proceed without credentials, permissions, or product input | `agent:blocked` |
+| Blocked | Work cannot proceed without credentials, permissions, budget, or product input | `agent:blocked` |
 | Merge Ready | Required checks and review gates are satisfied | `agent:merge-ready`, `ci:passing` |
 | Done | The work is merged or intentionally closed | Closed issue or merged PR |
 
@@ -38,81 +37,83 @@ setup in issue `#6`.
 - Agent state: `agent:ready`, `agent:working`, `agent:reviewing`,
   `agent:needs-fix`, `agent:needs-human`, `agent:blocked`,
   `agent:merge-ready`.
+- Fix budget: `agent:fix-pass-1`, `agent:fix-pass-2`.
 - Surface: `surface:backend`, `surface:frontend`, `surface:agent-pipeline`,
   `surface:scoring`, `surface:integrations`, `surface:docs`.
 - Risk: `risk:scoring-change`, `risk:outreach-gate`,
   `risk:data-handling`, `risk:external-api`.
-- Review and CI: `review:codex`, `review:human`, `ci:failed`,
-  `ci:passing`.
+- Review and CI: `review:codex`, `review:codex-clear`, `review:human`,
+  `ci:failed`, `ci:passing`.
 
 ## Operating Rules
 
 1. Every agent-owned issue needs exactly one loop label.
 2. Every implementation PR links back to an issue.
-3. Risk labels require explicit PR checklist attention.
-4. `risk:scoring-change`, `risk:outreach-gate`, `risk:data-handling`, and
-   `risk:external-api` should receive human review before merge.
-5. The babysitter can request fix passes, but merge decisions stay behind
-   branch protection and human review until the automation is proven.
+3. Risk labels require explicit PR checklist attention and human review.
+4. Low-risk complete issue forms may be normalized automatically, but launch
+   still requires maintainer-applied `agent:ready` or manual dispatch.
+5. High-risk issue forms remain `agent:needs-human` until human-approved.
+6. Fix passes stop after two attempts and then become `agent:blocked`.
+7. Low-risk merge decisions may be made by Codex review plus branch protection.
+   High-risk work stays human-reviewed.
 
 ## Automation Setup
 
 The workflow scaffolds in `.github/workflows/` use `openai/codex-action@v1`.
 Before running them, add `OPENAI_API_KEY` as a repository Actions secret.
 
-- `Codex issue loop` runs manually or when an issue with a loop label is
-  assigned or labeled `agent:ready`.
-- `Codex PR review` runs on PR events and can also be dispatched manually.
-- `Codex PR babysitter` runs manually or when a trusted reviewer comments
-  `@codex fix`.
+- `Codex issue loop` validates issue intake, starts maintainer-ready issues,
+  creates a branch, opens a PR, writes loop evidence, and moves the issue to
+  review.
+- `Codex PR review` runs automatically for PRs labeled `review:codex`,
+  reconciles clear reviews after CI success, and can be manually dispatched.
+- `Codex PR automerge` merges only low-risk agent PRs after Codex review,
+  backend, and frontend checks pass.
+- `Codex PR babysitter` runs on failed `CI`, `agent:needs-fix`, trusted
+  `@codex fix` comments, or manual dispatch, with a two-pass budget.
 - `Project label sync` maps issue and PR labels to the GitHub Project fields.
 - `CI` runs backend tests/lint and frontend tests/lint/typecheck on pull
   requests and pushes to `main`.
 
 The issue and fix-pass workflows keep networked GitHub operations outside the
 Codex sandbox. Codex edits files in the checkout; GitHub Actions commits,
-pushes, opens pull requests, and updates labels.
+pushes, opens pull requests, updates labels, and uploads artifacts.
+
+All Codex GitHub Action jobs pin `model: gpt-5.5`. Issue implementation prompts
+begin with `/goal` so assigned agents keep a persistent definition of done for
+the issue loop.
 
 For this user-owned Project v2, `Project label sync` needs a repository secret
 named `PROJECT_TOKEN` with the `project` scope. The workflow skips with a notice
 until that secret exists. The workflow uses project owner `@me` so the token can
 resolve the current user's Project. If GitHub reports missing scopes, regenerate
-the token with the reported scopes as well. Track that credential setup in
-issue `#7`.
+the token with the reported scopes as well.
 
-`Codex issue loop` needs `OPENAI_API_KEY` as a repository Actions secret. It
-skips with a notice until that secret exists. Track that credential setup in
-issue `#1`.
+`Codex issue loop`, `Codex PR review`, and `Codex PR babysitter` need
+`OPENAI_API_KEY` as a repository Actions secret. They skip with a notice until
+that secret exists.
 
-Keep automatic merging disabled until the review and fix-pass loop has proven
-reliable on several low-risk PRs.
+## Dry Run
 
-## First Issue Loop Dry Run
+Use a low-risk docs or test issue to validate the autonomous path:
 
-Issue `#2` is the first low-risk Codex issue loop dry run. It uses
-`loop:feature-build`, `surface:docs`, and `type:test` labels so the workflow can
-exercise the GitHub automation path without changing product behavior.
+2026-07-06 dry-run note: issue #32 exercises the guarded autonomous loop path
+with a docs-only change. The run must preserve high-risk human gates, avoid
+product behavior changes, and leave loop evidence in `.codex-run/loop-result.json`.
 
-The dry run is successful when the `Codex issue loop` workflow:
-
-1. Resolves `.codex-run/issue.json` for issue `#2`.
-2. Prepares a branch named from the issue number and title before Codex runs.
-3. Moves the issue from `agent:ready` to `agent:working` before Codex runs.
-4. Lets Codex leave a docs-only working-tree change.
-5. Commits and pushes the change from GitHub Actions after Codex exits.
-6. Opens a pull request labeled `review:codex` and `agent:reviewing` after
-   Codex exits.
-7. Moves the issue from `agent:working` to `agent:reviewing` after Codex exits.
-
-Verify the pre-Codex branch preparation and `agent:working` label transition in
-the early workflow logs. After Codex exits, verify the commit, push, pull request
-creation, and final `agent:reviewing` transition in GitHub Actions and the
-resulting PR before treating the automation as proven.
+1. Open a complete agent-loop issue with no risk flags.
+2. Confirm intake normalization applies loop, priority, type, and surface
+   labels while leaving the issue in human intake.
+3. Apply `agent:ready` or manually dispatch the issue loop.
+4. Confirm `Codex issue loop` creates a branch and PR.
+5. Confirm `Codex PR review` posts a review.
+6. Force or simulate a CI failure only on a disposable PR, then confirm the
+   babysitter consumes at most two fix passes.
+7. Confirm low-risk merge waits for Codex review plus branch protection, and
+   high-risk work still requires human review.
 
 ## Merge Gates
 
-CI is configured and passing on `main`. Required status checks, required pull
-request reviews, and required conversation resolution should be enabled on
-`main` when the repository plan supports branch protection for private repos.
-Until then, treat those gates as operating policy rather than enforced GitHub
-settings.
+`main` is protected. Required status checks, required pull request reviews,
+required conversation resolution, admin enforcement, and force-push/deletion
+blocks are enabled.

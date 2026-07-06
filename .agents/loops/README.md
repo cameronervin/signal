@@ -12,3 +12,7 @@ autonomous processes. They are repeatable execution patterns for coding agents:
 
 Use one loop per task. If a task spans backend, frontend, and docs, still keep
 the loop bounded by one user-visible outcome.
+
+The shared contract lives in `_loop-contract.md`. Machine-readable defaults for
+workflow timeouts, fix-pass budgets, risk gates, and per-loop policy live in
+`manifest.yml`.

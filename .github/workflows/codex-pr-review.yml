@@ -7,17 +7,36 @@ on:
         description: GitHub pull request number to review
         required: true
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
 
 permissions:
   contents: read
   issues: write
   pull-requests: write
 
+concurrency:
+  group: signal-pr-review-${{ inputs.pr_number || github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   review:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false }}
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event.pull_request.draft == false &&
+          contains(github.event.pull_request.labels.*.name, 'review:codex') &&
+          (
+            github.event.action != 'labeled' ||
+            github.event.label.name == 'review:codex'
+          )
+        )
+      }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     outputs:
       final_message: ${{ steps.codex.outputs.final-message }}
       pr_number: ${{ steps.context.outputs.pr_number }}
@@ -25,6 +44,9 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
       - name: Capture PR context
         id: context
         env:
@@ -34,26 +56,87 @@ jobs:
         run: |
           PR_NUMBER="${EVENT_PR_NUMBER:-$DISPATCH_PR_NUMBER}"
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-          git fetch --no-tags origin \
-            "+refs/pull/$PR_NUMBER/merge:refs/remotes/pull/$PR_NUMBER/merge" \
-            "+refs/pull/$PR_NUMBER/head:refs/remotes/pull/$PR_NUMBER/head"
-          git checkout "refs/remotes/pull/$PR_NUMBER/merge" || git checkout "refs/remotes/pull/$PR_NUMBER/head"
           mkdir -p .codex-run
           gh pr view "$PR_NUMBER" \
-            --json number,title,body,labels,author,baseRefName,headRefName,commits,files,reviews,comments,url \
+            --json number,title,body,labels,author,baseRefName,headRefName,commits,files,reviews,comments,url,statusCheckRollup \
             > .codex-run/pr.json
           gh pr diff "$PR_NUMBER" > .codex-run/pr.diff
+
+      - name: Prepare trusted review prompt
+        run: |
+          cat > "$RUNNER_TEMP/review-pr.md" <<'PROMPT'
+          You are the Signal PR review agent.
+
+          Review only the changes introduced by this PR. Use a findings-first code-review stance and order findings by severity.
+
+          Required context:
+          - `AGENTS.md`
+          - `.codex-run/pr.json`
+          - `.codex-run/pr.diff`
+          - Relevant rules under `.agents/rules/`
+          - The PR title, body, changed files, commits, and linked issue
+
+          Review checklist:
+          - Routes stay thin and services own orchestration.
+          - Score, tier, gate status, and draft eligibility are server-computed.
+          - Hard-gate-failed leads never expose drafts.
+          - Public API paths use cache or fixture fallbacks where needed.
+          - Logs avoid secrets, full emails, draft text, prompts, and raw payloads.
+          - Tests cover gate-pass and gate-fail paths when relevant.
+          - Docs changed when contracts or behavior changed.
+          - Frontend surfaces preserve accessible names, text fit, and gate-failed states.
+          - Workflow control-plane prompts and scripts do not run from PR- or agent-modified workspaces with write tokens.
+
+          Output:
+          Lead with findings:
+          - `P0`: security issue, secret leak, data loss, or automatic send behavior.
+          - `P1`: incorrect scoring/gating, broken trigger, or draft generated for failed gate.
+          - `P2`: maintainability, missing tests, brittle fixture, or API fallback risk.
+          - `P3`: style, naming, or small accessibility issue.
+
+          If no findings, say that clearly and note residual test or manual verification gaps.
+
+          End with exactly one status line:
+
+          ```text
+          REVIEW_STATUS: needs-fix | clear | human
+          ```
+          PROMPT
+
+      - name: Check OpenAI key
+        id: openai
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::notice::Skipping Codex PR review. Add OPENAI_API_KEY as a repository Actions secret."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run Codex review
         id: codex
+        if: ${{ steps.openai.outputs.available == 'true' }}
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          permission-profile: ":read-only"
-          prompt-file: .github/codex/prompts/review-pr.md
+          model: gpt-5.5
+          sandbox: read-only
+          safety-strategy: drop-sudo
+          output-file: .codex-run/codex-review.md
+          prompt-file: ${{ runner.temp }}/review-pr.md
         env:
           PR_NUMBER: ${{ steps.context.outputs.pr_number }}
+
+      - name: Require Codex review output
+        if: ${{ steps.openai.outputs.available != 'true' || steps.codex.outputs.final-message == '' }}
+        run: |
+          echo "::error::Codex review is required before this PR can be AI-merged."
+          exit 1
+
       - name: Post review comment
-        if: ${{ steps.codex.outputs.final-message != '' }}
+        if: ${{ steps.openai.outputs.available == 'true' && steps.codex.outputs.final-message != '' }}
         uses: actions/github-script@v7
         env:
           CODEX_FINAL_MESSAGE: ${{ steps.codex.outputs.final-message }}
@@ -67,3 +150,163 @@ jobs:
               issue_number: Number(process.env.PR_NUMBER),
               body: process.env.CODEX_FINAL_MESSAGE,
             });
+
+      - name: Apply review state labels
+        if: ${{ steps.openai.outputs.available == 'true' && steps.codex.outputs.final-message != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.context.outputs.pr_number }}
+          CODEX_FINAL_MESSAGE: ${{ steps.codex.outputs.final-message }}
+        run: |
+          message_file="$(mktemp)"
+          printf '%s\n' "$CODEX_FINAL_MESSAGE" > "$message_file"
+
+          apply_labels() {
+            local add_csv="$1"
+            local remove_csv="$2"
+            if [[ -n "$remove_csv" ]]; then
+              gh pr edit "$PR_NUMBER" --remove-label "$remove_csv" || true
+            fi
+            if [[ -n "$add_csv" ]]; then
+              gh pr edit "$PR_NUMBER" --add-label "$add_csv"
+            fi
+          }
+
+          if grep -Eq '^REVIEW_STATUS:[[:space:]]*needs-fix' "$message_file"; then
+            apply_labels "agent:needs-fix" "agent:merge-ready,ci:passing,review:codex-clear"
+          elif grep -Eq '^REVIEW_STATUS:[[:space:]]*human' "$message_file"; then
+            apply_labels "review:human,agent:needs-human" "agent:merge-ready,review:codex-clear"
+          elif grep -Eq '^REVIEW_STATUS:[[:space:]]*clear' "$message_file"; then
+            pr_state="$(gh pr view "$PR_NUMBER" --json labels,statusCheckRollup)"
+            needs_human="$(jq -r 'any(.labels[]?; .name == "review:human")' <<< "$pr_state")"
+            backend_ok="$(jq -r 'any(.statusCheckRollup[]?; .name == "backend" and .conclusion == "SUCCESS")' <<< "$pr_state")"
+            frontend_ok="$(jq -r 'any(.statusCheckRollup[]?; .name == "frontend" and .conclusion == "SUCCESS")' <<< "$pr_state")"
+
+            if [[ "$needs_human" == "true" ]]; then
+              apply_labels "review:codex-clear" "agent:merge-ready,agent:needs-fix,ci:failed"
+            elif [[ "$backend_ok" == "true" && "$frontend_ok" == "true" ]]; then
+              apply_labels "review:codex-clear,agent:merge-ready,ci:passing" "agent:reviewing,agent:needs-fix,ci:failed"
+            else
+              apply_labels "review:codex-clear,agent:reviewing" "agent:merge-ready,agent:needs-fix,ci:failed"
+            fi
+          else
+            apply_labels "agent:needs-human" ""
+          fi
+
+      - name: Write review loop artifact
+        if: ${{ steps.openai.outputs.available == 'true' }}
+        env:
+          PR_NUMBER: ${{ steps.context.outputs.pr_number }}
+          LOOP_STATUS: review
+          VERIFICATION_SUMMARY: ${{ steps.codex.outputs.final-message }}
+          FIX_PASS_COUNT: "0"
+        run: |
+          mkdir -p .codex-run
+          jq -n \
+            --arg issue_number "" \
+            --arg pr_number "$PR_NUMBER" \
+            --arg loop "" \
+            --arg status "$LOOP_STATUS" \
+            --arg model "gpt-5.5" \
+            --arg started_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg completed_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg verification "$VERIFICATION_SUMMARY" \
+            --arg docs_updated "not reported" \
+            --arg blockers "" \
+            --arg fix_pass_count "$FIX_PASS_COUNT" \
+            '{
+              issue_number: $issue_number,
+              pr_number: $pr_number,
+              loop: $loop,
+              status: $status,
+              model: $model,
+              started_at: $started_at,
+              completed_at: $completed_at,
+              changed_files: [],
+              verification: $verification,
+              docs_updated: $docs_updated,
+              risks: [],
+              blockers: $blockers,
+              fix_pass_count: ($fix_pass_count | tonumber? // 0)
+            }' > .codex-run/loop-result.json
+
+      - name: Upload review artifact
+        if: ${{ steps.openai.outputs.available == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-review-${{ steps.context.outputs.pr_number }}
+          path: .codex-run/
+          if-no-files-found: ignore
+          include-hidden-files: true
+
+      - name: Enforce clear Codex review
+        if: ${{ steps.openai.outputs.available == 'true' && steps.codex.outputs.final-message != '' }}
+        env:
+          CODEX_FINAL_MESSAGE: ${{ steps.codex.outputs.final-message }}
+        run: |
+          message_file="$(mktemp)"
+          printf '%s\n' "$CODEX_FINAL_MESSAGE" > "$message_file"
+
+          if grep -Eq '^REVIEW_STATUS:[[:space:]]*clear' "$message_file"; then
+            exit 0
+          fi
+          echo "::error::Codex review did not clear this PR."
+          exit 1
+
+  reconcile-ci:
+    if: >-
+      ${{
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success'
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Reconcile clear review with passing CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if [ -z "$HEAD_BRANCH" ]; then
+            echo "::notice::No workflow_run head branch found for CI reconciliation."
+            exit 0
+          fi
+
+          PR_NUMBER="$(gh pr list --head "$HEAD_BRANCH" --state open --json number --jq '.[0].number // ""')"
+          if [ -z "$PR_NUMBER" ]; then
+            echo "::notice::No open PR found for CI head branch $HEAD_BRANCH."
+            exit 0
+          fi
+
+          mkdir -p .codex-run
+          gh pr view "$PR_NUMBER" \
+            --json labels,statusCheckRollup,headRefName,headRepository,isCrossRepository \
+            > .codex-run/pr.json
+
+          head_ref="$(jq -r '.headRefName' .codex-run/pr.json)"
+          head_repository="$(jq -r '.headRepository.nameWithOwner' .codex-run/pr.json)"
+          is_cross_repository="$(jq -r '.isCrossRepository' .codex-run/pr.json)"
+          has_codex_review="$(jq -r 'any(.labels[]?; .name == "review:codex")' .codex-run/pr.json)"
+          has_clear_review="$(jq -r 'any(.labels[]?; .name == "review:codex-clear")' .codex-run/pr.json)"
+          needs_human="$(jq -r 'any(.labels[]?; .name == "review:human" or .name == "agent:needs-human")' .codex-run/pr.json)"
+          needs_fix="$(jq -r 'any(.labels[]?; .name == "agent:needs-fix")' .codex-run/pr.json)"
+          backend_ok="$(jq -r 'any(.statusCheckRollup[]?; .name == "backend" and .conclusion == "SUCCESS")' .codex-run/pr.json)"
+          frontend_ok="$(jq -r 'any(.statusCheckRollup[]?; .name == "frontend" and .conclusion == "SUCCESS")' .codex-run/pr.json)"
+
+          if [[ "$is_cross_repository" != "false" || "$head_repository" != "$GITHUB_REPOSITORY" || "$head_ref" != codex/* ]]; then
+            echo "::notice::Skipping CI reconciliation for non-agent or cross-repository PR #$PR_NUMBER."
+            exit 0
+          fi
+          if [[ "$has_codex_review" == "true" && "$has_clear_review" == "true" && "$needs_human" != "true" && "$needs_fix" != "true" && "$backend_ok" == "true" && "$frontend_ok" == "true" ]]; then
+            gh pr edit "$PR_NUMBER" --remove-label "agent:reviewing,ci:failed" || true
+            gh pr edit "$PR_NUMBER" --add-label "agent:merge-ready,ci:passing"
+          else
+            echo "::notice::PR #$PR_NUMBER is not ready for merge-state reconciliation."
+          fi

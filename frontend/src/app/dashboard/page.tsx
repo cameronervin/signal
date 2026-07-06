@@ -11,6 +11,43 @@ const metrics = [
   { label: "First-touch response", value: "34%", detail: "+6 pts", tone: "positive" as const }
 ];
 
+const volumeBars = [
+  ["chart-h-18", "chart-h-16", "chart-h-10"],
+  ["chart-h-20", "chart-h-20", "chart-h-15"],
+  ["chart-h-22", "chart-h-24", "chart-h-20"],
+  ["chart-h-24", "chart-h-28", "chart-h-25"],
+  ["chart-h-26", "chart-h-16", "chart-h-30"],
+  ["chart-h-28", "chart-h-20", "chart-h-10"],
+  ["chart-h-30", "chart-h-24", "chart-h-15"],
+  ["chart-h-32", "chart-h-28", "chart-h-20"],
+  ["chart-h-34", "chart-h-16", "chart-h-25"],
+  ["chart-h-36", "chart-h-20", "chart-h-30"],
+  ["chart-h-38", "chart-h-24", "chart-h-10"],
+  ["chart-h-40", "chart-h-28", "chart-h-15"],
+  ["chart-h-42", "chart-h-16", "chart-h-20"],
+  ["chart-h-44", "chart-h-20", "chart-h-25"]
+];
+
+const scoreDistribution = [
+  ["chart-h-42", "chart-fill-c"],
+  ["chart-h-54", "chart-fill-c"],
+  ["chart-h-88", "chart-fill-c"],
+  ["chart-h-76", "chart-fill-b"],
+  ["chart-h-52", "chart-fill-b"],
+  ["chart-h-34", "chart-fill-a"],
+  ["chart-h-22", "chart-fill-a"],
+  ["chart-h-14", "chart-fill-a"]
+];
+
+const markets = [
+  ["Austin", "91", "market-score-91", "high"],
+  ["Charlotte", "84", "market-score-84", "high"],
+  ["Nashville", "79", "market-score-79", "high"],
+  ["Phoenix", "73", "market-score-73", "medium"],
+  ["Denver", "68", "market-score-68", "medium"],
+  ["Seattle", "64", "market-score-64", "medium"]
+];
+
 export default function DashboardPage() {
   return (
     <>
@@ -21,45 +58,45 @@ export default function DashboardPage() {
             <button className="button secondary" type="button">
               Last 14 days <ChevronDown size={14} />
             </button>
-            <span className="sidebar-avatar m-0" aria-label="SDR profile">
+            <span className="sidebar-avatar topbar-avatar" aria-label="SDR profile">
               SD
             </span>
           </div>
         }
       />
       <main className="content stack-lg">
-        <section className="grid gap-4 lg:grid-cols-5">
+        <section className="kpi-grid">
           {metrics.map((metric) => (
             <MetricCard key={metric.label} {...metric} />
           ))}
         </section>
-        <section className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+        <section className="dashboard-chart-grid">
           <div className="surface-card p-5">
             <div className="flex items-center justify-between gap-4">
               <h2 className="section-title">Inbound volume by tier</h2>
-              <div className="flex gap-4 text-[11px] font-semibold text-[var(--ink-600)]">
+              <div className="legend">
                 {[
-                  ["A", "var(--tier-a)"],
-                  ["B", "var(--tier-b)"],
-                  ["C", "var(--tier-c)"]
-                ].map(([label, color]) => (
-                  <span key={label} className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-sm" style={{ background: color }} />
+                  ["A", "tier-swatch-a"],
+                  ["B", "tier-swatch-b"],
+                  ["C", "tier-swatch-c"]
+                ].map(([label, swatchClass]) => (
+                  <span key={label} className="legend-item">
+                    <span className={`legend-swatch ${swatchClass}`} />
                     {label}
                   </span>
                 ))}
               </div>
             </div>
-            <div className="mt-5 flex h-52 items-end gap-3" aria-label="Stacked bar placeholder">
-              {Array.from({ length: 14 }).map((_, index) => (
-                <div key={index} className="flex flex-1 flex-col overflow-hidden rounded-md bg-[var(--track)]">
-                  <span style={{ height: `${18 + index * 2}%` }} className="bg-[var(--tier-c)]" />
-                  <span style={{ height: `${16 + (index % 4) * 4}%` }} className="bg-[var(--tier-b)]" />
-                  <span style={{ height: `${10 + (index % 5) * 5}%` }} className="bg-[var(--tier-a)]" />
+            <div className="chart-bars" aria-label="Stacked bar placeholder">
+              {volumeBars.map(([tierC, tierB, tierA], index) => (
+                <div key={index} className="stacked-bar">
+                  <span className={`chart-fill-c ${tierC}`} />
+                  <span className={`chart-fill-b ${tierB}`} />
+                  <span className={`chart-fill-a ${tierA}`} />
                 </div>
               ))}
             </div>
-            <div className="mono mt-3 grid grid-cols-7 text-[10px] text-[var(--ink-400)]">
+            <div className="chart-axis">
               {["D-13", "D-11", "D-9", "D-7", "D-5", "D-3", "Today"].map((label) => (
                 <span key={label}>{label}</span>
               ))}
@@ -68,22 +105,14 @@ export default function DashboardPage() {
           <div className="surface-card p-5">
             <div className="flex items-center justify-between gap-4">
               <h2 className="section-title">Score distribution</h2>
-              <span className="mono text-[11px] font-semibold text-[var(--ink-400)]">187 leads</span>
+              <span className="mono text-soft text-xs font-semibold">187 leads</span>
             </div>
-            <div className="mt-5 grid h-52 grid-cols-8 items-end gap-2">
-              {[42, 54, 88, 76, 52, 34, 22, 14].map((height, index) => (
-                <div
-                  key={index}
-                  className="rounded-md"
-                  style={{
-                    background:
-                      index > 4 ? "var(--tier-a)" : index > 2 ? "var(--tier-b)" : "var(--tier-c)",
-                    height: `${height}%`
-                  }}
-                />
+            <div className="chart-bar-grid">
+              {scoreDistribution.map(([heightClass, fillClass], index) => (
+                <div key={index} className={`chart-bar ${heightClass} ${fillClass}`} />
               ))}
             </div>
-            <div className="mt-4 flex justify-between text-xs font-semibold text-[var(--ink-600)]">
+            <div className="chart-footer">
               <span>C 61%</span>
               <span>B 24%</span>
               <span>A 15%</span>
@@ -97,17 +126,13 @@ export default function DashboardPage() {
               View all markets
             </button>
           </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {["Austin", "Charlotte", "Nashville", "Phoenix", "Denver", "Seattle"].map((market, index) => {
-              const score = [91, 84, 79, 73, 68, 64][index];
+          <div className="dashboard-market-grid">
+            {markets.map(([market, score, scoreClass, toneClass]) => {
               return (
                 <div key={market} className="market-bar">
                   <span className="text-sm font-semibold">{market}</span>
-                  <span className="meter-track h-2">
-                    <span
-                      className="meter-fill"
-                      style={{ background: score >= 75 ? "var(--brand-primary)" : "var(--tier-b)", width: `${score}%` }}
-                    />
+                  <span className="meter-track market">
+                    <span className={`meter-fill ${toneClass} ${scoreClass}`} />
                   </span>
                   <span className="mono text-sm font-semibold">{score}</span>
                 </div>

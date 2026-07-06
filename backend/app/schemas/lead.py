@@ -4,6 +4,7 @@ from pydantic import BaseModel, EmailStr, Field
 
 Tier = Literal["A", "B", "C"]
 GateStatus = Literal["passed", "failed"]
+DraftReviewStatus = Literal["needs_review", "copied", "exported"]
 
 
 class LeadCreate(BaseModel):
@@ -57,6 +58,7 @@ class DraftEmail(BaseModel):
     subject: str
     body: str
     sources: list[SourceFact] = Field(default_factory=list)
+    review_status: DraftReviewStatus = "needs_review"
 
 
 class RelatedLead(BaseModel):

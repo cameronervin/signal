@@ -1,37 +1,69 @@
 # Eval Framework
 
-Signal evals start as deterministic fixture tests and can grow into a broader
-calibration suite.
+Signal evals start as deterministic fixture and contract tests. They should
+prove that the demo stays reliable and that score, draft, citation, and safety
+behavior do not regress.
 
-## Current Evals
+## Required Evals
 
-Backend tests cover:
+Backend tests should cover:
 
 - Health endpoint.
-- Gate-passed lead gets score, tier, why-line, related context, and draft.
-- Gate-failed lead gets C-tier and no draft.
+- Lead insertion triggers a run and returns enriched/scored output.
+- A-tier lead receives high score, why-line, talking points, related context,
+  and cited draft.
+- B-tier lead receives medium score with clear weaker-urgency explanation.
+- C-tier non-gate lead receives low score with no false urgency.
+- Hard-gate-failed lead receives C-tier, flags, and no draft.
+- Provider outage returns cache, fixture, warning, or no-data state.
+- LiteLLM gateway mode and direct/local mode use the provider abstraction and
+  fail safely on missing config.
+- LLM outage returns safe fallback behavior for gate-passed leads.
+- Worker mode enqueues identifier-only tasks, eager mode works without a broker,
+  and run status progresses through queued/running/terminal states.
+- Draft personalization claims map to source facts.
+- Copy/export action cannot send outreach.
+
+Frontend tests should cover:
+
+- Queue sorts A before B before C.
+- Filters/search do not hide gate-failed states incorrectly.
+- Lead detail shows source facts, talking points, and score components.
+- Gate-failed leads show no draft body and no copy/export action.
+- Draft review/copy/export controls are explicit and accessible.
+- Agent run detail shows stage and degraded-provider state.
 
 ## Required Fixture Set
 
 Maintain fixtures for:
 
-- A-tier large-portfolio senior contact.
-- B-tier good fit without urgency.
-- C-tier gate failure.
-- Edge case with missing news trigger.
-- Edge case with warning but no hard failure.
-
-## Future Evals
-
-- Score distribution check across seeded leads.
-- Draft citation check: every personalization claim maps to a source fact.
-- Gate-fail safety check: no draft body or send action is exposed.
-- Public API fallback check: outage returns cached/fixture values.
-- Human review check: agent runs cannot advance to send without approval.
+- A-tier large-portfolio senior contact with strong market and recent trigger.
+- B-tier good fit without strong urgency.
+- C-tier low-fit lead without a hard gate.
+- Hard-gate-failed lead.
+- Missing news/trigger edge case.
+- Warning-only lead where draft remains allowed.
+- LLM-unavailable fallback case.
+- Worker queued/running/succeeded case.
+- Worker dispatch failure or broker-unavailable fallback case.
 
 ## Manual Demo Checks
 
-- Queue sorts A before B before C.
-- Lead detail shows market signals and sources.
-- Gate-failed detail explains why the lead should not be worked.
-- Agent run shows deterministic enrichment, scoring/drafting, graph, and review.
+- Insert or seed a lead and show the pipeline run.
+- Queue sorts by tier and score.
+- Lead detail shows enriched facts, source citations, why-line, and cited draft.
+- Gate-failed detail explains why the lead should not be worked and shows no
+  draft.
+- Copy/export updates review state without sending outreach.
+- Run detail shows deterministic enrichment, LLM scoring/drafting, related
+  context, worker task state, and review gate.
+
+## Calibration Checks
+
+During shadow and pilot:
+
+- Track speed-to-first-action for A-tier leads.
+- Compare score bands with SDR manager judgment.
+- Log rep feedback when a score feels wrong.
+- Track draft edit distance as an adoption/quality proxy.
+- Reweight only after enough labeled examples exist.

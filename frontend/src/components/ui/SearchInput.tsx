@@ -10,7 +10,7 @@ export function SearchInput({ label, placeholder }: Props) {
     <label className="search-input">
       <Search aria-hidden="true" size={15} />
       <span className="sr-only">{label}</span>
-      <input placeholder={placeholder} />
+      <input placeholder={placeholder} type="search" />
     </label>
   );
 }

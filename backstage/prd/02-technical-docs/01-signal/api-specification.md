@@ -2,6 +2,9 @@
 
 Base path: `/api/v1`
 
+These contracts describe the fresh target spec. Existing implementation may need
+follow-up slices to match the full contract.
+
 ## Health
 
 `GET /health`
@@ -15,7 +18,7 @@ Response:
 }
 ```
 
-## Create Lead
+## Create Lead And Trigger Pipeline
 
 `POST /leads`
 
@@ -25,36 +28,114 @@ Request:
 {
   "contact_name": "Demo Contact",
   "email": "contact@operator.example",
-  "company": "Multifamily Operator",
-  "role": "VP Leasing",
+  "company": "Regional Housing Operator",
   "property_address": "100 Main St",
   "city": "Austin",
   "state": "TX",
-  "country": "US"
+  "country": "US",
+  "source": "demo_request"
 }
 ```
 
 Behavior:
 
 - Validates input.
-- Creates lead and run ids.
-- Invokes the LangGraph pipeline.
-- Persists the enriched lead and run in the v1 repository.
-- Returns the full lead response.
+- Creates a lead id and agent run id.
+- Triggers the LangGraph enrichment, LLM scoring/drafting, and graph context
+  pipeline through the configured execution mode:
+  - `inline`/`eager`: executes immediately for deterministic local/demo/test
+    paths.
+  - `worker`: enqueues a Celery task with identifier-only payload and exposes
+    progress through agent-run APIs.
+- Persists normalized lead, enrichment, score, draft, related context, task id,
+  execution mode, and run state in the v1 repository boundary as they become
+  available.
+- Returns the lead response with the current run summary. In worker mode, the
+  initial response may show queued/running state before enrichment and scoring
+  are complete; clients should poll the lead or run endpoints.
 
 Response: `201 LeadResponse`
+
+Validation errors return `422` with field-specific details. Unhandled provider
+or LLM outages should not turn a valid lead into a 5xx response when cached,
+fixture, warning, or fallback output can be returned safely.
 
 ## List Leads
 
 `GET /leads`
 
-Returns leads sorted by tier then score.
+Query params:
+
+| Param | Type | Notes |
+| --- | --- | --- |
+| `tier` | A/B/C optional | Filter by tier |
+| `status` | string optional | Filter by gate or review status |
+| `q` | string optional | Search contact, company, market, or why-line |
+
+Returns leads sorted by tier priority, score descending, and submitted time.
 
 ## Get Lead
 
 `GET /leads/{lead_id}`
 
-Returns one lead or 404.
+Returns one lead detail record or `404`.
+
+Lead detail includes:
+
+- Original input.
+- Enrichment facts and source facts.
+- Gates and flags.
+- Score breakdown and why-line.
+- Talking points.
+- Draft when gate-passed.
+- Related-lead context.
+- Current run summary.
+
+## Seed Demo Leads
+
+`POST /leads/seed`
+
+Behavior:
+
+- Resets or inserts deterministic fixture leads for A, B, C, warning-only, and
+  hard-gate-failed examples.
+- Does not require live public API or LLM uptime.
+- Returns created or reset lead ids and run ids.
+
+Response: `SeedLeadsResponse`
+
+This endpoint is intended for demo and local development only.
+
+## Draft Copy State
+
+`POST /leads/{lead_id}/draft/copy`
+
+Behavior:
+
+- Records that the reviewed draft was copied into the SDR's existing sales
+  tools.
+- Does not send email.
+- Sets draft `review_status` to `copied`.
+- Returns updated lead review state.
+
+Response: `LeadResponse`
+
+Gate-failed leads or leads with no draft return `409`.
+
+## Draft Export State
+
+`POST /leads/{lead_id}/draft/export`
+
+Behavior:
+
+- Records that the reviewed draft was exported into an existing sales workflow.
+- Does not send email.
+- Sets draft `review_status` to `exported`.
+- Returns updated lead review state.
+
+Response: `LeadResponse`
+
+Gate-failed leads or leads with no draft return `409`.
 
 ## List Agent Runs
 
@@ -66,11 +147,15 @@ Returns current and historical v1 runs.
 
 `GET /agent-runs/{run_id}`
 
-Returns one run or 404.
+Returns one run or `404`.
 
-## Planned Endpoints
+Run detail includes deterministic enrichment, LLM scoring/drafting, graph build,
+human review, execution mode, task id, queue name, and degraded-provider steps.
 
-- `POST /leads/seed` for demo fixture reset.
-- `POST /agent-runs/{run_id}/approve` for human review.
-- `POST /agent-runs/{run_id}/pause` for run control.
-- `GET /analytics/summary` for dashboard KPIs.
+## Planned Beyond V1
+
+- Read-only CRM or PMS context import.
+- Production auth and RBAC.
+- Durable storage.
+- Approval workflow with audit logs.
+- Live send or cadence behavior after compliance review.
