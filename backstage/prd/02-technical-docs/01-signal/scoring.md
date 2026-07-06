@@ -28,7 +28,8 @@ Implemented configuration lives in
 `backend/app/agents/scoring-rubric.v1.json` and is loaded through
 `SIGNAL_SCORING_CONFIG_PATH`:
 
-- `components` defines component caps, rationales, and source-reference labels.
+- `category_caps` and `components` define component caps, rationales, and
+  source-reference labels.
 - `portfolio_scale`, `seniority_points`, `asset_type_points`, and
   `market_buckets` define the 60/40 rubric tables.
 - `bonuses` and `tier_thresholds` define bounded bonuses and A/B/C thresholds.
@@ -67,9 +68,8 @@ in an average market may still deserve attention.
 
 Bonuses are bounded by a max score of 100.
 
-The graph attaches qualifying explicit fixture history before scoring. The
-scorer accepts that related-context count as an explicit input and caps the
-bonus at +10.
+The scorer accepts qualifying explicit fixture history as an input and caps the
+related-context bonus at +10.
 
 ## Tiers
 

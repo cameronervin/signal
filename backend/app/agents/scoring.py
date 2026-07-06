@@ -43,11 +43,15 @@ class RubricComponent:
 class ScoringRubric:
     tier_thresholds: dict[Tier, int]
     gate_failed_score: int
+    max_total_score: int
+    category_caps: dict[str, int]
     bonuses: dict[str, int]
     seniority_points: dict[str, int]
+    seniority_fallback_points: int
     asset_type_points: dict[str, int]
     portfolio_buckets: tuple[Bucket, ...]
     portfolio_fallback_points: int
+    company_momentum_fallback_points: int
     market_buckets: dict[str, tuple[Bucket, ...]]
     market_fallback_points: dict[str, int]
     components: dict[str, RubricComponent]
@@ -115,9 +119,12 @@ def score_lead(
     momentum = (
         active_rubric.components["company_momentum"].max_points
         if enrichment.recent_trigger
-        else 4
+        else active_rubric.company_momentum_fallback_points
     )
-    company_fit = min(60, portfolio + seniority + asset_fit + momentum)
+    company_fit = min(
+        active_rubric.category_caps["company_fit"],
+        portfolio + seniority + asset_fit + momentum,
+    )
 
     renter = _bucket(
         enrichment.renter_share or 0,
@@ -144,7 +151,10 @@ def score_lead(
         active_rubric.market_buckets["walkability_density"],
         active_rubric.market_fallback_points["walkability_density"],
     )
-    market = min(40, renter + rent + growth + labor + density)
+    market = min(
+        active_rubric.category_caps["market_opportunity"],
+        renter + rent + growth + labor + density,
+    )
 
     recent_bonus = (
         active_rubric.bonuses["recent_trigger"] if enrichment.recent_trigger else 0
@@ -152,7 +162,10 @@ def score_lead(
     related_bonus = (
         active_rubric.bonuses["related_context"] if related_context_count > 0 else 0
     )
-    total = min(100, company_fit + market + recent_bonus + related_bonus)
+    total = min(
+        active_rubric.max_total_score,
+        company_fit + market + recent_bonus + related_bonus,
+    )
     tier = _tier(total, active_rubric)
     why_line = _why_line(
         tier=tier,
@@ -218,15 +231,23 @@ def load_scoring_rubric(config_path: str | Path) -> ScoringRubric:
             "C": int(data["tier_thresholds"].get("C", 0)),
         },
         gate_failed_score=int(data["gate_failed_score"]),
+        max_total_score=int(data["max_total_score"]),
+        category_caps={
+            key: int(value) for key, value in data["category_caps"].items()
+        },
         bonuses={key: int(value) for key, value in data["bonuses"].items()},
         seniority_points={
             key: int(value) for key, value in data["seniority_points"].items()
         },
+        seniority_fallback_points=int(data["seniority_fallback_points"]),
         asset_type_points={
             key: int(value) for key, value in data["asset_type_points"].items()
         },
         portfolio_buckets=_load_buckets(data["portfolio_scale"]["buckets"]),
         portfolio_fallback_points=int(data["portfolio_scale"]["fallback_points"]),
+        company_momentum_fallback_points=int(
+            data["company_momentum"]["fallback_points"]
+        ),
         market_buckets={
             name: _load_buckets(config["buckets"])
             for name, config in data["market_buckets"].items()
@@ -266,7 +287,7 @@ def _seniority_points(role: str, rubric: ScoringRubric) -> int:
     for token, points in rubric.seniority_points.items():
         if token in normalized:
             return points
-    return 4
+    return rubric.seniority_fallback_points
 
 
 def _asset_type_points(asset_type: str | None, rubric: ScoringRubric) -> int:

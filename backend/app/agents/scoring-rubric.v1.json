@@ -6,6 +6,11 @@
     "C": 0
   },
   "gate_failed_score": 0,
+  "max_total_score": 100,
+  "category_caps": {
+    "company_fit": 60,
+    "market_opportunity": 40
+  },
   "bonuses": {
     "recent_trigger": 10,
     "related_context": 10
@@ -21,6 +26,7 @@
     "regional": 10,
     "manager": 7
   },
+  "seniority_fallback_points": 4,
   "asset_type_points": {
     "multifamily": 10,
     "student": 10,
@@ -35,6 +41,9 @@
       { "threshold": 40000, "points": 21 },
       { "threshold": 15000, "points": 14 }
     ]
+  },
+  "company_momentum": {
+    "fallback_points": 4
   },
   "market_buckets": {
     "renter_share": {

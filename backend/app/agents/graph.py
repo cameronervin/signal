@@ -14,9 +14,9 @@ def build_signal_graph():
     graph.add_node("agent_scoring_and_drafting", agent_scoring_and_drafting_node)
     graph.add_node("knowledge_graph_builder", knowledge_graph_builder_node)
     graph.add_edge(START, "deterministic_enrichment")
-    graph.add_edge("deterministic_enrichment", "knowledge_graph_builder")
-    graph.add_edge("knowledge_graph_builder", "agent_scoring_and_drafting")
-    graph.add_edge("agent_scoring_and_drafting", END)
+    graph.add_edge("deterministic_enrichment", "agent_scoring_and_drafting")
+    graph.add_edge("agent_scoring_and_drafting", "knowledge_graph_builder")
+    graph.add_edge("knowledge_graph_builder", END)
     return graph.compile()
 
 

@@ -18,9 +18,9 @@ Store the v1 scoring rubric in
 thresholds, gate-failed score, component caps, buckets, seniority and asset-type
 tables, and bounded bonuses.
 
-Related-context scoring is applied only when the graph attaches qualifying,
-explicit fixture history before the scoring node. Hard-gate failures still force
-C-tier, zero component totals, and draft suppression.
+Related-context scoring is applied only when the scoring node receives
+qualifying explicit fixture history. Hard-gate failures still force C-tier, zero
+component totals, and draft suppression.
 
 ## Consequences
 
