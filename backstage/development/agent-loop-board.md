@@ -115,9 +115,10 @@ product behavior changes, and leave loop evidence in `.codex-run/loop-result.jso
 ## Merge Gates
 
 `main` is protected. Low-risk agent PRs may merge only after the required
-`backend`, `frontend`, and Codex `review` status checks pass, required
-conversation resolution is satisfied, and the automerge label gates are present.
-Required human pull request reviews are not enabled for the low-risk agent path.
+`backend`, `frontend`, and Codex `review` status checks pass for the protected
+branch, required conversation resolution is satisfied, and the automerge label
+gates are present. Required human pull request reviews are not enabled for this
+low-risk agent path.
 
 High-risk work remains human-reviewed before merge and before autonomous launch
 unless manually dispatched by a repository maintainer.
