@@ -1,4 +1,3 @@
-from functools import lru_cache
 from uuid import uuid4
 
 from app.agents.graph import run_signal_pipeline
@@ -90,12 +89,3 @@ class LeadService:
 
     async def get_agent_run(self, run_id: str) -> AgentRunResponse | None:
         return await self.repository.get_agent_run(run_id)
-
-
-@lru_cache
-def get_repository() -> InMemorySignalRepository:
-    return InMemorySignalRepository()
-
-
-def get_lead_service() -> LeadService:
-    return LeadService(get_repository())

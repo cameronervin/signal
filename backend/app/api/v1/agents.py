@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.core.dependencies import get_lead_service
 from app.schemas.run import AgentRunResponse
-from app.services.lead_service import LeadService, get_lead_service
+from app.services.lead_service import LeadService
 
 router = APIRouter()
 

@@ -1,12 +1,108 @@
-from fastapi.testclient import TestClient
+import httpx
+import pytest
 
+from app.api.v1.leads import list_leads
+from app.core.config import Settings
+from app.core.dependencies import get_lead_service
+from app.core.logging import sanitize_log_event
 from app.main import create_app
 
 
-def test_health_endpoint() -> None:
-    client = TestClient(create_app())
+@pytest.mark.asyncio
+async def test_health_endpoint() -> None:
+    transport = httpx.ASGITransport(app=create_app())
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://testserver"
+    ) as client:
+        response = await client.get("/api/v1/health")
 
-    response = client.get("/api/v1/health")
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok", "service": "signal-api"}
 
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok", "service": "signal-api"}
+
+@pytest.mark.asyncio
+async def test_openapi_schema_remains_available() -> None:
+    transport = httpx.ASGITransport(app=create_app())
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://testserver"
+    ) as client:
+        response = await client.get("/openapi.json")
+
+        assert response.status_code == 200
+        assert response.json()["info"]["title"] == "Signal API"
+
+
+@pytest.mark.asyncio
+async def test_configured_cors_origin_allows_preflight() -> None:
+    settings = Settings(frontend_origin="http://localhost:3100")
+    transport = httpx.ASGITransport(app=create_app(settings=settings))
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://testserver"
+    ) as client:
+        response = await client.options(
+            "/api/v1/health",
+            headers={
+                "Origin": "http://localhost:3100",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+
+        assert response.status_code == 200
+        assert (
+            response.headers["access-control-allow-origin"]
+            == "http://localhost:3100"
+        )
+
+
+@pytest.mark.asyncio
+async def test_app_factory_accepts_dependency_overrides() -> None:
+    class StubLeadService:
+        async def list_leads(self) -> list[object]:
+            return []
+
+    app = create_app(lead_service=StubLeadService())
+    assert get_lead_service in app.dependency_overrides
+    override = app.dependency_overrides[get_lead_service]
+
+    assert await list_leads(override()) == []
+
+
+def test_settings_cover_demo_safe_backend_configuration() -> None:
+    settings = Settings()
+
+    assert settings.use_fixtures is True
+    assert settings.api_base_url == "http://127.0.0.1:8000"
+    assert settings.frontend_origin == "http://localhost:3000"
+    assert "http://localhost:3000" in settings.cors_origins
+    assert settings.scoring_config_path
+    assert settings.max_agent_retries >= 0
+    assert settings.provider_timeout_seconds > 0
+    assert settings.request_timeout_seconds > 0
+    assert settings.has_llm_key is False
+
+    assert Settings(openai_api_key="test-key").has_llm_key is True
+    assert Settings(litellm_gateway_key="test-key").has_llm_key is True
+
+
+def test_structured_logging_sanitizes_sensitive_values() -> None:
+    sanitized = sanitize_log_event(
+        None,
+        None,
+        {
+            "email": "contact@operator.example",
+            "message": "received contact@operator.example",
+            "request_body": {"safe": "value"},
+            "nested": {
+                "api_key": "secret-key",
+                "token": "secret-token",
+                "prompt": "draft a message",
+            },
+        },
+    )
+
+    assert sanitized["email"] == "[redacted]"
+    assert sanitized["message"] == "received c***@operator.example"
+    assert sanitized["request_body"] == "[redacted]"
+    assert sanitized["nested"]["api_key"] == "[redacted]"
+    assert sanitized["nested"]["token"] == "[redacted]"
+    assert sanitized["nested"]["prompt"] == "[redacted]"

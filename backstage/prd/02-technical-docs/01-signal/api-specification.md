@@ -18,6 +18,31 @@ Response:
 }
 ```
 
+The FastAPI app factory wires the v1 router under `/api/v1`, keeps OpenAPI
+available at `/openapi.json`, and applies explicit CORS origins from
+`SIGNAL_FRONTEND_ORIGIN` plus comma-separated `SIGNAL_EXTRA_CORS_ORIGINS`.
+Wildcard CORS is not part of the supported configuration.
+
+Core backend settings use fixture-first demo defaults:
+
+| Setting | Default | Notes |
+| --- | --- | --- |
+| `SIGNAL_USE_FIXTURES` | `true` | Keeps local/demo paths independent of live provider uptime. |
+| `SIGNAL_API_BASE_URL` | `http://127.0.0.1:8000` | Backend origin for local clients and docs. |
+| `SIGNAL_FRONTEND_ORIGIN` | `http://localhost:3000` | Primary browser origin allowed by CORS. |
+| `SIGNAL_EXTRA_CORS_ORIGINS` | `http://127.0.0.1:3000` | Additional explicit browser origins. |
+| `SIGNAL_SCORING_CONFIG_PATH` | `app/agents/scoring.py` | Current scoring source path until external config lands. |
+| `SIGNAL_MAX_AGENT_RETRIES` | `2` | Bounded agent retry count. |
+| `SIGNAL_PROVIDER_RETRY_COUNT` | `2` | Bounded live-provider retry count. |
+| `SIGNAL_PROVIDER_TIMEOUT_SECONDS` | `8` | Live-provider timeout budget. |
+| `SIGNAL_REQUEST_TIMEOUT_SECONDS` | `15` | General backend request timeout budget. |
+
+Optional provider/LLM settings are `SIGNAL_NEWS_API_KEY`,
+`SIGNAL_FRED_API_KEY`, `SIGNAL_OPENAI_API_KEY`,
+`SIGNAL_LITELLM_GATEWAY_URL`, `SIGNAL_LITELLM_GATEWAY_KEY`, and
+`SIGNAL_LLM_MODEL`. Credential values are secret inputs; app code may use only
+presence checks for health or capability branching.
+
 ## Create Lead And Trigger Pipeline
 
 `POST /leads`

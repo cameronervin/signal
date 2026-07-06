@@ -10,6 +10,9 @@ sensitive even when running as a take-home demo.
 - Store API keys and LLM credentials in environment variables only.
 - Do not log full emails, raw request bodies, draft bodies, prompts, tokens,
   secrets, or raw provider payloads.
+- Structured backend logs must pass through the sanitizer in
+  `backend/app/core/logging.py`, which redacts sensitive field names and masks
+  email addresses before JSON output.
 - Do not trust client-supplied score, tier, gate status, source facts, run
   state, or draft eligibility.
 - Do not generate drafts for hard-gate-failed leads.
@@ -37,6 +40,8 @@ data model and explaining the sales workflow value.
 - Route agent LLM calls through the configured provider abstraction.
 - Store LiteLLM gateway URLs, gateway keys, direct-provider keys, and model
   settings in environment variables or secret storage only.
+- LLM key presence is exposed as a boolean settings property only; real
+  credential values must not appear in logs, docs, fixtures, or tests.
 - Do not put provider-specific credentials or real provider payloads in
   fixtures, prompts, code comments, docs, tests, or logs.
 - Pass only the minimum lead and source-fact context needed for scoring and
