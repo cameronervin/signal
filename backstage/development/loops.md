@@ -19,7 +19,10 @@ goals = true
 
 ## Start A Loop
 
-Manual start:
+Issue loop automation is manual-only while the build backlog is being created.
+Creating, assigning, or labeling issues will not start agents right now.
+
+Start a loop:
 
 ```bash
 gh workflow run codex-issue-loop.yml \
@@ -28,7 +31,7 @@ gh workflow run codex-issue-loop.yml \
   -f loop=feature-build
 ```
 
-Automatic start:
+When automatic issue triggers are re-enabled:
 
 1. Create or scope an issue with clear acceptance criteria.
 2. Add exactly one `loop:*` label.
@@ -36,9 +39,9 @@ Automatic start:
 4. Add `agent:ready` last, or assign the issue after it already has
    `agent:ready`.
 
-Issues do not start agents just because they exist. The builder runs only on
-manual dispatch, or when an `assigned`/`labeled` event finds both `agent:ready`
-and a loop label.
+Issues do not start agents just because they exist. With automation paused, the
+builder runs only on manual dispatch. After issue triggers are re-enabled, an
+`assigned`/`labeled` event must find both `agent:ready` and a loop label.
 
 ## Labels That Matter
 

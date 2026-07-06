@@ -59,8 +59,7 @@ be created in the GitHub UI and grouped by `Agent Status`.
 The workflow scaffolds in `.github/workflows/` use `openai/codex-action@v1`.
 Before running them, add `OPENAI_API_KEY` as a repository Actions secret.
 
-- `Codex issue loop` runs manually or when an issue with a loop label is
-  assigned or labeled `agent:ready`.
+- `Codex issue loop` is manual-only while the build backlog is being created.
 - `Codex PR review` is manual-only while the scaffold stabilizes.
 - `Codex PR babysitter` runs manually or when a trusted reviewer comments
   `@codex fix`.

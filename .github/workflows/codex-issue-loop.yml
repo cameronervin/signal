@@ -10,8 +10,8 @@ on:
         description: Loop name, such as feature-build or bugfix
         required: true
         default: feature-build
-  issues:
-    types: [assigned, labeled]
+  # Issue event triggers are paused while the build backlog is being created.
+  # Re-enable `issues: [assigned, labeled]` after intake is stable.
 
 permissions:
   contents: write
