@@ -37,3 +37,13 @@ Lead with findings:
 
 If no findings, say that clearly and note residual test or manual verification
 gaps.
+
+End with exactly one status line:
+
+```text
+REVIEW_STATUS: needs-fix | clear | human
+```
+
+Use `needs-fix` when there is an actionable P0-P2 finding. Use `human` when the
+PR needs product, credential, risk, or merge judgment. Use `clear` when there
+are no blocking findings.

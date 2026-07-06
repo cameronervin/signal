@@ -1,0 +1,79 @@
+{
+  "defaults": {
+    "model": "gpt-5.5",
+    "max_concurrent_issue_loops": 2,
+    "max_fix_passes": 2,
+    "implementation_timeout_minutes": 45,
+    "review_timeout_minutes": 20,
+    "fix_timeout_minutes": 30,
+    "risk_labels_requiring_human_review": [
+      "risk:scoring-change",
+      "risk:outreach-gate",
+      "risk:data-handling",
+      "risk:external-api"
+    ]
+  },
+  "loops": {
+    "feature-build": {
+      "trigger_policy": "auto_low_risk_or_manual",
+      "sandbox": "workspace-write",
+      "required_context": [
+        "AGENTS.md",
+        "backstage/prd/README.md",
+        "backstage/architecture/overview.md",
+        ".agents/loops/feature-build.loop.md"
+      ],
+      "verification": [
+        "targeted tests",
+        "broader checks when contracts changed"
+      ],
+      "stop_rule": "acceptance criteria pass or blocker is recorded"
+    },
+    "bugfix": {
+      "trigger_policy": "auto_low_risk_or_manual",
+      "sandbox": "workspace-write",
+      "required_context": [
+        "AGENTS.md",
+        ".agents/loops/bugfix.loop.md",
+        "failing test, error output, or reproduction"
+      ],
+      "verification": [
+        "original failure",
+        "nearby regression path"
+      ],
+      "stop_rule": "failure is reproduced, fixed, and protected"
+    },
+    "eval-calibration": {
+      "trigger_policy": "manual_or_human_reviewed",
+      "sandbox": "workspace-write",
+      "required_context": [
+        "AGENTS.md",
+        ".agents/loops/eval-calibration.loop.md",
+        "backstage/prd/02-technical-docs/01-signal/scoring.md",
+        "backstage/prd/02-technical-docs/01-signal/eval-framework.md"
+      ],
+      "verification": [
+        "fixture graph or service test",
+        "tier and explanation stability"
+      ],
+      "stop_rule": "expected tier and explanation are stable"
+    },
+    "frontend-fidelity": {
+      "trigger_policy": "auto_low_risk_or_manual",
+      "sandbox": "workspace-write",
+      "required_context": [
+        "AGENTS.md",
+        ".agents/loops/frontend-fidelity.loop.md",
+        "backstage/design/README.md",
+        ".agents/style/design-tokens.md",
+        ".agents/style/ui-patterns.md"
+      ],
+      "verification": [
+        "desktop layout",
+        "narrow layout",
+        "accessibility and text-fit checks"
+      ],
+      "stop_rule": "surface matches design intent with no overlap"
+    }
+  }
+}

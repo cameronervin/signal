@@ -1,8 +1,9 @@
 # Agent Loops
 
-Signal uses GitHub issues as the queue for Codex build loops. A loop starts
-from one bounded issue, creates a branch, opens a PR, gets reviewed, accepts
-fix passes, and stops at the merge gate.
+Signal uses GitHub issues, labels, pull requests, CI, and workflow artifacts as
+the durable state machine for Codex build loops. The current loop contract lives
+in `.agents/loops/_loop-contract.md`; machine-readable defaults live in
+`.agents/loops/manifest.yml`.
 
 ## Agent Defaults
 
@@ -19,10 +20,12 @@ goals = true
 
 ## Start A Loop
 
-Issue loop automation is manual-only while the build backlog is being created.
-Creating, assigning, or labeling issues will not start agents right now.
+Low-risk issue-form submissions can self-start after the intake normalizer
+validates required fields and applies labels. High-risk work remains in
+`agent:needs-human` until a human explicitly applies `review:human` and
+`agent:ready`, or manually dispatches the loop workflow.
 
-Start a loop:
+Manual start:
 
 ```bash
 gh workflow run codex-issue-loop.yml \
@@ -31,17 +34,13 @@ gh workflow run codex-issue-loop.yml \
   -f loop=feature-build
 ```
 
-When automatic issue triggers are re-enabled:
+Automatic start requires:
 
-1. Create or scope an issue with clear acceptance criteria.
-2. Add exactly one `loop:*` label.
-3. Add priority, type, surface, risk, and review labels.
-4. Add `agent:ready` last, or assign the issue after it already has
-   `agent:ready`.
-
-Issues do not start agents just because they exist. With automation paused, the
-builder runs only on manual dispatch. After issue triggers are re-enabled, an
-`assigned`/`labeled` event must find both `agent:ready` and a loop label.
+1. A complete agent-loop issue form.
+2. Exactly one `loop:*` label after normalization.
+3. Priority, type, surface, and risk labels after normalization.
+4. `agent:ready`.
+5. No active `agent:working`, `agent:reviewing`, or `agent:merge-ready` state.
 
 ## Labels That Matter
 
@@ -49,21 +48,20 @@ builder runs only on manual dispatch. After issue triggers are re-enabled, an
 - `loop:bugfix`: focused defect fix.
 - `loop:eval-calibration`: scoring, prompt, fixture, or eval tuning.
 - `loop:frontend-fidelity`: visual and interaction polish.
+- `agent:needs-human`: intake or risk gate needs human action.
 - `agent:ready`: launchable work.
 - `agent:working`: implementation is running.
-- `agent:reviewing`: PR is open for review.
-- `agent:needs-fix`: comments or CI need another pass.
+- `agent:reviewing`: PR is open and under review.
+- `agent:needs-fix`: review comments or CI need another pass.
+- `agent:fix-pass-1`, `agent:fix-pass-2`: consumed fix-pass budget.
 - `agent:merge-ready`: checks and review are satisfied.
 - `agent:blocked`: workflow needs human input or external state.
 
-Use `agent:needs-human` for intake items that are not ready to run.
-
 ## Review And Fix Passes
 
-PRs created by the issue loop get `review:codex`.
-
-During scaffold and early product build, Codex PR review is manual-only. Run it
-when a PR has enough implementation surface to inspect:
+PRs created by the issue loop get `review:codex` and `agent:reviewing`.
+`codex-pr-review.yml` runs automatically for labeled loop PRs and can still be
+run manually:
 
 ```bash
 gh workflow run codex-pr-review.yml \
@@ -71,17 +69,26 @@ gh workflow run codex-pr-review.yml \
   -f pr_number=123
 ```
 
-Turn automatic PR review back on after several low-risk loop PRs are stable.
+The review agent ends with `REVIEW_STATUS: needs-fix`, `clear`, or `human`.
+`needs-fix` adds `agent:needs-fix`; `human` adds a human review gate.
 
-To ask the babysitter for a fix pass, comment on the PR:
+The babysitter can run from:
 
-```text
-@codex fix
-```
+- A failed `CI` workflow for an open loop PR.
+- A PR labeled `agent:needs-fix`.
+- A trusted collaborator comment containing `@codex fix`.
+- Manual workflow dispatch.
 
-The babysitter checks out the PR branch, applies a focused fix, commits, and
-pushes back to the same PR. Re-run the review workflow manually when you want
-another Codex review pass.
+Fix passes are capped at two per PR. After `agent:fix-pass-2`, another fix
+request marks the PR `agent:blocked`.
+
+## Loop Artifacts
+
+Each Codex workflow uploads `.codex-run/` as a GitHub Actions artifact. The
+important file is `.codex-run/loop-result.json`, which records issue/PR ids,
+loop type, status, model, timestamps, changed files, verification, docs state,
+risk labels, blockers, and fix-pass count. The issue loop also updates the PR
+body from this artifact.
 
 ## Merge Rules
 
@@ -95,8 +102,10 @@ Keep high-risk work human-reviewed:
 - `risk:data-handling`
 - `risk:external-api`
 
+No workflow auto-merges.
+
 ## Safe Operating Cadence
 
-Start with one to three ready issues at a time. A scoping agent may create many
-issues, but they should stay in `agent:needs-human` until you deliberately add
-`agent:ready`.
+Start with one or two ready issues at a time. The manifest caps concurrent issue
+loops at two. A scoping agent may create many issues, but they should remain in
+`agent:needs-human` until normalized and deliberately launchable.

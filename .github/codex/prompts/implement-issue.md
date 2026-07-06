@@ -13,6 +13,8 @@ Read:
 - `backstage/prd/README.md`
 - `backstage/architecture/overview.md`
 - `.codex-run/issue.json`
+- `.agents/loops/_loop-contract.md`
+- `.agents/loops/manifest.yml`
 - The relevant loop file in `.agents/loops/`
 - The applicable rules under `.agents/rules/`
 - The issue title, body, labels, and linked docs or files
@@ -47,3 +49,11 @@ Report:
 - Verification commands and results
 - Docs updated or why not needed
 - Open risks or blockers
+
+End with:
+
+```text
+LOOP_STATUS: completed | blocked
+DOCS_UPDATED: yes | no | not-needed
+BLOCKERS: none | <short blocker>
+```

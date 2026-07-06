@@ -10,35 +10,39 @@ on:
         description: Loop name, such as feature-build or bugfix
         required: true
         default: feature-build
-  # Issue event triggers are paused while the build backlog is being created.
-  # Re-enable `issues: [assigned, labeled]` after intake is stable.
+  issues:
+    types: [opened, labeled, assigned]
 
 permissions:
   contents: write
   issues: write
   pull-requests: write
 
+concurrency:
+  group: signal-issue-loop-${{ inputs.issue_number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: false
+
 jobs:
   implement:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Resolve issue and loop
+
+      - name: Resolve issue
         id: issue
         env:
           GH_TOKEN: ${{ github.token }}
           DISPATCH_ISSUE_NUMBER: ${{ inputs.issue_number }}
-          DISPATCH_LOOP: ${{ inputs.loop }}
           EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
-          EVENT_NAME: ${{ github.event_name }}
         run: |
           mkdir -p .codex-run
           ISSUE_NUMBER="${DISPATCH_ISSUE_NUMBER:-$EVENT_ISSUE_NUMBER}"
           if [ -z "$ISSUE_NUMBER" ]; then
             echo "::notice::No issue number found for this event."
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "should_continue=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -47,33 +51,29 @@ jobs:
             > .codex-run/issue.json
 
           ISSUE_TITLE="$(jq -r '.title' .codex-run/issue.json)"
-          LABELS="$(jq -r '.labels[].name' .codex-run/issue.json)"
-          LOOP_LABEL="$(printf '%s\n' "$LABELS" | sed -n 's/^loop://p' | head -n 1)"
-          LOOP="${DISPATCH_LOOP:-$LOOP_LABEL}"
-
-          if [ "$EVENT_NAME" != "workflow_dispatch" ] && ! printf '%s\n' "$LABELS" | grep -qx "agent:ready"; then
-            echo "::notice::Issue #$ISSUE_NUMBER is not agent:ready; skipping."
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if [ -z "$LOOP" ]; then
-            echo "::notice::Issue #$ISSUE_NUMBER has no loop label and no manual loop input; skipping."
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
           SLUG="$(printf '%s' "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-//;s/-$//' | cut -c1-48)"
           BRANCH="codex/issue-${ISSUE_NUMBER}-${SLUG:-work}"
 
-          echo "should_run=true" >> "$GITHUB_OUTPUT"
-          echo "number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "title=$ISSUE_TITLE" >> "$GITHUB_OUTPUT"
-          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
-          echo "loop=$LOOP" >> "$GITHUB_OUTPUT"
+          {
+            echo "should_continue=true"
+            echo "number=$ISSUE_NUMBER"
+            echo "title=$ISSUE_TITLE"
+            echo "branch=$BRANCH"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Normalize and validate issue
+        id: normalize
+        if: ${{ steps.issue.outputs.should_continue == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_LOOP: ${{ inputs.loop }}
+        run: bash .github/scripts/normalize-agent-issue.sh
+
       - name: Check OpenAI key
         id: openai
-        if: ${{ steps.issue.outputs.should_run == 'true' }}
+        if: ${{ steps.normalize.outputs.should_run == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -86,14 +86,17 @@ jobs:
           else
             echo "available=true" >> "$GITHUB_OUTPUT"
           fi
+
       - uses: actions/setup-node@v4
         if: ${{ steps.openai.outputs.available == 'true' }}
         with:
           node-version: 24
+
       - uses: actions/setup-python@v5
         if: ${{ steps.openai.outputs.available == 'true' }}
         with:
           python-version: "3.12"
+
       - name: Install toolchains and dependencies
         if: ${{ steps.openai.outputs.available == 'true' }}
         run: |
@@ -102,6 +105,7 @@ jobs:
           pnpm install --frozen-lockfile
           python -m pip install --upgrade pip uv
           cd backend && uv sync --frozen
+
       - name: Prepare branch
         if: ${{ steps.openai.outputs.available == 'true' }}
         env:
@@ -115,20 +119,24 @@ jobs:
           else
             git checkout -b "$BRANCH"
           fi
-          gh issue edit "$ISSUE_NUMBER" --remove-label "agent:ready" --add-label "agent:working" || true
+          gh issue edit "$ISSUE_NUMBER" --remove-label "agent:ready,agent:needs-human,agent:blocked" || true
+          gh issue edit "$ISSUE_NUMBER" --add-label "agent:working" || true
+
       - name: Run Codex implementation loop
+        id: codex
         if: ${{ steps.openai.outputs.available == 'true' }}
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           model: gpt-5.5
-          permission-profile: ":workspace"
+          sandbox: workspace-write
+          safety-strategy: drop-sudo
+          output-file: .codex-run/codex-implementation.md
           prompt-file: .github/codex/prompts/implement-issue.md
         env:
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
-          LOOP: ${{ steps.issue.outputs.loop }}
+          LOOP: ${{ steps.normalize.outputs.loop }}
+
       - name: Commit, push, and open pull request
         if: ${{ steps.openai.outputs.available == 'true' }}
         id: pr
@@ -137,12 +145,20 @@ jobs:
           ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
           ISSUE_TITLE: ${{ steps.issue.outputs.title }}
           BRANCH: ${{ steps.issue.outputs.branch }}
+          LOOP: ${{ steps.normalize.outputs.loop }}
+          RISK_LABELS: ${{ steps.normalize.outputs.risk_labels }}
+          VERIFICATION_SUMMARY: ${{ steps.codex.outputs.final-message }}
         run: |
           if [ -z "$(git status --porcelain)" ]; then
+            LOOP_STATUS="no_changes" BLOCKERS="Codex completed without producing file changes." \
+              bash .github/scripts/write-loop-result.sh
             gh issue comment "$ISSUE_NUMBER" --body "Codex issue loop completed without producing file changes. Marking for human review."
             gh issue edit "$ISSUE_NUMBER" --remove-label "agent:working" --add-label "agent:needs-human" || true
+            echo "created=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+
+          git diff --name-only > .codex-run/changed-files.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
@@ -153,8 +169,25 @@ jobs:
             --body "Closes #${ISSUE_NUMBER}" \
             --label "review:codex" \
             --label "agent:reviewing")"
-          echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
+          PR_NUMBER="${PR_URL##*/}"
+          {
+            echo "created=true"
+            echo "number=$PR_NUMBER"
+            echo "url=$PR_URL"
+          } >> "$GITHUB_OUTPUT"
+          PR_NUMBER="$PR_NUMBER" LOOP_STATUS="completed" BLOCKERS="" \
+            bash .github/scripts/write-loop-result.sh
+          PR_NUMBER="$PR_NUMBER" bash .github/scripts/update-loop-pr-body.sh
           gh issue edit "$ISSUE_NUMBER" --remove-label "agent:working" --add-label "agent:reviewing" || true
+
+      - name: Upload loop artifact
+        if: ${{ steps.openai.outputs.available == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-loop-${{ steps.issue.outputs.number }}
+          path: .codex-run/
+          if-no-files-found: ignore
+
       - name: Report workflow failure
         if: ${{ failure() }}
         env:

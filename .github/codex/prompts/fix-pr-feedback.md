@@ -10,6 +10,8 @@ Read:
 - `AGENTS.md`
 - `.codex-run/pr.json`
 - `.codex-run/pr.diff`
+- `.agents/loops/_loop-contract.md`
+- `.agents/loops/manifest.yml`
 - The PR title, body, review comments, unresolved threads, and CI failures
 - The original linked issue
 - Relevant loop and rule files under `.agents/`
@@ -31,3 +33,15 @@ Read:
 - Do not bypass the human review gate.
 - Do not resolve review comments by deleting coverage or weakening assertions.
 - Do not merge the PR.
+
+## Final Output
+
+Report what was fixed, what was verified, and what still needs a human.
+
+End with:
+
+```text
+LOOP_STATUS: completed | blocked
+DOCS_UPDATED: yes | no | not-needed
+BLOCKERS: none | <short blocker>
+```
