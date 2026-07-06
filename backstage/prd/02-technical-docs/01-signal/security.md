@@ -13,6 +13,10 @@ sensitive even when running as a take-home demo.
 - Structured backend logs must pass through the sanitizer in
   `backend/app/core/logging.py`, which redacts sensitive field names and masks
   email addresses before JSON output.
+- Public-data adapters must return sanitized `ProviderWarning` reason codes and
+  normalized facts only; do not expose raw provider payloads, request keys,
+  secrets, tokens, prompts, full emails, or provider stack traces in warnings,
+  logs, cache records, fixtures, or API responses.
 - Do not trust client-supplied score, tier, gate status, source facts, run
   state, or draft eligibility.
 - Do not generate drafts for hard-gate-failed leads.
