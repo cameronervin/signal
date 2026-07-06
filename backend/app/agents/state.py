@@ -22,4 +22,3 @@ class SignalState(TypedDict):
     draft: NotRequired[DraftEmail | None]
     related_leads: NotRequired[list[RelatedLead]]
     activity_log: NotRequired[list[str]]
-    degraded_reasons: NotRequired[list[str]]

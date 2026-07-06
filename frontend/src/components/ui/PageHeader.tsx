@@ -9,11 +9,11 @@ interface Props {
 export function PageHeader({ title, subtitle, actions }: Props) {
   return (
     <header className="topbar">
-      <div className="topbar-title">
+      <div>
         <h1>{title}</h1>
         {subtitle && <p>{subtitle}</p>}
       </div>
-      {actions && <div className="topbar-actions">{actions}</div>}
+      {actions}
     </header>
   );
 }

@@ -28,7 +28,6 @@ coverage/
 # Agent workspaces
 .agents/plans/*.tmp.md
 .agents/checkpoints/
-.codex-run/
 
 # Demo cache
 backend/.cache/
