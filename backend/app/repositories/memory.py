@@ -7,6 +7,10 @@ class InMemorySignalRepository:
         self._leads: dict[str, LeadResponse] = {}
         self._runs: dict[str, AgentRunResponse] = {}
 
+    async def reset(self) -> None:
+        self._leads.clear()
+        self._runs.clear()
+
     async def save_lead(self, lead: LeadResponse) -> None:
         self._leads[lead.id] = lead
 

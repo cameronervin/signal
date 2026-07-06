@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field
 
+from app.schemas.run import AgentRunResponse
+
 Tier = Literal["A", "B", "C"]
 GateStatus = Literal["passed", "failed"]
 DraftReviewStatus = Literal["needs_review", "copied", "exported"]
@@ -109,3 +111,19 @@ class LeadResponse(BaseModel):
     draft: DraftEmail | None = None
     related_leads: list[RelatedLead] = Field(default_factory=list)
     run_id: str
+    run: AgentRunResponse | None = None
+
+
+class SeedLeadResult(BaseModel):
+    handle: str
+    lead_id: str
+    run_id: str
+    tier: Tier
+    gate_status: GateStatus
+    draft_available: bool
+
+
+class SeedLeadsResponse(BaseModel):
+    reset: bool
+    count: int
+    seeds: list[SeedLeadResult]

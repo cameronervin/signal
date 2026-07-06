@@ -9,7 +9,8 @@ behavior do not regress.
 Backend tests should cover:
 
 - Health endpoint.
-- Lead insertion triggers a run and returns enriched/scored output.
+- Lead insertion triggers a run and returns enriched/scored output with the
+  current run summary attached to the lead response.
 - A-tier lead receives high score, why-line, talking points, related context,
   and cited draft.
 - B-tier lead receives medium score with clear weaker-urgency explanation.
@@ -19,8 +20,9 @@ Backend tests should cover:
 - LiteLLM gateway mode and direct/local mode use the provider abstraction and
   fail safely on missing config.
 - LLM outage returns safe fallback behavior for gate-passed leads.
-- Worker mode enqueues identifier-only tasks, eager mode works without a broker,
-  and run status progresses through queued/running/terminal states.
+- Worker-mode service tests verify identifier-only dispatch metadata, eager
+  fixture fallback works without a broker, and run summaries expose execution
+  mode, task id, queue, stage, and sanitized activity logs.
 - Draft personalization claims map to source facts.
 - Copy/export action cannot send outreach.
 
@@ -40,9 +42,10 @@ Maintain fixtures for:
 - A-tier large-portfolio senior contact with strong market and recent trigger.
 - B-tier good fit without strong urgency.
 - C-tier low-fit lead without a hard gate.
-- Hard-gate-failed lead.
-- Missing news/trigger edge case.
+- C-tier low-fit lead.
 - Warning-only lead where draft remains allowed.
+- Missing news/trigger edge case where draft remains allowed.
+- Hard-gate-failed lead with no draft.
 - LLM-unavailable fallback case.
 - Worker queued/running/succeeded case.
 - Worker dispatch failure or broker-unavailable fallback case.

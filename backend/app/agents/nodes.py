@@ -13,7 +13,10 @@ async def deterministic_enrichment_node(state: SignalState) -> dict:
         "enrichment": enrichment,
         "gates": gates,
         "flags": flags,
-        "activity_log": ["deterministic_enrichment: completed"],
+        "activity_log": [
+            *state.get("activity_log", []),
+            "deterministic_enrichment: completed",
+        ],
     }
 
 

@@ -6,7 +6,7 @@
 | Live | POST | `/api/v1/leads` | Trigger enrichment for a new lead |
 | Live | GET | `/api/v1/leads` | List enriched leads |
 | Live | GET | `/api/v1/leads/{lead_id}` | Get lead detail |
-| Planned | POST | `/api/v1/leads/seed` | Reset or insert deterministic demo leads |
+| Live | POST | `/api/v1/leads/seed` | Reset deterministic demo leads |
 | Planned | POST | `/api/v1/leads/{lead_id}/draft/copy` | Record reviewed draft copy action |
 | Planned | POST | `/api/v1/leads/{lead_id}/draft/export` | Record reviewed draft export action |
 | Live | GET | `/api/v1/agent-runs` | List agent runs |

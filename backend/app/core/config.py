@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     provider_retry_count: int = Field(default=2, ge=0, le=5)
     provider_timeout_seconds: float = Field(default=8.0, gt=0, le=60)
     request_timeout_seconds: float = Field(default=15.0, gt=0, le=120)
+    agent_execution_mode: Literal["inline", "eager", "worker"] = "inline"
+    celery_agent_queue: str = "signal-agent-runs"
 
     @property
     def cors_origins(self) -> list[str]:

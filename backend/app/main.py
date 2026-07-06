@@ -40,7 +40,10 @@ def create_app(
     )
     app.dependency_overrides[get_settings] = lambda: app_settings
     if lead_service is not None:
-        app.dependency_overrides[get_lead_service] = lambda: lead_service
+        async def override_lead_service() -> LeadService:
+            return lead_service
+
+        app.dependency_overrides[get_lead_service] = override_lead_service
     app.include_router(api_router, prefix="/api/v1")
     return app
 

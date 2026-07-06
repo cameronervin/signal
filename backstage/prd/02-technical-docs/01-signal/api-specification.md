@@ -75,9 +75,12 @@ Behavior:
 - Persists normalized lead, enrichment, score, draft, related context, task id,
   execution mode, and run state in the v1 repository boundary as they become
   available.
-- Returns the lead response with the current run summary. In worker mode, the
-  initial response may show queued/running state before enrichment and scoring
-  are complete; clients should poll the lead or run endpoints.
+- Returns the lead response with the current run summary in `run`. The current
+  implementation completes fixture-backed inline/eager output before returning.
+  Worker-mode service calls record identifier-only dispatch metadata on the run
+  while preserving eager fixture fallback when no broker dispatcher is
+  installed; the full Celery worker module remains a planned infrastructure
+  slice.
 
 Response: `201 LeadResponse`
 
@@ -122,10 +125,13 @@ Lead detail includes:
 
 Behavior:
 
-- Resets or inserts deterministic fixture leads for A, B, C, warning-only, and
-  hard-gate-failed examples.
+- Resets deterministic fixture leads for A-tier, B-tier, C-tier, warning-only,
+  missing-trigger, and hard-gate-failed examples.
 - Does not require live public API or LLM uptime.
-- Returns created or reset lead ids and run ids.
+- Returns stable handles, lead ids, run ids, tiers, gate status, and draft
+  availability. Current stable handles are `a_tier`, `b_tier`, `c_tier`,
+  `warning_only`, `missing_trigger`, and `hard_gate_failed`; lead ids use
+  `seed_<handle>` and run ids use `seed_run_<handle>`.
 
 Response: `SeedLeadsResponse`
 

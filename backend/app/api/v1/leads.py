@@ -1,9 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.schemas.lead import LeadCreate, LeadResponse
+from app.schemas.lead import LeadCreate, LeadResponse, SeedLeadsResponse
 from app.services.lead_service import LeadService, get_lead_service
 
 router = APIRouter()
+seed_router = APIRouter()
+
+
+@seed_router.post(
+    "/leads/seed",
+    response_model=SeedLeadsResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def seed_leads(
+    service: LeadService = Depends(get_lead_service),
+) -> SeedLeadsResponse:
+    return await service.seed_demo_leads()
 
 
 @router.post("", response_model=LeadResponse, status_code=status.HTTP_201_CREATED)
