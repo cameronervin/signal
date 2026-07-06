@@ -57,6 +57,11 @@ Tokened publish and merge steps must use `AGENT_GITHUB_TOKEN`, not the default
 Actions `GITHUB_TOKEN`, so GitHub runs follow-up CI and review workflows for
 agent-created branches and PRs.
 
+Autonomous issue and fix-publish steps must refuse agent-generated changes to
+`.github/workflows/`, `.github/scripts/`, or `.github/codex/prompts/` before
+using `AGENT_GITHUB_TOKEN`. Control-plane changes require a trusted maintainer
+path.
+
 High-risk labels require human review before merge and before autonomous launch
 unless manually dispatched by a repository maintainer:
 

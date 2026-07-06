@@ -122,6 +122,9 @@ Autonomous publish, fix-publish, and merge steps require the repository secret
 `AGENT_GITHUB_TOKEN`. The default Actions `GITHUB_TOKEN` is intentionally not
 used for those steps because GitHub suppresses follow-up PR workflows from
 branches and PRs created by the default token.
+Issue and fix-publish jobs refuse autonomous patches that touch
+`.github/workflows/`, `.github/scripts/`, or `.github/codex/prompts/`; those
+control-plane changes need a trusted maintainer path.
 
 ## Safe Operating Cadence
 

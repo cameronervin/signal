@@ -333,6 +333,25 @@ jobs:
             exit 1
           fi
 
+      - name: Reject autonomous control-plane patch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.fix.outputs.pr_number }}
+        run: |
+          if grep -Eq '^(\.github/workflows/|\.github/scripts/|\.github/codex/prompts/)' .codex-run/changed-files.txt; then
+            blocked_files="$(grep -E '^(\.github/workflows/|\.github/scripts/|\.github/codex/prompts/)' .codex-run/changed-files.txt | sed 's/^/- `/' | sed 's/$/`/')"
+            gh pr edit "$PR_NUMBER" --remove-label "agent:needs-fix,agent:working" --add-label "agent:needs-human,review:human" || true
+            comment_file="$(mktemp)"
+            {
+              echo "Codex fix pass produced control-plane changes that require a trusted maintainer path before publishing with AGENT_GITHUB_TOKEN:"
+              echo
+              echo "$blocked_files"
+            } > "$comment_file"
+            gh pr comment "$PR_NUMBER" --body-file "$comment_file"
+            echo "::error::Autonomous fix-pass publish refused control-plane changes."
+            exit 1
+          fi
+
       - name: Commit and push fix pass
         env:
           GH_TOKEN: ${{ secrets.AGENT_GITHUB_TOKEN }}

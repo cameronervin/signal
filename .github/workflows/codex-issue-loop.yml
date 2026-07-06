@@ -273,6 +273,25 @@ jobs:
             exit 1
           fi
 
+      - name: Reject autonomous control-plane patch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ needs.implement.outputs.issue_number }}
+        run: |
+          if grep -Eq '^(\.github/workflows/|\.github/scripts/|\.github/codex/prompts/)' .codex-run/changed-files.txt; then
+            blocked_files="$(grep -E '^(\.github/workflows/|\.github/scripts/|\.github/codex/prompts/)' .codex-run/changed-files.txt | sed 's/^/- `/' | sed 's/$/`/')"
+            gh issue edit "$ISSUE_NUMBER" --remove-label "agent:working,agent:ready" --add-label "agent:needs-human,review:human" || true
+            comment_file="$(mktemp)"
+            {
+              echo "Codex issue loop produced control-plane changes that require a trusted maintainer path before publishing with AGENT_GITHUB_TOKEN:"
+              echo
+              echo "$blocked_files"
+            } > "$comment_file"
+            gh issue comment "$ISSUE_NUMBER" --body-file "$comment_file"
+            echo "::error::Autonomous issue-loop publish refused control-plane changes."
+            exit 1
+          fi
+
       - name: Commit, push, and open pull request
         id: pr
         env:
