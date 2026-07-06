@@ -10,17 +10,19 @@ The take-home video should explain:
 
 1. Which public APIs are used and why.
 2. How the lead insertion trigger runs enrichment, scoring, drafting, and
-   related-context building.
+   related-context building, including the Celery worker path for agent runs.
 3. What assumptions drive the 60/40 scoring rubric.
-4. How the queue, why-line, source facts, talking points, and cited draft help a
+4. How LiteLLM gateway mode centralizes agent LLM access while fixture/direct
+   modes keep the demo reliable.
+5. How the queue, why-line, source facts, talking points, and cited draft help a
    sales rep act faster.
-5. How the tool would be tested and rolled out in a sales org.
+6. How the tool would be tested and rolled out in a sales org.
 
 ## Stages
 
 | Stage | Timeline | Scope | Exit Criteria |
 | --- | --- | --- | --- |
-| MVP build and internal validation | Week 1 | Build trigger, enrichment, scoring, LLM draft, queue/detail, fixtures, and docs | Seeded demo shows A/B/C and gate-failed leads; score and draft assumptions are documented |
+| MVP build and internal validation | Week 1 | Build trigger, worker execution, enrichment, scoring, LLM gateway/draft, queue/detail, fixtures, and docs | Seeded demo shows A/B/C and gate-failed leads; run status, score, and draft assumptions are documented |
 | Shadow mode | Weeks 2-3 | Run Signal against inbound leads without changing rep behavior | Baseline speed-to-lead, response rate, worked leads per rep, and meeting conversion are captured |
 | Pilot | Weeks 4-7 | 3-5 SDRs use queue and reviewed draft copy/export | A-tier first-action time improves; why-line accuracy and draft usefulness meet targets |
 | Graduated rollout | Weeks 8-10 | Expand by team or segment; pilot SDRs help enable peers | RevOps or GTM owner has runbook and calibration process |
@@ -52,6 +54,7 @@ The take-home video should explain:
 - Drafts contain unsupported or hallucinated personalization.
 - Enrichment latency breaks the speed-to-lead goal.
 - Provider failures regularly block the queue.
+- Worker or gateway failures hide the run state instead of degrading visibly.
 - SDRs do not trust the why-line or score component explanation.
 
 ## Demo Plan
@@ -59,7 +62,7 @@ The take-home video should explain:
 - Pre-seed a lead list with A, B, C, warning-only, and gate-failed outcomes.
 - Show lead insertion or fixture reset.
 - Show the agent run progressing through enrichment, LLM scoring/drafting,
-  related context, and review gate.
+  related context, worker task state, and review gate.
 - Open the ranked queue and explain tier ordering.
 - Open a lead detail page and show score components, source facts, talking
   points, related context, and cited draft.

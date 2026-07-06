@@ -16,7 +16,11 @@ Backend tests should cover:
 - C-tier non-gate lead receives low score with no false urgency.
 - Hard-gate-failed lead receives C-tier, flags, and no draft.
 - Provider outage returns cache, fixture, warning, or no-data state.
+- LiteLLM gateway mode and direct/local mode use the provider abstraction and
+  fail safely on missing config.
 - LLM outage returns safe fallback behavior for gate-passed leads.
+- Worker mode enqueues identifier-only tasks, eager mode works without a broker,
+  and run status progresses through queued/running/terminal states.
 - Draft personalization claims map to source facts.
 - Copy/export action cannot send outreach.
 
@@ -40,6 +44,8 @@ Maintain fixtures for:
 - Missing news/trigger edge case.
 - Warning-only lead where draft remains allowed.
 - LLM-unavailable fallback case.
+- Worker queued/running/succeeded case.
+- Worker dispatch failure or broker-unavailable fallback case.
 
 ## Manual Demo Checks
 
@@ -50,7 +56,7 @@ Maintain fixtures for:
   draft.
 - Copy/export updates review state without sending outreach.
 - Run detail shows deterministic enrichment, LLM scoring/drafting, related
-  context, and review gate.
+  context, worker task state, and review gate.
 
 ## Calibration Checks
 

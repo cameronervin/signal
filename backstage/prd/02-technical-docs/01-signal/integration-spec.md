@@ -16,7 +16,25 @@ fixture fallbacks for demo reliability.
 | Wikipedia API | Company background and scale hints | Required company-context adapter |
 | WalkScore or local-context equivalent | Walkability/density proxy | Required adapter or fixture-backed proxy |
 | DNS/MX lookup | Corporate email quality gate | Required domain-quality adapter |
-| LLM API | Draft generation and agent reasoning | Required agent capability with safe fallback behavior |
+| LLM gateway/API | Draft generation and agent reasoning | Required agent capability through LiteLLM gateway mode with safe fallback behavior |
+
+## LLM Gateway
+
+Signal v1 includes a provider abstraction for agent LLM calls.
+
+| Mode | Purpose | Required Config |
+| --- | --- | --- |
+| `litellm` | Normal gateway mode through a LiteLLM OpenAI-compatible proxy | `LLM_PROVIDER_MODE`, `LLM_CHAT_MODEL`, `LITELLM_BASE_URL`, `LITELLM_API_KEY`, common timeout/token settings |
+| `direct` | Local/test or explicit break-glass provider access | `LLM_PROVIDER_MODE`, `LLM_DIRECT_PROVIDER`, selected provider API key, common timeout/token settings |
+
+Gateway model aliases should be Signal-neutral, such as `signal-chat` and
+`signal-fast`. Provider-specific model ids and credentials belong in
+environment variables, gateway config, or secret storage, not in code, prompts,
+fixtures, tests, or committed docs.
+
+The scope should follow the user's `cameronervin/playbook` GitHub repo
+direction for gateway/provider factories, direct break-glass mode, and
+OpenAI-compatible gateway clients while keeping Signal domain language neutral.
 
 ## Adapter Rules
 
@@ -57,8 +75,34 @@ V1 uses `POST /api/v1/leads` as the lead-insertion trigger. In production, a CRM
 form, sheet, or workflow automation can point at the same endpoint without
 changing the enrichment engine.
 
-A scheduled batch is acceptable as a future alternative, but the v1 spec centers
-on the insertion trigger because it best supports speed-to-lead.
+The trigger can run inline/eager for demo reliability or enqueue a Celery worker
+task for agent execution. A scheduled batch is acceptable as a future
+alternative, but the v1 spec centers on the insertion trigger because it best
+supports speed-to-lead.
+
+## Worker Infrastructure
+
+Signal v1 includes a Celery worker for agent run execution only.
+
+Required configuration:
+
+- `SIGNAL_AGENT_EXECUTION_MODE`: `inline`, `eager`, or `worker`.
+- `CELERY_BROKER_URL`: Valkey/Redis broker URL.
+- `CELERY_RESULT_BACKEND`: Valkey/Redis result backend URL.
+- `CELERY_AGENT_QUEUE`: named agent execution queue.
+- `CELERY_TASK_MAX_RETRIES`, `CELERY_TASK_RETRY_COUNTDOWN`,
+  `CELERY_TASK_SOFT_TIME_LIMIT`, `CELERY_TASK_HARD_TIME_LIMIT`, and
+  `CELERY_WORKER_LOG_LEVEL`.
+
+Worker requirements:
+
+- Use JSON serialization and named task routes.
+- Track started/result states so run APIs can show progress.
+- Use late ACKs, worker-lost rejection, publish retry, prefetch fairness, and
+  bounded visibility/timeouts.
+- Send only identifiers and minimal metadata through the broker.
+- Preserve an eager/local path for tests and demos when the broker is not
+  running.
 
 ## Demo Reliability
 
@@ -68,4 +112,5 @@ For the demo:
 - Cache API responses for demo leads.
 - Use fixtures when providers are down, missing keys, or rate-limited.
 - Keep LLM draft fallback available.
+- Keep worker eager/fixture fallback available for local demos.
 - Never block the queue because one provider failed.

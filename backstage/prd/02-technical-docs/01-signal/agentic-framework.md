@@ -17,12 +17,36 @@ START
 The graph is deliberately bounded. There is no open-ended autonomous loop in
 v1.
 
+## Execution Runtime
+
+V1 supports two execution modes:
+
+- `inline` or `eager`: deterministic local/demo/test execution that can run
+  without a broker and return completed fixture outputs when configured.
+- `worker`: API creates a lead and agent run, then dispatches the run to a
+  Celery worker through a Valkey/Redis broker and exposes progress through the
+  agent-run APIs.
+
+The worker path should follow the user's `cameronervin/playbook` GitHub repo
+patterns for backend Celery setup: named queues, JSON serialization, ID-only
+dispatch payloads, late ACKs, worker-lost rejection, bounded time limits, result
+tracking, lazy broker connection, and explicit startup commands. Do not copy
+product copy, branded identifiers, or unrelated domain concepts from that repo
+into Signal.
+
+Celery payloads must contain only identifiers and minimal execution metadata,
+such as `lead_id`, `run_id`, and `execution_mode`. The worker re-loads lead/run
+state through the repository boundary and writes sanitized stage transitions.
+
 ## State
 
 State includes:
 
 - `lead_id`
 - `run_id`
+- `task_id`
+- `execution_mode`
+- `worker_queue`
 - `lead`
 - `sources`
 - `gates`
@@ -36,6 +60,11 @@ State includes:
 - `activity_log`
 
 Nodes return typed partial state updates.
+
+Run status should support at least `queued`, `running`, `degraded`, `succeeded`,
+and `failed` states. Activity logs may name stages and provider categories, but
+must not include raw prompts, draft bodies, full emails, secrets, token payloads,
+or raw provider responses.
 
 ## Node 1 - Deterministic Enrichment
 
@@ -65,6 +94,10 @@ Responsibilities:
 The LLM is required for the target v1 agent node, but the product must define
 safe fallback behavior:
 
+- Agent LLM calls go through a provider abstraction.
+- Normal gateway mode routes through a LiteLLM OpenAI-compatible proxy using
+  configured model aliases, base URL, and gateway key.
+- Direct mode is reserved for local/test or explicit break-glass use.
 - If LLM is unavailable but gates pass, return deterministic score output and a
   clearly marked fallback template draft.
 - If source facts are insufficient for personalization, produce generic copy
@@ -102,3 +135,5 @@ of scope.
 - Provider failures become degraded states, warnings, cached data, or fixtures.
 - Every draft personalization claim maps to `SourceFact` or is omitted.
 - Activity logs show stage progress and degraded provider categories only.
+- Worker dispatch and task logs show ids, counts, stages, and sanitized error
+  types only.

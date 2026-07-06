@@ -42,10 +42,17 @@ Behavior:
 - Validates input.
 - Creates a lead id and agent run id.
 - Triggers the LangGraph enrichment, LLM scoring/drafting, and graph context
-  pipeline.
-- Persists normalized lead, enrichment, score, draft, related context, and run
-  state in the v1 repository boundary.
-- Returns the full lead response.
+  pipeline through the configured execution mode:
+  - `inline`/`eager`: executes immediately for deterministic local/demo/test
+    paths.
+  - `worker`: enqueues a Celery task with identifier-only payload and exposes
+    progress through agent-run APIs.
+- Persists normalized lead, enrichment, score, draft, related context, task id,
+  execution mode, and run state in the v1 repository boundary as they become
+  available.
+- Returns the lead response with the current run summary. In worker mode, the
+  initial response may show queued/running state before enrichment and scoring
+  are complete; clients should poll the lead or run endpoints.
 
 Response: `201 LeadResponse`
 
@@ -143,7 +150,7 @@ Returns current and historical v1 runs.
 Returns one run or `404`.
 
 Run detail includes deterministic enrichment, LLM scoring/drafting, graph build,
-human review, and degraded-provider steps.
+human review, execution mode, task id, queue name, and degraded-provider steps.
 
 ## Planned Beyond V1
 

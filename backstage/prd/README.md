@@ -35,8 +35,12 @@ Anything that does not support those questions is out of scope for v1.
 - Seeded fixture leads for repeatable demo runs.
 - Public API enrichment across geocoding, demographics/economics, local context,
   news/events, company context, domain quality, and LLM drafting.
+- LiteLLM gateway-backed LLM provider mode, with a direct/local mode for
+  development, tests, and explicit break-glass use.
 - LangGraph pipeline: deterministic enrichment, LLM scoring/drafting agent, and
   lightweight related-lead graph builder.
+- Celery worker execution for agent runs, using a Valkey/Redis broker and
+  result backend while preserving fixture/eager demo paths.
 - Config-driven hard gates, 60/40 scoring rubric, multipliers, A/B/C tiers, and
   rep-readable why-lines.
 - SDR queue sorted by tier and score.
@@ -56,7 +60,8 @@ Anything that does not support those questions is out of scope for v1.
 - Durable production storage beyond the demo repository boundary.
 - Paid data dependencies as required demo paths.
 - Full graph database.
-- Fully automated scheduling, cadence, or follow-up workers.
+- Fully automated scheduling, cadence, follow-up, or live-send workers. The v1
+  worker is limited to agent run execution.
 
 ## Non-Negotiables
 
@@ -69,8 +74,8 @@ Anything that does not support those questions is out of scope for v1.
   clearly fall back to generic copy.
 - Public API failures must degrade through cache, fixtures, warnings, or a clear
   no-data state instead of breaking the demo.
-- Raw emails, raw drafts, prompts, provider payloads, API keys, and tokens must
-  not be logged.
+- Raw emails, raw drafts, prompts, provider payloads, broker payload details,
+  API keys, and tokens must not be logged.
 
 ## Docs
 

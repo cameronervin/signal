@@ -125,6 +125,9 @@ The v1 graph is lightweight. A graph database is out of scope.
 - `lead_id`
 - `status`
 - `trigger`
+- `execution_mode`: `inline`, `eager`, or `worker`
+- `task_id`: nullable worker task id
+- `worker_queue`: nullable queue name
 - `current_stage`
 - `steps`
 - `activity_log`
@@ -132,3 +135,5 @@ The v1 graph is lightweight. A graph database is out of scope.
 
 The activity log may show provider categories and stages, but must not include
 raw emails, prompt text, draft bodies, secrets, tokens, or raw provider payloads.
+Celery broker payloads should carry only identifiers and minimal metadata needed
+to re-load this state through the repository boundary.
