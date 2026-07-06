@@ -92,6 +92,28 @@ issue `#1`.
 Keep automatic merging disabled until the review and fix-pass loop has proven
 reliable on several low-risk PRs.
 
+## First Issue Loop Dry Run
+
+Issue `#2` is the first low-risk Codex issue loop dry run. It uses
+`loop:feature-build`, `surface:docs`, and `type:test` labels so the workflow can
+exercise the GitHub automation path without changing product behavior.
+
+The dry run is successful when the `Codex issue loop` workflow:
+
+1. Resolves `.codex-run/issue.json` for issue `#2`.
+2. Prepares a branch named from the issue number and title before Codex runs.
+3. Moves the issue from `agent:ready` to `agent:working` before Codex runs.
+4. Lets Codex leave a docs-only working-tree change.
+5. Commits and pushes the change from GitHub Actions after Codex exits.
+6. Opens a pull request labeled `review:codex` and `agent:reviewing` after
+   Codex exits.
+7. Moves the issue from `agent:working` to `agent:reviewing` after Codex exits.
+
+Verify the pre-Codex branch preparation and `agent:working` label transition in
+the early workflow logs. After Codex exits, verify the commit, push, pull request
+creation, and final `agent:reviewing` transition in GitHub Actions and the
+resulting PR before treating the automation as proven.
+
 ## Merge Gates
 
 `main` is protected. Required status checks, required pull request reviews,
