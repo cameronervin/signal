@@ -1,4 +1,4 @@
-import { BadgeCheck, ChevronRight, Send, SlidersHorizontal } from "lucide-react";
+import { BadgeCheck, ChevronRight, FileText, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -37,7 +37,7 @@ export default function AgentsPage() {
                   <span>
                     <span className="flex items-center gap-3">
                       <span className={`icon-tile ${run.agent.includes("Enrichment") ? "neutral" : ""}`}>
-                        {run.agent.includes("Enrichment") ? <BadgeCheck size={16} /> : <Send size={15} />}
+                        {run.agent.includes("Enrichment") ? <BadgeCheck size={16} /> : <FileText size={15} />}
                       </span>
                       <span>
                         <strong className="block text-sm">{run.agent}</strong>

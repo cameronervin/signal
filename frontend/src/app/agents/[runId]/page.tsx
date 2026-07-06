@@ -1,4 +1,4 @@
-import { ChevronLeft, Pause, Pencil, Send } from "lucide-react";
+import { ChevronLeft, Copy, Pause, Pencil } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -42,7 +42,7 @@ export default async function AgentRunPage({ params }: Props) {
               <Pause size={15} /> Pause
             </button>
             <button className="button primary" type="button">
-              <Send size={15} /> Approve and send
+              <Pencil size={15} /> Review draft
             </button>
           </div>
         }
@@ -85,7 +85,7 @@ export default async function AgentRunPage({ params }: Props) {
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <button className="button primary" type="button">
-                  <Send size={14} /> Approve and send
+                  <Copy size={14} /> Copy reviewed draft
                 </button>
                 <button className="button purple" type="button">
                   <Pencil size={14} /> Edit draft

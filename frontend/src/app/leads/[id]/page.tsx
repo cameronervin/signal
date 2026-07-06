@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronLeft, Copy, MailX, Plus, RefreshCw, Send } from "lucide-react";
+import { AlertTriangle, ChevronLeft, Copy, Download, MailX, Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -158,7 +158,7 @@ export default async function LeadDetailPage({ params }: Props) {
             <div className="surface-card flex flex-col p-5">
               <div className="flex items-center justify-between">
                 <h2 className="section-title">Drafted email</h2>
-                <span className="status-pill">Review and send</span>
+                <span className="status-pill">Review and copy</span>
               </div>
               <div className="draft-meta">
                 <span><strong>To:</strong> {lead.email}</span>
@@ -176,7 +176,7 @@ export default async function LeadDetailPage({ params }: Props) {
                 <button className="button secondary" type="button"><RefreshCw size={15} /> Regenerate</button>
                 <div className="flex gap-2">
                   <button className="button secondary" type="button"><Copy size={15} /> Copy</button>
-                  <button className="button primary" type="button"><Send size={15} /> Send</button>
+                  <button className="button primary" type="button"><Download size={15} /> Export</button>
                 </div>
               </div>
             </div>
