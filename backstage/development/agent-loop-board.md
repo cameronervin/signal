@@ -60,7 +60,13 @@ be created in the GitHub UI and grouped by `Agent Status`.
 ## Automation Setup
 
 The workflow scaffolds in `.github/workflows/` use `openai/codex-action@v1`.
-Before running them, add `OPENAI_API_KEY` as a repository Actions secret.
+Before running them, add these repository Actions secrets:
+
+- `OPENAI_API_KEY` for Codex implementation, review, and fix passes.
+- `AGENT_GITHUB_TOKEN` for agent branch pushes, PR creation, fix-pass pushes,
+  and automerge. Use a bot or maintainer token with repository contents,
+  issues, pull requests, and workflow permissions so PR workflows trigger from
+  agent-created branches.
 
 - `Codex issue loop` validates issue intake, starts maintainer-ready issues,
   creates a branch, opens a PR, writes loop evidence, and moves the issue to
@@ -93,6 +99,11 @@ the token with the reported scopes as well.
 `OPENAI_API_KEY` as a repository Actions secret. They skip with a notice until
 that secret exists.
 
+`Codex issue loop`, `Codex PR babysitter`, and `Codex PR automerge` need
+`AGENT_GITHUB_TOKEN` for tokened publish and merge steps. The default
+`GITHUB_TOKEN` is not enough for the fully autonomous path because GitHub
+suppresses follow-up workflows from PRs and pushes created by that token.
+
 ## Dry Run
 
 Use a low-risk docs or test issue to validate the autonomous path:
@@ -114,6 +125,7 @@ product behavior changes, and leave loop evidence in `.codex-run/loop-result.jso
 
 ## Merge Gates
 
-`main` is protected. Required status checks, required pull request reviews,
-required conversation resolution, admin enforcement, and force-push/deletion
-blocks are enabled.
+`main` is protected. Low-risk agent PRs require the `backend`, `frontend`, and
+Codex `review` status checks, required conversation resolution, admin
+enforcement, and force-push/deletion blocks. High-risk labels still require
+human review before merge.

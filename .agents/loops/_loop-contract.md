@@ -53,6 +53,10 @@ only agent-owned labels allowed by the manifest. The automerge workflow is the
 only component allowed to merge code; implementation and fix-pass agents must
 not merge.
 
+Tokened publish and merge steps must use `AGENT_GITHUB_TOKEN`, not the default
+Actions `GITHUB_TOKEN`, so GitHub runs follow-up CI and review workflows for
+agent-created branches and PRs.
+
 High-risk labels require human review before merge and before autonomous launch
 unless manually dispatched by a repository maintainer:
 
