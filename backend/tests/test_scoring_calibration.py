@@ -7,9 +7,10 @@ from app.agents.fixtures import demo_enrichment
 from app.agents.scoring import (
     evaluate_gates,
     load_default_scoring_rubric,
+    load_scoring_rubric,
     score_lead,
 )
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.repositories.memory import InMemorySignalRepository
 from app.schemas.lead import LeadCreate, ScoreBreakdown
 from app.services.lead_service import LeadService
@@ -158,6 +159,23 @@ def test_scoring_config_path_loads_runtime_rubric(
 
     get_settings.cache_clear()
     load_default_scoring_rubric.cache_clear()
+
+
+def test_env_example_scoring_config_path_loads_default_rubric() -> None:
+    env_example = Path(__file__).resolve().parents[2] / ".env.example"
+    config_line = next(
+        line
+        for line in env_example.read_text(encoding="utf-8").splitlines()
+        if line.startswith("SIGNAL_SCORING_CONFIG_PATH=")
+    )
+    _, config_path = config_line.split("=", maxsplit=1)
+
+    assert config_path == Settings().scoring_config_path
+    assert load_scoring_rubric(config_path).tier_thresholds == {
+        "A": 75,
+        "B": 50,
+        "C": 0,
+    }
 
 
 @pytest.mark.asyncio
