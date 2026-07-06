@@ -3,4 +3,4 @@
 This disposable smoke test verifies that the guarded fix-pass workflow can make
 a tiny docs-only correction on an agent-owned PR.
 
-The second pass should correct teh next deliberately introduced typo.
+The second pass should correct the next deliberately introduced typo.
