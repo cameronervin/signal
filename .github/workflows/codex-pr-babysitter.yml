@@ -65,6 +65,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
 
       - name: Capture and validate PR context
         id: context
@@ -207,9 +208,11 @@ jobs:
       - name: Checkout trusted PR head
         if: ${{ steps.fixpass.outputs.should_run == 'true' }}
         env:
+          GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ steps.context.outputs.pr_number }}
         run: |
-          git fetch --no-tags origin "+refs/pull/$PR_NUMBER/head:pr-$PR_NUMBER"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: bearer $GH_TOKEN" \
+            fetch --no-tags origin "+refs/pull/$PR_NUMBER/head:pr-$PR_NUMBER"
           git checkout "pr-$PR_NUMBER"
 
       - uses: actions/setup-node@v4
@@ -320,7 +323,7 @@ jobs:
           git add -A
           git commit -m "fix(agents): address PR ${PR_NUMBER} feedback"
           # Safe because the context step rejects forks and non-codex branches.
-          git push origin "HEAD:${HEAD_REF}"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: bearer $GH_TOKEN" push origin "HEAD:${HEAD_REF}"
           gh pr edit "$PR_NUMBER" --remove-label "agent:needs-fix,ci:failed,agent:blocked" || true
           gh pr edit "$PR_NUMBER" --add-label "agent:fix-pass-${NEXT_PASS},agent:reviewing,review:codex" || true
           write_loop_result "completed" ""

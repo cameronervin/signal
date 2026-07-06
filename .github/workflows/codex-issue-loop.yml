@@ -30,6 +30,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Resolve issue
         id: issue
@@ -106,6 +107,14 @@ jobs:
           python -m pip install --upgrade pip uv
           cd backend && uv sync --frozen
 
+      - name: Prepare trusted control files
+        if: ${{ steps.openai.outputs.available == 'true' }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/agent-control"
+          cp .github/scripts/write-loop-result.sh "$RUNNER_TEMP/agent-control/"
+          cp .github/scripts/update-loop-pr-body.sh "$RUNNER_TEMP/agent-control/"
+          cp .github/codex/prompts/implement-issue.md "$RUNNER_TEMP/agent-control/"
+
       - name: Prepare branch
         if: ${{ steps.openai.outputs.available == 'true' }}
         env:
@@ -113,21 +122,15 @@ jobs:
           ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
           BRANCH: ${{ steps.issue.outputs.branch }}
         run: |
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            git fetch origin "$BRANCH"
+          if git -c "http.https://github.com/.extraheader=AUTHORIZATION: bearer $GH_TOKEN" \
+            ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git -c "http.https://github.com/.extraheader=AUTHORIZATION: bearer $GH_TOKEN" fetch origin "$BRANCH"
             git checkout -B "$BRANCH" "origin/$BRANCH"
           else
             git checkout -b "$BRANCH"
           fi
           gh issue edit "$ISSUE_NUMBER" --remove-label "agent:ready,agent:needs-human,agent:blocked" || true
           gh issue edit "$ISSUE_NUMBER" --add-label "agent:working" || true
-
-      - name: Prepare trusted control scripts
-        if: ${{ steps.openai.outputs.available == 'true' }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/agent-control"
-          cp .github/scripts/write-loop-result.sh "$RUNNER_TEMP/agent-control/"
-          cp .github/scripts/update-loop-pr-body.sh "$RUNNER_TEMP/agent-control/"
 
       - name: Run Codex implementation loop
         id: codex
@@ -139,7 +142,7 @@ jobs:
           sandbox: workspace-write
           safety-strategy: drop-sudo
           output-file: .codex-run/codex-implementation.md
-          prompt-file: .github/codex/prompts/implement-issue.md
+          prompt-file: ${{ runner.temp }}/agent-control/implement-issue.md
         env:
           ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
           LOOP: ${{ steps.normalize.outputs.loop }}
@@ -170,7 +173,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "chore(agents): implement issue ${ISSUE_NUMBER}"
-          git push --set-upstream origin "$BRANCH"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: bearer $GH_TOKEN" push --set-upstream origin "$BRANCH"
           PR_URL="$(gh pr create \
             --title "Loop #${ISSUE_NUMBER}: ${ISSUE_TITLE}" \
             --body "Closes #${ISSUE_NUMBER}" \
