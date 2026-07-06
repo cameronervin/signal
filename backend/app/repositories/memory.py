@@ -16,6 +16,7 @@ class InMemorySignalRepository:
             key=lambda lead: (
                 {"A": 0, "B": 1, "C": 2}[lead.score.tier],
                 -lead.score.total,
+                -lead.input.submitted_at.timestamp(),
             ),
         )
 
