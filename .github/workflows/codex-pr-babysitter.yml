@@ -78,6 +78,7 @@ jobs:
           EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
           REVIEW_PR_NUMBER: ${{ github.event.pull_request.number }}
           FAILED_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          FAILED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           PR_NUMBER="${DISPATCH_PR_NUMBER:-${EVENT_PR_NUMBER:-${ISSUE_PR_NUMBER:-$REVIEW_PR_NUMBER}}}"
           if [ -z "$PR_NUMBER" ] && [ -n "$FAILED_HEAD_BRANCH" ]; then
@@ -91,11 +92,12 @@ jobs:
 
           mkdir -p .codex-run
           gh pr view "$PR_NUMBER" \
-            --json number,title,body,labels,author,baseRefName,headRefName,headRepository,headRepositoryOwner,isCrossRepository,commits,files,reviews,comments,url \
+            --json number,title,body,labels,author,baseRefName,headRefName,headRefOid,headRepository,headRepositoryOwner,isCrossRepository,commits,files,reviews,comments,url \
             > .codex-run/pr.json
           gh pr diff "$PR_NUMBER" > .codex-run/pr.diff
 
           HEAD_REF="$(jq -r '.headRefName' .codex-run/pr.json)"
+          HEAD_SHA="$(jq -r '.headRefOid' .codex-run/pr.json)"
           HEAD_REPOSITORY="$(jq -r '.headRepository.nameWithOwner' .codex-run/pr.json)"
           IS_CROSS_REPOSITORY="$(jq -r '.isCrossRepository' .codex-run/pr.json)"
           HAS_CODEX_REVIEW="$(jq -r 'any(.labels[]?; .name == "review:codex")' .codex-run/pr.json)"
@@ -109,6 +111,11 @@ jobs:
           fi
           if [[ "$HEAD_REF" != codex/* ]]; then
             echo "::notice::Skipping Codex fix pass for PR #$PR_NUMBER because the head branch is not agent-owned."
+            echo "should_continue=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$EVENT_NAME" == "workflow_run" && -n "$FAILED_HEAD_SHA" && "$FAILED_HEAD_SHA" != "$HEAD_SHA" ]]; then
+            echo "::notice::Skipping Codex fix pass for PR #$PR_NUMBER because the failed CI head SHA no longer matches the PR head."
             echo "should_continue=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
