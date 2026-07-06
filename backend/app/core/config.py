@@ -1,7 +1,8 @@
 from functools import lru_cache
+from typing import Annotated
 
 from pydantic import Field, SecretStr, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -16,7 +17,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     api_base_url: str = "http://127.0.0.1:8000"
     frontend_origin: str = "http://localhost:3000"
-    extra_cors_origins: list[str] = Field(
+    extra_cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://127.0.0.1:3000"]
     )
     use_fixtures: bool = True

@@ -84,6 +84,23 @@ def test_settings_cover_demo_safe_backend_configuration() -> None:
     assert Settings(litellm_gateway_key="test-key").has_llm_key is True
 
 
+def test_settings_parse_comma_separated_extra_cors_origins_from_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "SIGNAL_EXTRA_CORS_ORIGINS",
+        "http://127.0.0.1:3000, http://localhost:3100",
+    )
+
+    settings = Settings()
+
+    assert settings.extra_cors_origins == [
+        "http://127.0.0.1:3000",
+        "http://localhost:3100",
+    ]
+    assert "http://localhost:3100" in settings.cors_origins
+
+
 def test_structured_logging_sanitizes_sensitive_values() -> None:
     sanitized = sanitize_log_event(
         None,

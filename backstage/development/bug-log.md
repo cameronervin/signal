@@ -5,3 +5,4 @@ Track reproduced bugs here.
 | Date | ID | Summary | Status | Notes |
 | --- | --- | --- | --- | --- |
 | 2026-07-05 | B-001 | Initial scaffold | Closed | No known product bugs yet |
+| 2026-07-06 | B-002 | Comma-separated `SIGNAL_EXTRA_CORS_ORIGINS` failed settings startup parsing | Closed | Marked the list field with Pydantic Settings `NoDecode` and added env-backed regression coverage |
