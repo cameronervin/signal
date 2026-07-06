@@ -19,7 +19,7 @@ on:
     types: [created]
 
 permissions:
-  contents: write
+  contents: read
   issues: write
   pull-requests: write
   actions: read
@@ -60,6 +60,12 @@ jobs:
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      openai_available: ${{ steps.openai.outputs.available }}
+      should_publish: ${{ steps.fix_patch.outputs.has_changes }}
+      pr_number: ${{ steps.context.outputs.pr_number }}
+      head_ref: ${{ steps.context.outputs.head_ref }}
+      next_pass: ${{ steps.fixpass.outputs.next_pass }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -281,21 +287,50 @@ jobs:
 
           git -c core.hooksPath=/dev/null add -A
           git -c core.hooksPath=/dev/null diff --cached --name-only > .codex-run/changed-files.txt
-          git -c core.hooksPath=/dev/null diff --cached --binary > "$RUNNER_TEMP/agent.patch"
+          git -c core.hooksPath=/dev/null diff --cached --binary > .codex-run/agent.patch
           echo "has_changes=true" >> "$GITHUB_OUTPUT"
 
-      - name: Commit and push fix pass
+      - name: Upload pending fix artifact
         if: ${{ steps.openai.outputs.available == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-fix-patch-${{ steps.context.outputs.pr_number }}-${{ steps.fixpass.outputs.next_pass }}
+          path: .codex-run/
+          if-no-files-found: ignore
+          include-hidden-files: true
+
+  publish-fix:
+    needs: fix
+    if: ${{ needs.fix.outputs.openai_available == 'true' && needs.fix.outputs.should_publish == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: pr-fix-patch-${{ needs.fix.outputs.pr_number }}-${{ needs.fix.outputs.next_pass }}
+          path: .codex-run/
+
+      - name: Commit and push fix pass
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          PR_NUMBER: ${{ steps.context.outputs.pr_number }}
-          HEAD_REF: ${{ steps.context.outputs.head_ref }}
-          NEXT_PASS: ${{ steps.fixpass.outputs.next_pass }}
-          VERIFICATION_SUMMARY: ${{ steps.codex.outputs.final-message }}
-          FIX_PASS_COUNT: ${{ steps.fixpass.outputs.next_pass }}
-          HAS_CHANGES: ${{ steps.fix_patch.outputs.has_changes }}
+          PR_NUMBER: ${{ needs.fix.outputs.pr_number }}
+          HEAD_REF: ${{ needs.fix.outputs.head_ref }}
+          NEXT_PASS: ${{ needs.fix.outputs.next_pass }}
+          FIX_PASS_COUNT: ${{ needs.fix.outputs.next_pass }}
         run: |
+          VERIFICATION_SUMMARY="$(cat .codex-run/codex-fix-pass.md 2>/dev/null || true)"
+          export VERIFICATION_SUMMARY
           write_loop_result() {
             local status="$1"
             local blockers="$2"
@@ -335,13 +370,6 @@ jobs:
               }' > .codex-run/loop-result.json
           }
 
-          if [[ "$HAS_CHANGES" != "true" ]]; then
-            write_loop_result "no_changes" "Codex fix pass produced no file changes."
-            gh pr edit "$PR_NUMBER" --add-label "agent:needs-human" || true
-            gh pr comment "$PR_NUMBER" --body "Codex fix pass $NEXT_PASS completed without file changes. Marking for human review."
-            exit 0
-          fi
-
           auth_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
           trusted_dir="$RUNNER_TEMP/trusted-fix-commit"
           rm -rf "$trusted_dir"
@@ -351,7 +379,7 @@ jobs:
           cd "$trusted_dir"
           git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" fetch origin "$HEAD_REF"
           git checkout -B "$HEAD_REF" "origin/$HEAD_REF"
-          git apply --binary "$RUNNER_TEMP/agent.patch"
+          git apply --binary "$GITHUB_WORKSPACE/.codex-run/agent.patch"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -c core.hooksPath=/dev/null add -A
@@ -368,19 +396,44 @@ jobs:
           write_loop_result "completed" ""
 
       - name: Upload fix artifact
-        if: ${{ steps.openai.outputs.available == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: pr-fix-${{ steps.context.outputs.pr_number }}-${{ steps.fixpass.outputs.next_pass }}
+          name: pr-fix-${{ needs.fix.outputs.pr_number }}-${{ needs.fix.outputs.next_pass }}
           path: .codex-run/
           if-no-files-found: ignore
           include-hidden-files: true
 
-      - name: Report workflow failure
-        if: ${{ failure() }}
+  report-no-fix-changes:
+    needs: fix
+    if: ${{ needs.fix.outputs.openai_available == 'true' && needs.fix.outputs.should_publish != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Mark PR for human review
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ steps.context.outputs.pr_number }}
+          PR_NUMBER: ${{ needs.fix.outputs.pr_number }}
+          NEXT_PASS: ${{ needs.fix.outputs.next_pass }}
+        run: |
+          gh pr edit "$PR_NUMBER" --add-label "agent:needs-human" || true
+          gh pr comment "$PR_NUMBER" --body "Codex fix pass $NEXT_PASS completed without file changes. Marking for human review."
+
+  report-failure:
+    needs: fix
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Report workflow failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.fix.outputs.pr_number }}
         run: |
           if [ -n "$PR_NUMBER" ]; then
             gh pr edit "$PR_NUMBER" --add-label "agent:blocked" || true
