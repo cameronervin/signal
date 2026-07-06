@@ -58,6 +58,10 @@ def normalize_lookup_key(value: str) -> str:
     return f"email-domain:{domain}"
 
 
+def normalize_provider_source(value: str) -> str:
+    return _WHITESPACE_RE.sub(" ", value.strip().lower())
+
+
 def _secret_is_configured(value: SecretStr | str | None) -> bool:
     if value is None:
         return False
@@ -105,6 +109,7 @@ class NormalizedPublicDataResult(BaseModel):
 
 class PublicDataCacheRecord(BaseModel):
     provider_category: ProviderCategory
+    source: str
     lookup_key: str
     response: NormalizedPublicDataResult
     retrieved_at: datetime = Field(default_factory=utc_now)
@@ -119,14 +124,21 @@ class PublicDataCacheRecord(BaseModel):
 
 class InMemoryPublicDataCache:
     def __init__(self) -> None:
-        self._records: dict[tuple[ProviderCategory, str], PublicDataCacheRecord] = {}
+        self._records: dict[
+            tuple[ProviderCategory, str, str], PublicDataCacheRecord
+        ] = {}
 
     def get(
         self,
         provider_category: ProviderCategory,
+        source: str,
         lookup_key: str,
     ) -> PublicDataCacheRecord | None:
-        cache_key = (provider_category, normalize_lookup_key(lookup_key))
+        cache_key = (
+            provider_category,
+            normalize_provider_source(source),
+            normalize_lookup_key(lookup_key),
+        )
         record = self._records.get(cache_key)
         if record is None:
             return None
@@ -149,15 +161,19 @@ class InMemoryPublicDataCache:
             else None
         )
         lookup_key = normalize_lookup_key(result.lookup_key)
+        source = normalize_provider_source(result.source)
         record = PublicDataCacheRecord(
             provider_category=result.provider_category,
+            source=source,
             lookup_key=lookup_key,
             response=result.model_copy(update={"lookup_key": lookup_key}),
             retrieved_at=retrieved_at,
             expires_at=expires_at,
             refresh_policy=refresh_policy,
         )
-        self._records[(record.provider_category, record.lookup_key)] = record
+        self._records[(record.provider_category, record.source, record.lookup_key)] = (
+            record
+        )
         return record
 
 
@@ -167,31 +183,44 @@ class PublicDataFixtureStore:
         fixtures: list[NormalizedPublicDataResult] | None = None,
     ) -> None:
         self._fixtures: dict[
-            tuple[ProviderCategory, str], NormalizedPublicDataResult
+            tuple[ProviderCategory, str, str], NormalizedPublicDataResult
         ] = {}
         for fixture in fixtures or []:
             self.add(fixture)
 
     def add(self, fixture: NormalizedPublicDataResult) -> None:
-        key = (fixture.provider_category, normalize_lookup_key(fixture.lookup_key))
+        key = (
+            fixture.provider_category,
+            normalize_provider_source(fixture.source),
+            normalize_lookup_key(fixture.lookup_key),
+        )
         self._fixtures[key] = fixture.model_copy(
-            update={"lookup_key": key[1], "is_fixture": True, "cache_hit": False}
+            update={
+                "lookup_key": key[2],
+                "is_fixture": True,
+                "cache_hit": False,
+            }
         )
 
     def get(
         self,
         provider_category: ProviderCategory,
+        source: str,
         lookup_key: str,
         *,
         warning: ProviderWarning,
     ) -> NormalizedPublicDataResult | None:
-        key = (provider_category, normalize_lookup_key(lookup_key))
+        key = (
+            provider_category,
+            normalize_provider_source(source),
+            normalize_lookup_key(lookup_key),
+        )
         fixture = self._fixtures.get(key)
         if fixture is None:
             return None
         return fixture.model_copy(
             update={
-                "lookup_key": key[1],
+                "lookup_key": key[2],
                 "retrieved_at": utc_now(),
                 "warnings": [*fixture.warnings, warning],
                 "is_fixture": True,
@@ -260,7 +289,11 @@ class BasePublicDataAdapter:
 
     async def lookup(self, lookup_key: str) -> NormalizedPublicDataResult:
         normalized_key = normalize_lookup_key(lookup_key)
-        cached = self.cache.get(self.provider_category, normalized_key)
+        cached = self.cache.get(
+            self.provider_category,
+            self.source_name,
+            normalized_key,
+        )
         if cached is not None:
             return cached.response.model_copy(update={"cache_hit": True})
 
@@ -289,6 +322,7 @@ class BasePublicDataAdapter:
         normalized = result.model_copy(
             update={
                 "provider_category": self.provider_category,
+                "source": self.source_name,
                 "lookup_key": normalized_key,
                 "is_fixture": False,
                 "cache_hit": False,
@@ -317,6 +351,7 @@ class BasePublicDataAdapter:
         )
         fixture = self.fixture_store.get(
             self.provider_category,
+            self.source_name,
             lookup_key,
             warning=degraded_warning,
         )

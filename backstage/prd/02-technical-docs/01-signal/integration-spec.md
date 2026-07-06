@@ -59,6 +59,8 @@ OpenAI-compatible gateway clients while keeping Signal domain language neutral.
 Cache records should include:
 
 - Provider category.
+- Provider/source identifier, so primary and fallback adapters in the same
+  category do not share records accidentally.
 - Request key or normalized lookup key.
 - Normalized response.
 - Retrieved timestamp.
