@@ -354,7 +354,7 @@ jobs:
 
   report-publish-failure:
     needs: [implement, publish]
-    if: ${{ failure() }}
+    if: ${{ needs.implement.result == 'success' && needs.publish.result == 'failure' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
