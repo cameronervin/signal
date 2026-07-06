@@ -12,8 +12,7 @@ GitHub Project: `Signal Agent Loop Development`
 
 The project has an `Agent Status` field with kanban states. GitHub's public API
 does not currently expose project view creation, so the visual board view must
-be created in the GitHub UI and grouped by `Agent Status`. Track that UI-only
-setup in issue `#6`.
+be created in the GitHub UI and grouped by `Agent Status`.
 
 ## Board Columns
 
@@ -68,6 +67,8 @@ Before running them, add `OPENAI_API_KEY` as a repository Actions secret.
 - `Project label sync` maps issue and PR labels to the GitHub Project fields.
 - `CI` runs backend tests/lint and frontend tests/lint/typecheck on pull
   requests and pushes to `main`.
+- `backstage/development/loops.md` is the concise operator guide for launching
+  and reviewing loops.
 
 The issue and fix-pass workflows keep networked GitHub operations outside the
 Codex sandbox. Codex edits files in the checkout; GitHub Actions commits,
@@ -89,8 +90,6 @@ reliable on several low-risk PRs.
 
 ## Merge Gates
 
-CI is configured and passing on `main`. Required status checks, required pull
-request reviews, and required conversation resolution should be enabled on
-`main` when the repository plan supports branch protection for private repos.
-Until then, treat those gates as operating policy rather than enforced GitHub
-settings.
+`main` is protected. Required status checks, required pull request reviews,
+required conversation resolution, admin enforcement, and force-push/deletion
+blocks are enabled.
