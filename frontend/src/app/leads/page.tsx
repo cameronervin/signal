@@ -71,10 +71,12 @@ export default function LeadsPage() {
                 <span>
                   {lead.gates.status === "failed" ? (
                     <Flag>Review flags</Flag>
-                  ) : (
+                  ) : lead.draft ? (
                     <span className="button secondary small">
                       <Copy aria-hidden="true" size={14} /> Copy draft
                     </span>
+                  ) : (
+                    <span className="status-pill muted">Draft pending</span>
                   )}
                 </span>
                 <ChevronRight className={lead.gates.status === "failed" ? "chevron-muted" : "chevron-soft"} size={18} />

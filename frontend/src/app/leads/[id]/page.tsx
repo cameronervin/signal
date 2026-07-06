@@ -20,6 +20,7 @@ export default async function LeadDetailPage({ params }: Props) {
   }
 
   const failed = lead.gates.status === "failed";
+  const draft = lead.draft;
 
   return (
     <>
@@ -155,31 +156,44 @@ export default async function LeadDetailPage({ params }: Props) {
                 </div>
               </div>
             </div>
-            <div className="surface-card flex flex-col p-5">
-              <div className="flex items-center justify-between">
-                <h2 className="section-title">Drafted email</h2>
-                <span className="status-pill">Review and copy</span>
-              </div>
-              <div className="draft-meta">
-                <span><strong>To:</strong> {lead.email}</span>
-                <span><strong>Subject:</strong> {lead.draft?.subject}</span>
-              </div>
-              <pre className="draft-body mt-4">
-                {lead.draft?.body}
-              </pre>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {lead.draft?.sources.map((source) => (
-                  <SourceChip key={`${source.source}-${source.label}`} source={source} />
-                ))}
-              </div>
-              <div className="mt-auto flex justify-between pt-5">
-                <button className="button secondary" type="button"><RefreshCw size={15} /> Regenerate</button>
-                <div className="flex gap-2">
-                  <button className="button secondary" type="button"><Copy size={15} /> Copy</button>
-                  <button className="button primary" type="button"><Download size={15} /> Export</button>
+            {draft ? (
+              <div className="surface-card flex flex-col p-5">
+                <div className="flex items-center justify-between">
+                  <h2 className="section-title">Drafted email</h2>
+                  <span className="status-pill">Review and copy</span>
+                </div>
+                <div className="draft-meta">
+                  <span><strong>To:</strong> {lead.email}</span>
+                  <span><strong>Subject:</strong> {draft.subject}</span>
+                </div>
+                <pre className="draft-body mt-4">
+                  {draft.body}
+                </pre>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {draft.sources.map((source) => (
+                    <SourceChip key={`${source.source}-${source.label}`} source={source} />
+                  ))}
+                </div>
+                <div className="mt-auto flex justify-between pt-5">
+                  <button className="button secondary" type="button"><RefreshCw size={15} /> Regenerate</button>
+                  <div className="flex gap-2">
+                    <button className="button secondary" type="button"><Copy size={15} /> Copy</button>
+                    <button className="button primary" type="button"><Download size={15} /> Export</button>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="surface-card flex min-h-80 flex-col items-center justify-center p-8 text-center">
+                <div className="empty-icon mb-4">
+                  <MailX size={26} />
+                </div>
+                <h2 className="text-lg font-bold">Draft pending</h2>
+                <p className="mt-2 max-w-sm text-sm leading-6 text-muted">
+                  Signal has not produced a draft for this lead yet. Copy and export controls appear only after
+                  draft eligibility is complete.
+                </p>
+              </div>
+            )}
           </section>
         )}
       </main>
