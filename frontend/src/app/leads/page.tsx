@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { ScoreMeter } from "@/components/ui/ScoreMeter";
 import { TierBadge } from "@/components/ui/TierBadge";
+import { routes } from "@/lib/constants/routes";
 import { leads } from "@/lib/fixtures/leads";
 
 export default function LeadsPage() {
@@ -53,7 +54,7 @@ export default function LeadsPage() {
             {sortedLeads.map((lead) => (
               <Link
                 key={lead.id}
-                href={`/leads/${lead.id}`}
+                href={routes.leadDetail(lead.id)}
                 className={`table-row lead-grid ${lead.score.tier === "A" ? "tier-a-row" : ""} ${
                   lead.gates.status === "failed" ? "dimmed" : ""
                 }`}
