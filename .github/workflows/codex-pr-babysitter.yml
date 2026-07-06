@@ -321,11 +321,14 @@ jobs:
           git diff --name-only > .codex-run/changed-files.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "fix(agents): address PR ${PR_NUMBER} feedback"
+          git -c core.hooksPath=/dev/null add -A
+          git -c core.hooksPath=/dev/null commit -m "fix(agents): address PR ${PR_NUMBER} feedback"
           # Safe because the context step rejects forks and non-codex branches.
           auth_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
-          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" push origin "HEAD:${HEAD_REF}"
+          git \
+            -c core.hooksPath=/dev/null \
+            -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" \
+            push origin "HEAD:${HEAD_REF}"
           gh pr edit "$PR_NUMBER" --remove-label "agent:needs-fix,ci:failed,agent:blocked" || true
           gh pr edit "$PR_NUMBER" --add-label "agent:fix-pass-${NEXT_PASS},agent:reviewing,review:codex" || true
           write_loop_result "completed" ""

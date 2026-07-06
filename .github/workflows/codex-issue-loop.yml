@@ -173,10 +173,13 @@ jobs:
           git diff --name-only > .codex-run/changed-files.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "chore(agents): implement issue ${ISSUE_NUMBER}"
+          git -c core.hooksPath=/dev/null add -A
+          git -c core.hooksPath=/dev/null commit -m "chore(agents): implement issue ${ISSUE_NUMBER}"
           auth_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
-          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" push --set-upstream origin "$BRANCH"
+          git \
+            -c core.hooksPath=/dev/null \
+            -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" \
+            push --set-upstream origin "$BRANCH"
           PR_URL="$(gh pr create \
             --title "Loop #${ISSUE_NUMBER}: ${ISSUE_TITLE}" \
             --body "Closes #${ISSUE_NUMBER}" \
