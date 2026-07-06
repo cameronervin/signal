@@ -1,3 +1,4 @@
+from functools import lru_cache
 from uuid import uuid4
 
 from app.agents.graph import run_signal_pipeline
@@ -41,16 +42,19 @@ class LeadService:
                 if response.gates.status == "passed"
                 else "completed"
             ),
+            execution_mode="inline",
             current_stage=(
                 "human_review" if response.gates.status == "passed" else "gate_failed"
             ),
             steps=[
                 AgentStep(
+                    stage="deterministic_enrichment",
                     name="Deterministic enrichment",
                     status="done",
                     summary="Geography, market, company, and domain signals resolved.",
                 ),
                 AgentStep(
+                    stage="agent_scoring_and_drafting",
                     name="Agent scoring and drafting",
                     status="skipped" if response.gates.status == "failed" else "done",
                     summary=(
@@ -60,11 +64,13 @@ class LeadService:
                     ),
                 ),
                 AgentStep(
+                    stage="knowledge_graph",
                     name="Knowledge graph",
                     status="done",
                     summary="Related-lead context attached.",
                 ),
                 AgentStep(
+                    stage="human_review",
                     name="Human review",
                     status=(
                         "pending" if response.gates.status == "passed" else "skipped"
@@ -73,6 +79,11 @@ class LeadService:
                 ),
             ],
             activity_log=result.get("activity_log", []),
+            degraded_reasons=(
+                ["draft_suppressed: hard gate failed"]
+                if response.gates.status == "failed"
+                else []
+            ),
         )
         await self.repository.save_lead(response)
         await self.repository.save_agent_run(run)
@@ -89,3 +100,12 @@ class LeadService:
 
     async def get_agent_run(self, run_id: str) -> AgentRunResponse | None:
         return await self.repository.get_agent_run(run_id)
+
+
+@lru_cache
+def get_repository() -> InMemorySignalRepository:
+    return InMemorySignalRepository()
+
+
+async def get_lead_service() -> LeadService:
+    return LeadService(get_repository())

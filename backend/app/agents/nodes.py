@@ -23,7 +23,11 @@ async def agent_scoring_and_drafting_node(state: SignalState) -> dict:
     enrichment = state["enrichment"]
     score = score_lead(lead, gates, enrichment)
     talking_points = _talking_points(enrichment)
-    draft = None if gates.status == "failed" else _draft_email(lead, enrichment)
+    draft = (
+        None
+        if gates.status == "failed"
+        else _draft_email(lead, enrichment, talking_points)
+    )
     return {
         "score": score,
         "talking_points": talking_points,
@@ -42,6 +46,8 @@ async def knowledge_graph_builder_node(state: SignalState) -> dict:
             lead_id="demo-related-001",
             label=f"{lead.company} related inbound",
             reason="Same company appeared in fixture history",
+            relationship_type="company",
+            score_impact="Related context is available for SDR review.",
         )
     ]
     return {
@@ -71,7 +77,7 @@ def _talking_points(enrichment) -> list[str]:
     return points
 
 
-def _draft_email(lead, enrichment) -> DraftEmail:
+def _draft_email(lead, enrichment, talking_points: list[str]) -> DraftEmail:
     subject = f"Improving leasing response in {lead.city}"
     trigger_sentence = (
         f"I noticed {enrichment.recent_trigger.lower()}."
@@ -88,4 +94,10 @@ def _draft_email(lead, enrichment) -> DraftEmail:
         "inbound demand spikes.\n\n"
         "Would it be worth comparing how your team is handling those leads today?"
     )
-    return DraftEmail(subject=subject, body=body, sources=enrichment.sources)
+    return DraftEmail(
+        subject=subject,
+        body=body,
+        talking_points=talking_points,
+        sources=enrichment.sources,
+        generation_mode="fallback_template",
+    )

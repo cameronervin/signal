@@ -6,9 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import Settings, get_settings
-from app.core.dependencies import get_lead_service
 from app.core.logging import configure_logging
-from app.services.lead_service import LeadService
+from app.services.lead_service import LeadService, get_lead_service
 
 
 def build_lifespan(settings: Settings):

@@ -1,18 +1,18 @@
-import httpx
 import pytest
+from httpx import ASGITransport, AsyncClient
 
 from app.api.v1.leads import list_leads
 from app.core.config import Settings
-from app.core.dependencies import get_lead_service
 from app.core.logging import sanitize_log_event
 from app.main import create_app
+from app.services.lead_service import get_lead_service
 
 
 @pytest.mark.asyncio
 async def test_health_endpoint() -> None:
-    transport = httpx.ASGITransport(app=create_app())
-    async with httpx.AsyncClient(
-        transport=transport, base_url="http://testserver"
+    async with AsyncClient(
+        transport=ASGITransport(app=create_app()),
+        base_url="http://testserver",
     ) as client:
         response = await client.get("/api/v1/health")
 
@@ -22,9 +22,9 @@ async def test_health_endpoint() -> None:
 
 @pytest.mark.asyncio
 async def test_openapi_schema_remains_available() -> None:
-    transport = httpx.ASGITransport(app=create_app())
-    async with httpx.AsyncClient(
-        transport=transport, base_url="http://testserver"
+    async with AsyncClient(
+        transport=ASGITransport(app=create_app()),
+        base_url="http://testserver",
     ) as client:
         response = await client.get("/openapi.json")
 
@@ -35,9 +35,9 @@ async def test_openapi_schema_remains_available() -> None:
 @pytest.mark.asyncio
 async def test_configured_cors_origin_allows_preflight() -> None:
     settings = Settings(frontend_origin="http://localhost:3100")
-    transport = httpx.ASGITransport(app=create_app(settings=settings))
-    async with httpx.AsyncClient(
-        transport=transport, base_url="http://testserver"
+    async with AsyncClient(
+        transport=ASGITransport(app=create_app(settings=settings)),
+        base_url="http://testserver",
     ) as client:
         response = await client.options(
             "/api/v1/health",
