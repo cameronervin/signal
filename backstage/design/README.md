@@ -79,6 +79,7 @@ Detailed implementation guidance lives in
 - `DataTable`
 - `MetricCard`
 - `PipelineStepper`
+- `StateNotice` for empty, warning/degraded, and gate-failed no-draft states
 
 ## Implementation Notes
 
@@ -87,4 +88,6 @@ Detailed implementation guidance lives in
 - Use React Flow for the knowledge graph.
 - Keep gate-failed states first-class.
 - Below 1100px, detail pages collapse to one column.
+- Top-level navigation should keep active states on nested lead detail and agent
+  run routes.
 - Keep all implementation copy Signal-neutral.

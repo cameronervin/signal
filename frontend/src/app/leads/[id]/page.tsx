@@ -1,11 +1,14 @@
-import { AlertTriangle, ChevronLeft, Copy, Download, MailX, Plus, RefreshCw } from "lucide-react";
+import { AlertTriangle, ChevronLeft, Copy, Download, Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ScoreMeter } from "@/components/ui/ScoreMeter";
 import { SourceChip } from "@/components/ui/SourceChip";
+import { StateNotice } from "@/components/ui/StateNotice";
 import { TierBadge } from "@/components/ui/TierBadge";
+import { routes } from "@/lib/constants/routes";
 import { getLead } from "@/lib/fixtures/leads";
 
 interface Props {
@@ -30,7 +33,7 @@ export default async function LeadDetailPage({ params }: Props) {
         subtitle={`${lead.role} · ${lead.company} · ${lead.market}`}
         actions={
           <div className="flex gap-2">
-            <Link className="button secondary" href="/leads">
+            <Link className="button secondary" href={routes.leads}>
               <ChevronLeft size={16} /> Back
             </Link>
             {!failed && (
@@ -76,24 +79,17 @@ export default async function LeadDetailPage({ params }: Props) {
                 </p>
               </div>
             </div>
-            <div className="surface-card flex min-h-80 flex-col items-center justify-center p-8 text-center">
-              <div className="empty-icon mb-4">
-                <MailX size={26} />
-              </div>
-              <h2 className="text-lg font-bold">No draft generated</h2>
-              <p className="mt-2 max-w-sm text-sm leading-6 text-muted">
-                Signal suppresses outreach for gate-failed leads. Verify the contact manually or dismiss it
-                to clear it from the queue.
-              </p>
-              <div className="mt-5 flex gap-2">
-                <button className="button secondary" type="button">
-                  Dismiss lead
-                </button>
-                <button className="button secondary" type="button">
-                  Verify manually
-                </button>
-              </div>
-            </div>
+            <StateNotice
+              action={
+                <>
+                  <Button variant="secondary">Dismiss lead</Button>
+                  <Button variant="secondary">Verify manually</Button>
+                </>
+              }
+              description="Signal suppresses outreach for gate-failed leads. Verify the contact manually or dismiss it to clear it from the queue."
+              title="No draft generated"
+              tone="danger"
+            />
           </section>
         ) : (
           <section className="detail-grid">
@@ -192,16 +188,10 @@ export default async function LeadDetailPage({ params }: Props) {
                 )}
               </div>
             ) : (
-              <div className="surface-card flex min-h-80 flex-col items-center justify-center p-8 text-center">
-                <div className="empty-icon mb-4">
-                  <MailX size={26} />
-                </div>
-                <h2 className="text-lg font-bold">Draft pending</h2>
-                <p className="mt-2 max-w-sm text-sm leading-6 text-muted">
-                  Signal has not produced a draft for this lead yet. Copy and export controls appear only after
-                  draft eligibility is complete.
-                </p>
-              </div>
+              <StateNotice
+                description="Signal has not produced a draft for this lead yet. Copy and export controls appear only after draft eligibility is complete."
+                title="Draft pending"
+              />
             )}
           </section>
         )}
