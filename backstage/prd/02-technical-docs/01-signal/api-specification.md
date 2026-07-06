@@ -99,14 +99,31 @@ Response: `SeedLeadsResponse`
 
 This endpoint is intended for demo and local development only.
 
-## Draft Review State
+## Draft Copy State
 
 `POST /leads/{lead_id}/draft/copy`
 
 Behavior:
 
-- Records that the reviewed draft was copied or exported.
+- Records that the reviewed draft was copied into the SDR's existing sales
+  tools.
 - Does not send email.
+- Sets draft `review_status` to `copied`.
+- Returns updated lead review state.
+
+Response: `LeadResponse`
+
+Gate-failed leads or leads with no draft return `409`.
+
+## Draft Export State
+
+`POST /leads/{lead_id}/draft/export`
+
+Behavior:
+
+- Records that the reviewed draft was exported into an existing sales workflow.
+- Does not send email.
+- Sets draft `review_status` to `exported`.
 - Returns updated lead review state.
 
 Response: `LeadResponse`
