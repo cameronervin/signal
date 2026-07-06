@@ -122,6 +122,13 @@ jobs:
           gh issue edit "$ISSUE_NUMBER" --remove-label "agent:ready,agent:needs-human,agent:blocked" || true
           gh issue edit "$ISSUE_NUMBER" --add-label "agent:working" || true
 
+      - name: Prepare trusted control scripts
+        if: ${{ steps.openai.outputs.available == 'true' }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/agent-control"
+          cp .github/scripts/write-loop-result.sh "$RUNNER_TEMP/agent-control/"
+          cp .github/scripts/update-loop-pr-body.sh "$RUNNER_TEMP/agent-control/"
+
       - name: Run Codex implementation loop
         id: codex
         if: ${{ steps.openai.outputs.available == 'true' }}
@@ -151,7 +158,7 @@ jobs:
         run: |
           if [ -z "$(git status --porcelain)" ]; then
             LOOP_STATUS="no_changes" BLOCKERS="Codex completed without producing file changes." \
-              bash .github/scripts/write-loop-result.sh
+              bash "$RUNNER_TEMP/agent-control/write-loop-result.sh"
             gh issue comment "$ISSUE_NUMBER" --body "Codex issue loop completed without producing file changes. Marking for human review."
             gh issue edit "$ISSUE_NUMBER" --remove-label "agent:working" --add-label "agent:needs-human" || true
             echo "created=false" >> "$GITHUB_OUTPUT"
@@ -176,8 +183,8 @@ jobs:
             echo "url=$PR_URL"
           } >> "$GITHUB_OUTPUT"
           PR_NUMBER="$PR_NUMBER" LOOP_STATUS="completed" BLOCKERS="" \
-            bash .github/scripts/write-loop-result.sh
-          PR_NUMBER="$PR_NUMBER" bash .github/scripts/update-loop-pr-body.sh
+            bash "$RUNNER_TEMP/agent-control/write-loop-result.sh"
+          PR_NUMBER="$PR_NUMBER" bash "$RUNNER_TEMP/agent-control/update-loop-pr-body.sh"
           gh issue edit "$ISSUE_NUMBER" --remove-label "agent:working" --add-label "agent:reviewing" || true
 
       - name: Upload loop artifact
@@ -187,6 +194,7 @@ jobs:
           name: issue-loop-${{ steps.issue.outputs.number }}
           path: .codex-run/
           if-no-files-found: ignore
+          include-hidden-files: true
 
       - name: Report workflow failure
         if: ${{ failure() }}
