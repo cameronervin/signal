@@ -39,7 +39,11 @@ OpenAI-compatible gateway clients while keeping Signal domain language neutral.
 ## Adapter Rules
 
 - Public API clients live under `backend/app/integrations/`.
-- Adapters return typed normalized results and sanitized errors.
+- Adapters share the public-data boundary in
+  `backend/app/integrations/public_data.py`: `NormalizedPublicDataResult`,
+  `ProviderWarning`, `PublicDataCacheRecord`, `PublicDataFixtureStore`, and the
+  base adapter lookup flow.
+- Adapters return typed normalized results and sanitized warnings/errors.
 - Agents consume normalized facts, not raw provider payloads.
 - Every fact used in scoring, talking points, or drafts must become a
   `SourceFact`.
@@ -60,6 +64,11 @@ Cache records should include:
 - Retrieved timestamp.
 - Expiration or refresh policy.
 
+The implemented in-memory cache stores those fields on `PublicDataCacheRecord`
+with a TTL, refresh policy, and normalized lookup key. It is a demo-safe cache
+boundary; durable storage remains out of scope for v1 until a later persistence
+phase.
+
 Fixture fallback must cover:
 
 - A-tier lead with strong fit and urgency.
@@ -68,6 +77,11 @@ Fixture fallback must cover:
 - Hard-gate-failed lead with no draft.
 - Missing-trigger lead.
 - Warning-only lead that can still produce a draft.
+
+The shared fixture path can be selected explicitly, or when a required key is
+missing, a provider times out, a response schema changes, a rate limit is hit, or
+another provider request fails. Returned warnings use sanitized reason codes and
+generic messages rather than raw provider payloads or request details.
 
 ## Trigger Design
 
