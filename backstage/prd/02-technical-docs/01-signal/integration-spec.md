@@ -39,7 +39,11 @@ OpenAI-compatible gateway clients while keeping Signal domain language neutral.
 ## Adapter Rules
 
 - Public API clients live under `backend/app/integrations/`.
-- Adapters return typed normalized results and sanitized errors.
+- Adapters share the public-data boundary in
+  `backend/app/integrations/public_data.py`: `NormalizedPublicDataResult`,
+  `ProviderWarning`, `PublicDataCacheRecord`, `PublicDataFixtureStore`, and the
+  base adapter lookup flow.
+- Adapters return typed normalized results and sanitized warnings/errors.
 - Agents consume normalized facts, not raw provider payloads.
 - Every fact used in scoring, talking points, or drafts must become a
   `SourceFact`.
@@ -65,10 +69,17 @@ OpenAI-compatible gateway clients while keeping Signal domain language neutral.
 Cache records should include:
 
 - Provider category.
+- Provider/source identifier, so primary and fallback adapters in the same
+  category do not share records accidentally.
 - Request key or normalized lookup key.
 - Normalized response.
 - Retrieved timestamp.
 - Expiration or refresh policy.
+
+The implemented in-memory cache stores those fields on `PublicDataCacheRecord`
+with a TTL, refresh policy, and normalized lookup key. It is a demo-safe cache
+boundary; durable storage remains out of scope for v1 until a later persistence
+phase.
 
 Fixture fallback must cover:
 
@@ -85,6 +96,11 @@ warnings and agent-run degraded reasons while still allowing scoring and draft
 generation when address, company, country, and domain hard gates pass.
 Fixture geocoding only resolves explicit supported city/state keys; unsupported
 locations return no coordinates so the address hard gate suppresses drafting.
+
+The shared fixture path can be selected explicitly, or when a required key is
+missing, a provider times out, a response schema changes, a rate limit is hit, or
+another provider request fails. Returned warnings use sanitized reason codes and
+generic messages rather than raw provider payloads or request details.
 
 ## Trigger Design
 
