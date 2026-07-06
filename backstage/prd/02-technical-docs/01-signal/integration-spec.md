@@ -48,7 +48,8 @@ OpenAI-compatible gateway clients while keeping Signal domain language neutral.
   into one enrichment result consumed by the deterministic graph node.
 - Geocoding and DNS/MX domain quality have live-capable paths when fixture mode
   is disabled; provider errors, timeouts, no-data results, or schema mismatches
-  fall back to fixture-normalized values with sanitized degraded reasons.
+  fall back to fixture-normalized values or explicit no-data states with
+  sanitized degraded reasons.
 - Demographic, economic, local-context, company-context, and trigger-context
   categories are fixture-normalized in the current slice and should move behind
   cache-backed live adapters before pilot use.
@@ -82,6 +83,8 @@ Current fixture behavior includes a warning-only path where local context and
 trigger context are unavailable. Those optional no-data states become gate
 warnings and agent-run degraded reasons while still allowing scoring and draft
 generation when address, company, country, and domain hard gates pass.
+Fixture geocoding only resolves explicit supported city/state keys; unsupported
+locations return no coordinates so the address hard gate suppresses drafting.
 
 ## Trigger Design
 

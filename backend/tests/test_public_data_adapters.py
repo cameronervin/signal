@@ -1,5 +1,8 @@
+from datetime import datetime
+
 import pytest
 
+from app.integrations import public_data
 from app.integrations.public_data import PublicDataClient, PublicDataClientConfig
 from app.schemas.lead import LeadCreate
 
@@ -76,3 +79,74 @@ async def test_public_data_client_flags_personal_domain_quality() -> None:
         fact.label == "Domain quality" and fact.value == "personal"
         for fact in result.enrichment.sources
     )
+
+
+@pytest.mark.asyncio
+async def test_fixture_geocode_returns_no_data_for_unsupported_location() -> None:
+    client = PublicDataClient(PublicDataClientConfig(use_fixtures=True))
+
+    result = await client.enrich(_lead(city="Unsupported", state="TX"))
+
+    assert result.enrichment.market == ""
+    assert result.enrichment.coordinates is None
+    assert result.enrichment.geo_confidence is None
+    assert result.enrichment.census_geo_id is None
+    assert any(
+        fact.label == "Address resolution" and fact.value == "unresolved"
+        for fact in result.enrichment.sources
+    )
+
+
+@pytest.mark.asyncio
+async def test_live_geocode_provider_failure_uses_sanitized_fixture_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FailingAsyncClient:
+        def __init__(self, *, timeout: float) -> None:
+            self.timeout = timeout
+
+        async def __aenter__(self) -> "FailingAsyncClient":
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+        async def get(self, *args: object, **kwargs: object) -> object:
+            raise public_data.httpx.ConnectError("provider unavailable")
+
+    monkeypatch.setattr(public_data.httpx, "AsyncClient", FailingAsyncClient)
+    client = PublicDataClient(PublicDataClientConfig(use_fixtures=False))
+
+    result = await client.enrich(_lead(city="Unsupported", state="TX"))
+
+    assert result.enrichment.coordinates is None
+    assert result.enrichment.geo_confidence is None
+    assert "geocoding fixture fallback" in result.warnings
+    assert "geocoding: fixture fallback" in result.degraded_reasons
+    assert all("provider unavailable" not in warning for warning in result.warnings)
+
+
+@pytest.mark.asyncio
+async def test_live_domain_dns_failure_uses_sanitized_fixture_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fixture_live_geocode(
+        self: PublicDataClient,
+        lead: LeadCreate,
+        retrieved_at: datetime,
+    ) -> object:
+        return self._fixture_geocode(lead, retrieved_at)
+
+    async def failing_resolve(domain: str, record_type: str) -> object:
+        raise public_data.dns.exception.Timeout
+
+    monkeypatch.setattr(PublicDataClient, "_live_geocode", fixture_live_geocode)
+    monkeypatch.setattr(public_data.dns.asyncresolver, "resolve", failing_resolve)
+    client = PublicDataClient(PublicDataClientConfig(use_fixtures=False))
+
+    result = await client.enrich(_lead())
+
+    assert result.enrichment.domain_status == "corporate"
+    assert "domain-quality fixture fallback" in result.warnings
+    assert "domain_quality: fixture fallback" in result.degraded_reasons
+    assert all("operator.example" not in warning for warning in result.warnings)

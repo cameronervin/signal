@@ -49,11 +49,11 @@ PERSONAL_DOMAINS = {
     "aol.com",
 }
 
-CITY_COORDINATES: dict[str, tuple[float, float]] = {
-    "austin": (30.2672, -97.7431),
-    "arlington": (32.7357, -97.1081),
-    "charlotte": (35.2271, -80.8431),
-    "raleigh": (35.7796, -78.6382),
+FIXTURE_COORDINATES: dict[tuple[str, str], tuple[float, float]] = {
+    ("austin", "tx"): (30.2672, -97.7431),
+    ("arlington", "tx"): (32.7357, -97.1081),
+    ("charlotte", "nc"): (35.2271, -80.8431),
+    ("raleigh", "nc"): (35.7796, -78.6382),
 }
 
 
@@ -194,22 +194,22 @@ class PublicDataClient:
         market = f"{lead.city}, {lead.state}"
         supported_country = lead.country.upper() in {"US", "USA", "UNITED STATES"}
         unresolved = "unresolved" in lead.property_address.lower()
-        city_key = lead.city.lower()
+        location_key = (lead.city.lower(), lead.state.lower())
         coordinates = (
-            CITY_COORDINATES.get(city_key, (39.8283, -98.5795))
+            FIXTURE_COORDINATES.get(location_key)
             if supported_country and not unresolved
             else None
         )
-        confidence = "high" if city_key in CITY_COORDINATES and coordinates else None
-        if coordinates and confidence is None:
-            confidence = "medium"
+        confidence = "high" if coordinates else None
         value = "resolved" if coordinates else "unresolved"
         return _GeoResult(
             market=market if coordinates else "",
             coordinates=coordinates,
             geo_confidence=confidence,
             census_geo_id=(
-                f"fixture-{city_key}-{lead.state.lower()}" if coordinates else None
+                f"fixture-{location_key[0]}-{location_key[1]}"
+                if coordinates
+                else None
             ),
             facts=[
                 _fact(
