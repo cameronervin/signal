@@ -58,9 +58,21 @@ jobs:
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
           mkdir -p .codex-run
           gh pr view "$PR_NUMBER" \
-            --json number,title,body,labels,author,baseRefName,headRefName,commits,files,reviews,comments,url,statusCheckRollup \
+            --json number,title,body,labels,author,baseRefName,headRefName,commits,files,reviews,comments,url,statusCheckRollup,closingIssuesReferences \
             > .codex-run/pr.json
           gh pr diff "$PR_NUMBER" > .codex-run/pr.diff
+          linked_issues="$(jq -r '.closingIssuesReferences[]?.number' .codex-run/pr.json)"
+          if [ -z "$linked_issues" ]; then
+            echo "[]" > .codex-run/linked-issues.json
+          else
+            tmp_issues="$(mktemp -d)"
+            for issue_number in $linked_issues; do
+              gh issue view "$issue_number" \
+                --json number,title,body,labels,state,url,comments \
+                > "$tmp_issues/$issue_number.json"
+            done
+            jq -s '.' "$tmp_issues"/*.json > .codex-run/linked-issues.json
+          fi
 
       - name: Prepare trusted review prompt
         run: |
@@ -73,6 +85,7 @@ jobs:
           - `AGENTS.md`
           - `.codex-run/pr.json`
           - `.codex-run/pr.diff`
+          - `.codex-run/linked-issues.json`
           - Relevant rules under `.agents/rules/`
           - The PR title, body, changed files, commits, and linked issue
 

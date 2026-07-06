@@ -11,6 +11,7 @@ Read:
 - `.agents/skills/code-review-expert/SKILL.md`
 - `.codex-run/pr.json`
 - `.codex-run/pr.diff`
+- `.codex-run/linked-issues.json`
 - Relevant rules under `.agents/rules/`
 - The PR title, body, changed files, commits, and linked issue
 
