@@ -18,9 +18,10 @@ export default async function AgentRunPage({ params }: Props) {
   }
   const lead = run.leadId ? getLead(run.leadId) : undefined;
   const exported = run.steps.some((step) => step.name === "Export" && step.status === "done");
+  const completedWithoutDraft = Boolean(lead && !lead.draft && run.status === "completed");
   const awaitingReview = Boolean(lead?.draft && run.status === "awaiting_review");
-  const outputComplete = Boolean(lead?.draft && (awaitingReview || exported));
-  const scoreLabel = outputComplete && lead ? `${lead.score.total} · ${lead.score.tier}` : "Pending";
+  const outputResolved = Boolean(lead && (awaitingReview || exported || completedWithoutDraft));
+  const scoreLabel = outputResolved && lead ? `${lead.score.total} · ${lead.score.tier}` : "Pending";
 
   const stepDetails = run.steps.map((step, index) => ({
     ...step,
@@ -45,9 +46,11 @@ export default async function AgentRunPage({ params }: Props) {
             <span className={`status-pill ${awaitingReview ? "warning" : "muted"}`}>
               {awaitingReview ? "Awaiting your review" : run.statusLabel ?? run.status}
             </span>
-            <button className="button secondary" type="button">
-              <Pause size={15} /> Pause
-            </button>
+            {run.status === "running" && (
+              <button className="button secondary" type="button">
+                <Pause size={15} /> Pause
+              </button>
+            )}
             {awaitingReview && (
               <button className="button primary" type="button">
                 <Pencil size={15} /> Review draft
@@ -87,7 +90,13 @@ export default async function AgentRunPage({ params }: Props) {
             <div className="surface-card purple-panel p-5">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="section-title text-deep">
-                  {awaitingReview ? "Output ready for review" : exported ? "Draft exported" : "Output in progress"}
+                  {awaitingReview
+                    ? "Output ready for review"
+                    : exported
+                      ? "Draft exported"
+                      : completedWithoutDraft
+                        ? "No draft generated"
+                        : "Output in progress"}
                 </h2>
                 <span className="mono text-xs font-semibold text-deep">{scoreLabel}</span>
               </div>
@@ -96,7 +105,9 @@ export default async function AgentRunPage({ params }: Props) {
                   ? "Score, why-line, talking points, related context, and draft are ready for SDR review."
                   : exported
                     ? "The reviewed draft has been exported for use in existing sales tools."
-                  : "Signal is still building the score, related context, and draft eligibility decision."}
+                    : completedWithoutDraft
+                      ? "This run completed without a draft because draft eligibility was not met."
+                      : "Signal is still building the score, related context, and draft eligibility decision."}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {awaitingReview && (

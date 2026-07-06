@@ -384,6 +384,25 @@ export const agentRuns: FixtureAgentRun[] = [
     activityLog: ["10:18:01 api_insert received", "10:18:08 review approved", "10:18:12 draft exported"]
   },
   {
+    runId: "run-6600",
+    agent: "Gate Review Agent",
+    kind: "Gate failed",
+    leadId: "lead-tom-whitaker",
+    lead: "Tom Whitaker · Unverified Homes",
+    started: "1h",
+    stage: "Gate failed",
+    stageIndex: 1,
+    status: "completed",
+    statusLabel: "Gate failed",
+    steps: [
+      { name: "Deterministic enrichment", status: "done", summary: "Domain and company checks completed." },
+      { name: "Agent scoring and drafting", status: "skipped", summary: "Draft suppressed because hard gates failed." },
+      { name: "Knowledge graph", status: "skipped", summary: "Skipped for gate-failed lead." },
+      { name: "Human review", status: "skipped", summary: "No draft review required." }
+    ],
+    activityLog: ["10:05:01 api_insert received", "10:05:04 hard gates failed", "10:05:04 draft suppressed"]
+  },
+  {
     runId: "run-next-release",
     agent: "Follow-up Agent",
     kind: "Next release",

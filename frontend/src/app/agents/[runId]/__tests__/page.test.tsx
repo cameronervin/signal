@@ -24,7 +24,19 @@ describe("AgentRunPage", () => {
 
     expect(screen.getByText("Exported")).toBeInTheDocument();
     expect(screen.getByText("Draft exported")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /pause/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /review draft/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /copy reviewed draft/i })).not.toBeInTheDocument();
+  });
+
+  it("shows completed no-draft runs instead of progress or review actions", async () => {
+    render(await AgentRunPage({ params: Promise.resolve({ runId: "run-6600" }) }));
+
+    expect(screen.getByText("Gate failed")).toBeInTheDocument();
+    expect(screen.getByText("No draft generated")).toBeInTheDocument();
+    expect(screen.getAllByText(/skipped/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Output in progress")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /pause/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /review draft/i })).not.toBeInTheDocument();
   });
 });

@@ -14,12 +14,15 @@ interface Props {
   steps: Step[];
 }
 
+type VisualStepStatus = "done" | "active" | "pending" | "skipped" | "failed";
+
 export function PipelineStepper({ steps }: Props) {
   return (
     <ol className="stepper">
       {steps.map((step, index) => {
         const isLast = index === steps.length - 1;
-        const visualStatus = step.status === "running" ? "active" : step.status === "done" ? "done" : "pending";
+        const visualStatus: VisualStepStatus =
+          step.status === "running" ? "active" : step.status === "done" ? "done" : step.status;
         const nextVisualStatus = steps[index + 1]?.status === "done" ? "done" : "pending";
         const connectorDone = visualStatus === "done" && nextVisualStatus === "done";
 
@@ -33,7 +36,7 @@ export function PipelineStepper({ steps }: Props) {
             </span>
             <span className="stepper-content">
               <span className="flex items-baseline justify-between gap-3">
-                <strong className={visualStatus === "pending" ? "text-sm text-soft" : "text-sm"}>
+                <strong className={visualStatus === "pending" || visualStatus === "skipped" ? "text-sm text-soft" : "text-sm"}>
                   {step.name}
                 </strong>
                 {step.duration && (
@@ -48,7 +51,7 @@ export function PipelineStepper({ steps }: Props) {
               </span>
               <span
                 className={`mt-2 block text-sm leading-6 ${
-                  visualStatus === "pending" ? "text-soft" : "text-muted"
+                  visualStatus === "pending" || visualStatus === "skipped" ? "text-soft" : "text-muted"
                 }`}
               >
                 {step.summary}

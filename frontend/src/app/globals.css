@@ -1180,6 +1180,16 @@ meter.score-meter.tier-c::-moz-meter-bar {
   width: 7px;
 }
 
+.stepper-dot.skipped {
+  background: var(--surface-0);
+  border-color: var(--tier-c-border);
+}
+
+.stepper-dot.failed {
+  background: var(--danger-bg);
+  border-color: var(--danger-500);
+}
+
 .stepper-connector {
   background: var(--tier-c-border);
   flex: 1;
