@@ -225,11 +225,11 @@ export const leads: FixtureLead[] = [
     }
   },
   {
-    id: "lead-elena-ramos",
-    name: "Elena Ramos",
-    email: "elena@rivergate-housing.example",
+    id: "lead-demo-pending",
+    name: "Demo Contact B",
+    email: "demo-contact-b@regional-operator-b.example",
     role: "Leasing Operations Manager",
-    company: "Rivergate Housing",
+    company: "Regional Operator B",
     market: "Raleigh, NC",
     units: 72000,
     gates: { status: "passed", failures: [] },
@@ -322,7 +322,8 @@ export const agentRuns: FixtureAgentRun[] = [
     started: "2m",
     stage: "Human review",
     stageIndex: 3,
-    status: "Awaiting you",
+    status: "awaiting_review",
+    statusLabel: "Awaiting you",
     steps: [
       { name: "Deterministic enrichment", status: "done", summary: "Public data and domain checks completed." },
       {
@@ -331,7 +332,7 @@ export const agentRuns: FixtureAgentRun[] = [
         summary: "Score 92, A-tier, draft generated with cited sources."
       },
       { name: "Knowledge graph", status: "done", summary: "Related company context attached." },
-      { name: "Human review", status: "active", summary: "Awaiting SDR review before copy or export." },
+      { name: "Human review", status: "pending", summary: "Awaiting SDR review before copy or export." },
       { name: "Export", status: "pending", summary: "Runs only after human review." }
     ],
     activityLog: [
@@ -352,10 +353,11 @@ export const agentRuns: FixtureAgentRun[] = [
     started: "9m",
     stage: "Scoring",
     stageIndex: 2,
-    status: "In progress",
+    status: "running",
+    statusLabel: "In progress",
     steps: [
       { name: "Deterministic enrichment", status: "done", summary: "Public data resolved." },
-      { name: "Agent scoring and drafting", status: "active", summary: "Building score and draft." },
+      { name: "Agent scoring and drafting", status: "running", summary: "Building score and draft." },
       { name: "Knowledge graph", status: "pending", summary: "Waiting on score output." },
       { name: "Human review", status: "pending", summary: "Not ready." }
     ],
@@ -370,7 +372,8 @@ export const agentRuns: FixtureAgentRun[] = [
     started: "1h",
     stage: "Exported",
     stageIndex: 4,
-    status: "Exported",
+    status: "completed",
+    statusLabel: "Exported",
     steps: [
       { name: "Deterministic enrichment", status: "done", summary: "Public data resolved." },
       { name: "Agent scoring and drafting", status: "done", summary: "Score 71, B-tier, draft generated." },
@@ -388,7 +391,8 @@ export const agentRuns: FixtureAgentRun[] = [
     started: "-",
     stage: "Human approval policy",
     stageIndex: 0,
-    status: "Next release",
+    status: "queued",
+    statusLabel: "Next release",
     disabled: true,
     steps: [],
     activityLog: []

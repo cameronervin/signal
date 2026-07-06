@@ -62,10 +62,10 @@ export default function AgentsPage() {
                   </span>
                   <span
                     className={`status-pill ${
-                      run.status === "In progress" ? "warning" : run.disabled ? "muted" : ""
+                      run.status === "running" ? "warning" : run.disabled ? "muted" : ""
                     }`}
                   >
-                    {run.status}
+                    {run.statusLabel ?? run.status}
                   </span>
                   {!run.disabled && <ChevronRight className="chevron-soft" size={18} />}
                 </>

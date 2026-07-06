@@ -17,9 +17,8 @@ export default async function AgentRunPage({ params }: Props) {
     notFound();
   }
   const lead = run.leadId ? getLead(run.leadId) : undefined;
-  const reviewStep = run.steps.find((step) => step.name === "Human review");
   const exported = run.steps.some((step) => step.name === "Export" && step.status === "done");
-  const awaitingReview = Boolean(lead?.draft && reviewStep?.status === "active");
+  const awaitingReview = Boolean(lead?.draft && run.status === "awaiting_review");
   const outputComplete = Boolean(lead?.draft && (awaitingReview || exported));
   const scoreLabel = outputComplete && lead ? `${lead.score.total} · ${lead.score.tier}` : "Pending";
 
@@ -44,7 +43,7 @@ export default async function AgentRunPage({ params }: Props) {
               <ChevronLeft size={16} /> Back
             </Link>
             <span className={`status-pill ${awaitingReview ? "warning" : "muted"}`}>
-              {awaitingReview ? "Awaiting your review" : run.status}
+              {awaitingReview ? "Awaiting your review" : run.statusLabel ?? run.status}
             </span>
             <button className="button secondary" type="button">
               <Pause size={15} /> Pause

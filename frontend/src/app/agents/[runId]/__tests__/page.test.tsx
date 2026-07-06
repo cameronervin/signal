@@ -22,7 +22,7 @@ describe("AgentRunPage", () => {
   it("preserves exported runs as terminal states", async () => {
     render(await AgentRunPage({ params: Promise.resolve({ runId: "run-7750" }) }));
 
-    expect(screen.getAllByText("Exported").length).toBeGreaterThan(0);
+    expect(screen.getByText("Exported")).toBeInTheDocument();
     expect(screen.getByText("Draft exported")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /review draft/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /copy reviewed draft/i })).not.toBeInTheDocument();

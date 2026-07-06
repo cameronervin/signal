@@ -1,8 +1,10 @@
 import { Check } from "lucide-react";
 
+import type { StepStatus } from "@/types/lead";
+
 interface Step {
   name: string;
-  status: "done" | "active" | "pending";
+  status: StepStatus;
   summary: string;
   duration?: string;
   chips?: string[];
@@ -17,25 +19,27 @@ export function PipelineStepper({ steps }: Props) {
     <ol className="stepper">
       {steps.map((step, index) => {
         const isLast = index === steps.length - 1;
-        const connectorDone = step.status === "done" && steps[index + 1]?.status === "done";
+        const visualStatus = step.status === "running" ? "active" : step.status === "done" ? "done" : "pending";
+        const nextVisualStatus = steps[index + 1]?.status === "done" ? "done" : "pending";
+        const connectorDone = visualStatus === "done" && nextVisualStatus === "done";
 
         return (
           <li key={`${step.name}-${index}`} className="stepper-step">
             <span className="stepper-rail" aria-hidden="true">
-              <span className={`stepper-dot ${step.status}`}>
-                {step.status === "done" && <Check size={12} strokeWidth={3} />}
+              <span className={`stepper-dot ${visualStatus}`}>
+                {visualStatus === "done" && <Check size={12} strokeWidth={3} />}
               </span>
               {!isLast && <span className={`stepper-connector ${connectorDone ? "done" : ""}`} />}
             </span>
             <span className="stepper-content">
               <span className="flex items-baseline justify-between gap-3">
-                <strong className={step.status === "pending" ? "text-sm text-soft" : "text-sm"}>
+                <strong className={visualStatus === "pending" ? "text-sm text-soft" : "text-sm"}>
                   {step.name}
                 </strong>
                 {step.duration && (
                   <span
                     className={`mono text-xs ${
-                      step.status === "active" ? "text-warning" : "text-soft"
+                      visualStatus === "active" ? "text-warning" : "text-soft"
                     }`}
                   >
                     {step.duration}
@@ -44,7 +48,7 @@ export function PipelineStepper({ steps }: Props) {
               </span>
               <span
                 className={`mt-2 block text-sm leading-6 ${
-                  step.status === "pending" ? "text-soft" : "text-muted"
+                  visualStatus === "pending" ? "text-soft" : "text-muted"
                 }`}
               >
                 {step.summary}

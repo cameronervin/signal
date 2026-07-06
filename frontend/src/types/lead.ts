@@ -1,5 +1,7 @@
 export type Tier = "A" | "B" | "C";
 export type GateStatus = "passed" | "failed";
+export type RunStatus = "queued" | "running" | "awaiting_review" | "completed" | "failed";
+export type StepStatus = "pending" | "running" | "done" | "failed" | "skipped";
 
 export interface SourceFact {
   source: string;
@@ -44,11 +46,12 @@ export interface FixtureAgentRun {
   started: string;
   stage: string;
   stageIndex: number;
-  status: string;
+  status: RunStatus;
+  statusLabel?: string;
   disabled?: boolean;
   steps: Array<{
     name: string;
-    status: "done" | "active" | "pending";
+    status: StepStatus;
     summary: string;
     duration?: string;
     chips?: string[];

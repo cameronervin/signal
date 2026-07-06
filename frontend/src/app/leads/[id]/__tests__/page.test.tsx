@@ -12,7 +12,7 @@ describe("LeadDetailPage", () => {
   });
 
   it("withholds copy and export controls when a gate-passed lead has no draft", async () => {
-    render(await LeadDetailPage({ params: Promise.resolve({ id: "lead-elena-ramos" }) }));
+    render(await LeadDetailPage({ params: Promise.resolve({ id: "lead-demo-pending" }) }));
 
     expect(screen.getByText("Draft pending")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /copy/i })).not.toBeInTheDocument();
