@@ -17,6 +17,7 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+  actions: read
 
 concurrency:
   group: signal-issue-loop-${{ inputs.issue_number || github.event.issue.number || github.run_id }}
@@ -72,6 +73,57 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           DISPATCH_LOOP: ${{ inputs.loop }}
         run: bash .github/scripts/normalize-agent-issue.sh
+
+      - name: Enforce issue loop concurrency cap
+        if: ${{ steps.normalize.outputs.should_run == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
+        run: |
+          max_loops="$(jq -r '.defaults.max_concurrent_issue_loops // 2' .agents/loops/manifest.yml)"
+          if ! [[ "$max_loops" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::Invalid max_concurrent_issue_loops value: $max_loops"
+            exit 1
+          fi
+
+          attempts=0
+          max_attempts=30
+          while true; do
+            gh api \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/codex-issue-loop.yml/runs?status=in_progress&per_page=100" \
+              > .codex-run/issue-loop-runs.json
+
+            slot_status="$(jq -r \
+              --argjson current "$GITHUB_RUN_ID" \
+              --argjson max "$max_loops" \
+              '
+                [.workflow_runs[] | select(.status == "in_progress")]
+                | sort_by(.created_at, .id)
+                | map(.id) as $ids
+                | ($ids | index($current)) as $idx
+                | if $idx == null then "missing"
+                  elif $idx < $max then "proceed"
+                  else "wait"
+                  end
+              ' .codex-run/issue-loop-runs.json)"
+
+            if [[ "$slot_status" == "proceed" ]]; then
+              echo "Issue loop concurrency slot acquired."
+              exit 0
+            fi
+
+            attempts=$((attempts + 1))
+            if (( attempts >= max_attempts )); then
+              gh issue comment "$ISSUE_NUMBER" --body "Codex issue loop could not acquire an issue-loop concurrency slot within 30 minutes. Leaving this issue blocked for retry."
+              gh issue edit "$ISSUE_NUMBER" --remove-label "agent:ready,agent:working" --add-label "agent:blocked" || true
+              echo "::error::Timed out waiting for issue-loop concurrency slot."
+              exit 1
+            fi
+
+            echo "Waiting for issue-loop concurrency slot (${attempts}/${max_attempts})."
+            sleep 60
+          done
 
       - name: Check OpenAI key
         id: openai
