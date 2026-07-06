@@ -1,20 +1,26 @@
+from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 Tier = Literal["A", "B", "C"]
 GateStatus = Literal["passed", "failed"]
+DraftStateStatus = Literal["awaiting_review", "blocked"]
 
 
 class LeadCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
+
     contact_name: str = Field(min_length=1, max_length=120)
     email: EmailStr
     company: str = Field(min_length=1, max_length=180)
     role: str | None = Field(default=None, max_length=120)
+    source: str | None = Field(default=None, min_length=1, max_length=80)
+    submitted_at: datetime | None = None
     property_address: str = Field(min_length=1, max_length=240)
     city: str = Field(min_length=1, max_length=100)
     state: str = Field(min_length=2, max_length=80)
-    country: str = Field(default="US", min_length=2, max_length=80)
+    country: str = Field(default="US", min_length=1, max_length=80)
 
 
 class SourceFact(BaseModel):
@@ -59,6 +65,18 @@ class DraftEmail(BaseModel):
     sources: list[SourceFact] = Field(default_factory=list)
 
 
+class DraftState(BaseModel):
+    eligible: bool
+    status: DraftStateStatus
+    reason: str | None = None
+
+
+class ReviewState(BaseModel):
+    status: DraftStateStatus
+    human_review_required: bool = True
+    reason: str | None = None
+
+
 class RelatedLead(BaseModel):
     lead_id: str
     label: str
@@ -71,8 +89,11 @@ class LeadResponse(BaseModel):
     gates: GateResult
     enrichment: Enrichment
     score: ScoreBreakdown
+    source_facts: list[SourceFact] = Field(default_factory=list)
     talking_points: list[str] = Field(default_factory=list)
     flags: list[str] = Field(default_factory=list)
+    draft_state: DraftState
+    review_state: ReviewState
     draft: DraftEmail | None = None
-    related_leads: list[RelatedLead] = Field(default_factory=list)
+    related_context: list[RelatedLead] = Field(default_factory=list)
     run_id: str

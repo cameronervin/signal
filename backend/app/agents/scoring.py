@@ -1,6 +1,7 @@
 from app.schemas.lead import Enrichment, GateResult, LeadCreate, ScoreBreakdown, Tier
 
 PERSONAL_DOMAINS = {
+    "personal.example",
     "gmail.com",
     "yahoo.com",
     "hotmail.com",

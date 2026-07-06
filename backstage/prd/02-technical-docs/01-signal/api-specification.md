@@ -27,6 +27,8 @@ Request:
   "email": "contact@operator.example",
   "company": "Multifamily Operator",
   "role": "VP Leasing",
+  "source": "web_form",
+  "submitted_at": "2026-07-06T12:00:00Z",
   "property_address": "100 Main St",
   "city": "Austin",
   "state": "TX",
@@ -37,12 +39,22 @@ Request:
 Behavior:
 
 - Validates input.
+- Ignores client-supplied trusted outcomes such as score, tier, gate result,
+  source facts, run state, draft eligibility, or draft content.
 - Creates lead and run ids.
 - Invokes the LangGraph pipeline.
 - Persists the enriched lead and run in the v1 repository.
 - Returns the full lead response.
 
 Response: `201 LeadResponse`
+
+`LeadResponse` includes:
+
+- `id`, original normalized `input`, and `run_id`
+- `gates`, `enrichment`, `source_facts`, `score`, `talking_points`, and `flags`
+- `draft_state` and `review_state`
+- `draft`, which is null when hard gates fail
+- `related_context`
 
 ## List Leads
 
@@ -60,7 +72,8 @@ Returns one lead or 404.
 
 `GET /agent-runs`
 
-Returns current and historical v1 runs.
+Returns current and historical v1 runs. Each run includes `current_stage`,
+`stage_index`, `steps`, sanitized `activity_log`, and `degraded_reasons`.
 
 ## Get Agent Run
 

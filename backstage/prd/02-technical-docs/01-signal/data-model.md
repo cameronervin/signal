@@ -11,6 +11,8 @@ shaped so it can move to SQLAlchemy/PostgreSQL without changing API responses.
 | `email` | email | Used for domain gate and contact |
 | `company` | string | Required |
 | `role` | string nullable | Seniority signal |
+| `source` | string nullable | Optional inbound source label, for example form or manual entry |
+| `submitted_at` | datetime nullable | Optional client-observed submission timestamp |
 | `property_address` | string | Geocoding input |
 | `city` | string | Market signal |
 | `state` | string | Market signal |
@@ -61,7 +63,26 @@ Hard gate failures suppress draft generation.
 - `body`
 - `sources`
 
-Drafts are absent for gate-failed leads.
+`DraftState` contains:
+
+- `eligible`: whether server-owned gates permit draft generation
+- `status`: `awaiting_review` or `blocked`
+- `reason`: failed hard gates when blocked
+
+`ReviewState` contains:
+
+- `status`: `awaiting_review` or `blocked`
+- `human_review_required`: always true for v1 draftable outreach
+- `reason`: failed hard gates when blocked
+
+Drafts are absent for gate-failed leads. Draftable leads still require human
+review before any send-like action.
+
+## Related Context
+
+`LeadResponse.related_context` contains related lead or account context assembled
+by the graph. v1 uses in-memory fixture-style context; later phases can replace
+that implementation without changing the response contract.
 
 ## Agent Run
 
@@ -72,7 +93,11 @@ Drafts are absent for gate-failed leads.
 - `status`
 - `trigger`
 - `current_stage`
+- `stage_index`
 - `steps`
 - `activity_log`
+- `degraded_reasons`
 
-The v1 status surface is enough for polling. Streaming can be added later.
+The v1 status surface is enough for polling. `activity_log` and
+`degraded_reasons` must omit raw emails, prompts, draft bodies, secrets, tokens,
+and provider payloads. Streaming can be added later.
