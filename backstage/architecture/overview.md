@@ -81,6 +81,14 @@ News API triggers, Wikipedia search, and DNS/MX validation. The provider caches
 responses by lead payload and surfaces provider failures as warnings or omitted
 facts.
 
+The FastAPI lifespan owns app-duration infrastructure: settings, DB
+sessionmaker, a shared HTTPX async client, public-data provider, LiteLLM
+provider, and compiled Signal graph provider are warmed once and attached to
+`app.state`. Startup is intentionally warm-only; it does not connect to the
+database, call public APIs, verify LiteLLM, or create schemas. Celery workers
+own the same kind of process-local resources through worker lifecycle signals
+so queued graph execution can reuse compiled graphs and shared HTTP pooling.
+
 ## LLM Boundary
 
 `backend/app/infrastructure/llm/` exposes a LiteLLM provider boundary. Drafting

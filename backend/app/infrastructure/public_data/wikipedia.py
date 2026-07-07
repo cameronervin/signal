@@ -11,9 +11,11 @@ class WikipediaClient:
         self,
         *,
         user_agent: str,
+        http_client: httpx.AsyncClient | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.user_agent = user_agent
+        self.http_client = http_client
         self.transport = transport
 
     async def company_snapshot(self, *, company: str) -> CompanySnapshot | None:
@@ -21,6 +23,7 @@ class WikipediaClient:
             WIKIPEDIA_SEARCH_URL,
             params={"q": company, "limit": 1},
             headers={"User-Agent": self.user_agent},
+            client=self.http_client,
             transport=self.transport,
         )
         if not isinstance(payload, dict):

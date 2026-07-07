@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from time import monotonic
 from typing import Any
 
+import httpx
+
 from app.infrastructure.public_data.census import CensusAcsClient
 from app.infrastructure.public_data.datausa import DataUsaClient
 from app.infrastructure.public_data.domain import DomainMxClient
@@ -28,7 +30,7 @@ class PublicDataClientConfig:
     news_api_key: str | None = None
     fred_api_key: str | None = None
     census_api_key: str | None = None
-    user_agent: str = "Signal API local demo"
+    user_agent: str = "Signal API"
     nominatim_email: str | None = None
     cache_ttl_seconds: int = 3600
 
@@ -45,17 +47,32 @@ class PublicDataClient:
         news: NewsApiClient | None = None,
         wikipedia: WikipediaClient | None = None,
         domain: DomainMxClient | None = None,
+        http_client: httpx.AsyncClient | None = None,
     ) -> None:
         self.config = config
+        self.http_client = http_client
         self.geocoding = geocoding or NominatimClient(
             user_agent=config.user_agent,
             email=config.nominatim_email,
+            http_client=http_client,
         )
-        self.census = census or CensusAcsClient(api_key=config.census_api_key)
-        self.datausa = datausa or DataUsaClient()
-        self.fred = fred or FredClient(api_key=config.fred_api_key)
-        self.news = news or NewsApiClient(api_key=config.news_api_key)
-        self.wikipedia = wikipedia or WikipediaClient(user_agent=config.user_agent)
+        self.census = census or CensusAcsClient(
+            api_key=config.census_api_key,
+            http_client=http_client,
+        )
+        self.datausa = datausa or DataUsaClient(http_client=http_client)
+        self.fred = fred or FredClient(
+            api_key=config.fred_api_key,
+            http_client=http_client,
+        )
+        self.news = news or NewsApiClient(
+            api_key=config.news_api_key,
+            http_client=http_client,
+        )
+        self.wikipedia = wikipedia or WikipediaClient(
+            user_agent=config.user_agent,
+            http_client=http_client,
+        )
         self.domain = domain or DomainMxClient()
         self._cache: dict[str, tuple[float, Any]] = {}
 

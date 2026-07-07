@@ -107,13 +107,18 @@ deploy/envs/      Local env templates
 deploy/litellm/   LiteLLM proxy config
 ```
 
-Start Postgres, the DB UI, Valkey, and LiteLLM:
+Start Postgres, Valkey, and LiteLLM:
 
 ```bash
 cp deploy/envs/.env.local.example deploy/envs/.env.local
 cp deploy/envs/.env.litellm.local.example deploy/envs/.env.litellm.local
 cp backend/.env.example backend/.env
-make compose-up
+docker compose \
+  --env-file deploy/envs/.env.local \
+  --env-file deploy/envs/.env.litellm.local \
+  -f deploy/compose/base.yml \
+  -f deploy/compose/local.yml \
+  up -d postgres valkey litellm
 ```
 
 This exposes local infrastructure on:
@@ -121,9 +126,22 @@ This exposes local infrastructure on:
 | Component | Local host port |
 | --- | --- |
 | Postgres | `5433` |
-| CloudBeaver DB UI | `5050` |
 | Valkey | `6379` |
 | LiteLLM | `4000` |
+
+Use the `signal` Compose project name from `deploy/envs/.env.local`; do not
+start a parallel project with an alternate project name.
+
+Start the optional DB UI when needed:
+
+```bash
+docker compose \
+  --env-file deploy/envs/.env.local \
+  --env-file deploy/envs/.env.litellm.local \
+  -f deploy/compose/base.yml \
+  -f deploy/compose/local.yml \
+  up -d cloudbeaver
+```
 
 Open the DB UI at `http://localhost:5050` and log in with:
 

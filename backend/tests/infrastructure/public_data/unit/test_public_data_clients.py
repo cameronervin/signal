@@ -40,6 +40,59 @@ async def test_get_json_uses_transport_params_headers_and_status_errors() -> Non
 
 
 @pytest.mark.asyncio
+async def test_get_json_can_use_shared_async_client() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"ok": True})
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler),
+        follow_redirects=True,
+    ) as shared_client:
+        payload = await get_json(
+            "https://api.example.test/search",
+            params={"q": "Austin"},
+            headers={"User-Agent": "Signal tests"},
+            client=shared_client,
+        )
+
+    assert payload == {"ok": True}
+    assert requests[0].url == "https://api.example.test/search?q=Austin"
+    assert requests[0].headers["user-agent"] == "Signal tests"
+
+
+@pytest.mark.asyncio
+async def test_get_json_prefers_explicit_transport_over_shared_client() -> None:
+    shared_requests: list[httpx.Request] = []
+    explicit_requests: list[httpx.Request] = []
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(
+            lambda request: (
+                shared_requests.append(request)
+                or httpx.Response(200, json={"source": "shared"})
+            )
+        ),
+    ) as shared_client:
+        payload = await get_json(
+            "https://api.example.test/search",
+            client=shared_client,
+            transport=httpx.MockTransport(
+                lambda request: (
+                    explicit_requests.append(request)
+                    or httpx.Response(200, json={"source": "explicit"})
+                )
+            ),
+        )
+
+    assert payload == {"source": "explicit"}
+    assert explicit_requests
+    assert shared_requests == []
+
+
+@pytest.mark.asyncio
 async def test_nominatim_client_sends_search_contract() -> None:
     captured: list[httpx.Request] = []
 

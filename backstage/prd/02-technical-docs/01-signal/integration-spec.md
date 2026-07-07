@@ -24,8 +24,11 @@ surfaces unavailable providers as warnings instead of substituting fixture data.
 - Live adapters must have mocked contract tests over request and response shape.
 - Failures return warnings or omitted facts, not unhandled exceptions or
   production fixture substitutes.
-- The public data provider is cached by settings and injected into LangGraph
-  runtime context per run.
+- The public data provider is warmed by the API lifespan or worker process
+  lifecycle and injected into LangGraph runtime context per run.
+- Runtime public-data adapters reuse a shared scoped HTTPX async client for
+  connection pooling; tests may still inject explicit mocked transports for
+  contract isolation.
 - The same provider methods back deterministic enrichment and optional
   model-callable research tools.
 

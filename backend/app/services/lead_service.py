@@ -2,11 +2,11 @@ from collections import Counter
 from collections.abc import AsyncIterator
 from uuid import uuid4
 
-from fastapi import Depends
+from fastapi import Depends, Request
 
 from app.agents.executors.signal_pipeline import SignalPipelineExecutor
 from app.agents.states.signal_state import SignalState
-from app.core.config import Settings, get_settings
+from app.core.config import Settings, get_request_settings
 from app.infrastructure.db.session import get_sessionmaker
 from app.infrastructure.public_data import get_public_data_client
 from app.repositories.base import SignalRepository
@@ -183,14 +183,22 @@ def _update_human_review_step(
 
 
 async def get_lead_service(
-    settings: Settings = Depends(get_settings),
+    request: Request,
+    settings: Settings = Depends(get_request_settings),
 ) -> AsyncIterator[LeadService]:
-    session_factory = get_sessionmaker(settings)
+    session_factory = getattr(request.app.state, "sessionmaker", None)
+    if session_factory is None:
+        session_factory = get_sessionmaker(settings)
+    public_data_client = getattr(request.app.state, "public_data_client", None)
+    if public_data_client is None:
+        public_data_client = get_public_data_client(settings)
+    graph_provider = getattr(request.app.state, "signal_graph_provider", None)
     async with session_factory() as session:
         yield LeadService(
             PostgresSignalRepository(session),
             pipeline_executor=SignalPipelineExecutor(
                 settings=settings,
-                public_data_client=get_public_data_client(settings),
+                graph_provider=graph_provider,
+                public_data_client=public_data_client,
             ),
         )

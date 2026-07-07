@@ -32,18 +32,36 @@ use a `SIGNAL_` prefix.
 ## Start Dependencies
 
 ```bash
-make compose-up
+docker compose \
+  --env-file deploy/envs/.env.local \
+  --env-file deploy/envs/.env.litellm.local \
+  -f deploy/compose/base.yml \
+  -f deploy/compose/local.yml \
+  up -d postgres valkey litellm
 ```
 
 This starts:
 
 - Postgres on `localhost:5433`
-- CloudBeaver DB UI on `localhost:5050`
 - Valkey on `localhost:6379`
 - LiteLLM on `localhost:4000`
 
+Use the `signal` Compose project name from `deploy/envs/.env.local`; do not
+start a parallel project with an alternate project name.
+
 LiteLLM uses its database-backed image for the local proxy. On a fresh Postgres
 volume, the first boot can take several minutes while proxy migrations run.
+
+Start the optional DB UI when needed:
+
+```bash
+docker compose \
+  --env-file deploy/envs/.env.local \
+  --env-file deploy/envs/.env.litellm.local \
+  -f deploy/compose/base.yml \
+  -f deploy/compose/local.yml \
+  up -d cloudbeaver
+```
 
 Open the DB UI at `http://localhost:5050` and log in with:
 
@@ -72,13 +90,23 @@ CloudBeaver admin password, set `DB_UI_ADMIN_PASSWORD`.
 Stop the stack with:
 
 ```bash
-make compose-down
+docker compose \
+  --env-file deploy/envs/.env.local \
+  --env-file deploy/envs/.env.litellm.local \
+  -f deploy/compose/base.yml \
+  -f deploy/compose/local.yml \
+  down
 ```
 
 Reset local dependency data with:
 
 ```bash
-make compose-reset
+docker compose \
+  --env-file deploy/envs/.env.local \
+  --env-file deploy/envs/.env.litellm.local \
+  -f deploy/compose/base.yml \
+  -f deploy/compose/local.yml \
+  down -v
 ```
 
 ## Run App Processes On Host

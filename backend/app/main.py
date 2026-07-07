@@ -1,21 +1,51 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.agents.graph_provider import (
+    clear_signal_graph_provider_cache,
+    get_signal_graph_provider,
+)
 from app.api.v1.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
-from app.infrastructure.db.session import close_db_engine
+from app.infrastructure.db.session import close_db_engine, get_sessionmaker
+from app.infrastructure.llm import clear_llm_provider_cache, get_llm_provider
+from app.infrastructure.public_data import (
+    clear_public_data_client_cache,
+    create_public_data_client,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
     configure_logging(settings.log_level)
-    yield
-    await close_db_engine(settings)
+    http_client = httpx.AsyncClient(follow_redirects=True)
+    try:
+        sessionmaker = get_sessionmaker(settings)
+        public_data_client = create_public_data_client(
+            settings,
+            http_client=http_client,
+        )
+        llm_provider = get_llm_provider(settings)
+        signal_graph_provider = get_signal_graph_provider(settings=settings)
+        signal_graph_provider.signal_graph()
+        app.state.http_client = http_client
+        app.state.sessionmaker = sessionmaker
+        app.state.public_data_client = public_data_client
+        app.state.llm_provider = llm_provider
+        app.state.signal_graph_provider = signal_graph_provider
+        yield
+    finally:
+        await http_client.aclose()
+        await close_db_engine(settings)
+        clear_public_data_client_cache()
+        clear_llm_provider_cache()
+        clear_signal_graph_provider_cache()
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

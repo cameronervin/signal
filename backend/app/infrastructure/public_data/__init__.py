@@ -2,6 +2,7 @@
 
 from app.infrastructure.public_data.factory import (
     clear_public_data_client_cache,
+    create_public_data_client,
     get_public_data_client,
 )
 from app.infrastructure.public_data.provider import (
@@ -13,5 +14,6 @@ __all__ = [
     "PublicDataClient",
     "PublicDataClientConfig",
     "clear_public_data_client_cache",
+    "create_public_data_client",
     "get_public_data_client",
 ]

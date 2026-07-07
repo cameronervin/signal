@@ -14,9 +14,11 @@ class FredClient:
         self,
         *,
         api_key: str | None = None,
+        http_client: httpx.AsyncClient | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.api_key = api_key
+        self.http_client = http_client
         self.transport = transport
 
     async def snapshot(self, *, state: str) -> FredSnapshot | None:
@@ -66,6 +68,7 @@ class FredClient:
                 "sort_order": "desc",
                 "limit": limit,
             },
+            client=self.http_client,
             transport=self.transport,
         )
         if not isinstance(payload, dict):

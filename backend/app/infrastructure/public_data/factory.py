@@ -1,5 +1,7 @@
 from functools import lru_cache
 
+import httpx
+
 from app.core.config import Settings, get_settings
 from app.infrastructure.public_data.provider import (
     PublicDataClient,
@@ -10,6 +12,14 @@ from app.infrastructure.public_data.provider import (
 @lru_cache
 def _cached_public_data_client(settings_json: str) -> PublicDataClient:
     settings = Settings.model_validate_json(settings_json)
+    return create_public_data_client(settings)
+
+
+def create_public_data_client(
+    settings: Settings,
+    *,
+    http_client: httpx.AsyncClient | None = None,
+) -> PublicDataClient:
     return PublicDataClient(
         PublicDataClientConfig(
             news_api_key=settings.news_api_key,
@@ -18,7 +28,8 @@ def _cached_public_data_client(settings_json: str) -> PublicDataClient:
             user_agent=settings.public_data_user_agent,
             nominatim_email=settings.nominatim_email,
             cache_ttl_seconds=settings.public_data_cache_ttl_seconds,
-        )
+        ),
+        http_client=http_client,
     )
 
 

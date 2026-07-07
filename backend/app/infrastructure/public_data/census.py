@@ -15,9 +15,11 @@ class CensusAcsClient:
         self,
         *,
         api_key: str | None = None,
+        http_client: httpx.AsyncClient | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.api_key = api_key
+        self.http_client = http_client
         self.transport = transport
 
     async def market_snapshot(
@@ -39,6 +41,7 @@ class CensusAcsClient:
         payload = await get_json(
             CENSUS_ACS_PROFILE_URL,
             params=params,
+            client=self.http_client,
             transport=self.transport,
         )
         if not isinstance(payload, list) or len(payload) < 2:

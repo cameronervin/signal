@@ -14,10 +14,12 @@ class NominatimClient:
         *,
         user_agent: str,
         email: str | None = None,
+        http_client: httpx.AsyncClient | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.user_agent = user_agent
         self.email = email
+        self.http_client = http_client
         self.transport = transport
 
     async def geocode(
@@ -44,6 +46,7 @@ class NominatimClient:
             NOMINATIM_SEARCH_URL,
             params=params,
             headers={"User-Agent": self.user_agent},
+            client=self.http_client,
             transport=self.transport,
         )
         if not isinstance(payload, list) or not payload:

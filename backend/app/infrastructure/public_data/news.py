@@ -11,9 +11,11 @@ class NewsApiClient:
         self,
         *,
         api_key: str | None = None,
+        http_client: httpx.AsyncClient | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.api_key = api_key
+        self.http_client = http_client
         self.transport = transport
 
     async def recent_trigger(self, *, company: str) -> NewsSnapshot | None:
@@ -28,6 +30,7 @@ class NewsApiClient:
                 "pageSize": 1,
                 "apiKey": self.api_key,
             },
+            client=self.http_client,
             transport=self.transport,
         )
         if not isinstance(payload, dict):
