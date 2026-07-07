@@ -38,6 +38,16 @@ services:
     ports:
       - "${VALKEY_HOST_PORT:-6379}:6379"
 
+  neo4j:
+    ports:
+      - "${NEO4J_BROWSER_HOST_PORT:-7474}:7474"
+      - "${NEO4J_BOLT_HOST_PORT:-7687}:7687"
+    env_file:
+      - path: ../envs/.env.local
+        required: false
+    environment:
+      NEO4J_AUTH: ${SIGNAL_NEO4J_USER:-neo4j}/${SIGNAL_NEO4J_PASSWORD:-signal-local-neo4j}
+
   litellm-db-init:
     image: postgres:16-alpine
     env_file:
@@ -72,8 +82,8 @@ services:
       # LiteLLM runs inside Compose, so it uses the Postgres container port.
       LITELLM_DATABASE_URL: ${LITELLM_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/litellm}
       SIGNAL_LITELLM_UPSTREAM_MODEL: ${SIGNAL_LITELLM_UPSTREAM_MODEL:-openai/gpt-5.4-mini}
-      SIGNAL_LITELLM_UPSTREAM_API_BASE: ${SIGNAL_LITELLM_UPSTREAM_API_BASE:-https://api.openai.com/v1}
-      SIGNAL_LITELLM_UPSTREAM_API_KEY: ${SIGNAL_LITELLM_UPSTREAM_API_KEY:-replace-with-openai-api-key}
+      OPENAI_API_BASE: ${OPENAI_API_BASE:-https://api.openai.com/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-replace-with-openai-api-key}
     depends_on:
       postgres:
         condition: service_healthy

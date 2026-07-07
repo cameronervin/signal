@@ -44,6 +44,39 @@ Behavior:
 
 Response: `201 LeadResponse`
 
+`LeadResponse` includes `knowledge_graph`:
+
+```json
+{
+  "nodes": [
+    {
+      "id": "lead:lead_123",
+      "kind": "lead",
+      "label": "Sample Contact",
+      "subtitle": "Current inbound lead",
+      "source_fact_ids": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "lead:lead_123:HAS_CONTACT:contact_123",
+      "source": "lead:lead_123",
+      "target": "contact_123",
+      "relationship": "HAS_CONTACT",
+      "reason": "Lead input includes this contact.",
+      "confidence": 1.0,
+      "source_fact_ids": []
+    }
+  ],
+  "sources": [],
+  "related_leads": [],
+  "warnings": []
+}
+```
+
+The legacy `related_leads` field remains in the response and is populated from
+graph related-lead context when available.
+
 ## List Leads
 
 `GET /leads`

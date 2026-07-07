@@ -9,9 +9,12 @@ from app.agents.states.signal_state import SignalState
 from app.agents.tools.tool_registry import PUBLIC_DATA_ENRICHMENT_TOOL
 from app.agents.utils.scoring import load_scoring_config, score_lead
 from app.agents.utils.talking_points import talking_points_for_enrichment
+from app.schemas.knowledge_graph import KnowledgeGraphContext, LeadKnowledgeGraph
 from app.schemas.lead import RelatedLead
 
 DETERMINISTIC_ENRICHMENT_NODE = "deterministic_enrichment"
+KNOWLEDGE_GRAPH_INGEST_NODE = "knowledge_graph_ingest"
+GRAPH_CONTEXT_RETRIEVAL_NODE = "graph_context_retrieval"
 DETERMINISTIC_SCORING_NODE = "deterministic_scoring"
 AGENT_RESEARCH_AND_DRAFTING_NODE = "agent_research_and_drafting"
 SCORING_AND_DRAFTING_NODE = AGENT_RESEARCH_AND_DRAFTING_NODE
@@ -43,6 +46,72 @@ def create_lead_intelligence_nodes(
             "activity_log": ["deterministic_enrichment: completed"],
         }
 
+    async def knowledge_graph_ingest(
+        state: SignalState,
+        runtime: Runtime[SignalRuntimeContext],
+    ) -> dict[str, Any]:
+        try:
+            graph_context = (
+                await runtime.context.knowledge_graph_service.ingest_lead_graph(
+                    lead_id=state["lead_id"],
+                    lead=state["lead"],
+                    enrichment=state["enrichment"],
+                )
+            )
+        except Exception:  # noqa: BLE001
+            graph_context = KnowledgeGraphContext(
+                warnings=[
+                    (
+                        "knowledge graph ingest unavailable; returned current "
+                        "lead graph only"
+                    )
+                ]
+            )
+        return {
+            "graph_context": graph_context,
+            "activity_log": [
+                *state.get("activity_log", []),
+                *_graph_warning_activity("knowledge_graph_ingest", graph_context),
+                "knowledge_graph_ingest: completed",
+            ],
+        }
+
+    async def graph_context_retrieval(
+        state: SignalState,
+        runtime: Runtime[SignalRuntimeContext],
+    ) -> dict[str, Any]:
+        existing_context = state.get("graph_context", KnowledgeGraphContext())
+        try:
+            graph_context = (
+                await runtime.context.knowledge_graph_service.retrieve_graph_context(
+                    lead_id=state["lead_id"],
+                    lead=state["lead"],
+                    enrichment=state["enrichment"],
+                    existing_warnings=existing_context.warnings,
+                )
+            )
+        except Exception:  # noqa: BLE001
+            graph_context = KnowledgeGraphContext(
+                warnings=[
+                    *existing_context.warnings,
+                    (
+                        "knowledge graph retrieval unavailable; returned current "
+                        "lead graph only"
+                    ),
+                ]
+            )
+        return {
+            "graph_context": graph_context,
+            "activity_log": [
+                *state.get("activity_log", []),
+                *_graph_warning_activity(
+                    "graph_context_retrieval",
+                    graph_context,
+                ),
+                "graph_context_retrieval: completed",
+            ],
+        }
+
     async def deterministic_scoring(
         state: SignalState,
         runtime: Runtime[SignalRuntimeContext],
@@ -56,7 +125,11 @@ def create_lead_intelligence_nodes(
             enrichment,
             config=load_scoring_config(runtime.context.settings),
         )
-        talking_points = talking_points_for_enrichment(enrichment)
+        graph_context = state.get("graph_context", KnowledgeGraphContext())
+        talking_points = [
+            *talking_points_for_enrichment(enrichment),
+            *graph_context.talking_points,
+        ]
         return {
             "score": score,
             "talking_points": talking_points,
@@ -121,26 +194,55 @@ def create_lead_intelligence_nodes(
             ],
         }
 
-    async def knowledge_graph_builder(state: SignalState) -> dict[str, Any]:
-        lead = state["lead"]
+    async def knowledge_graph_builder(
+        state: SignalState,
+        runtime: Runtime[SignalRuntimeContext],
+    ) -> dict[str, Any]:
+        graph_context = state.get("graph_context", KnowledgeGraphContext())
+        try:
+            knowledge_graph = (
+                runtime.context.knowledge_graph_service.project_lead_graph(
+                    lead_id=state["lead_id"],
+                    lead=state["lead"],
+                    enrichment=state["enrichment"],
+                    graph_context=graph_context,
+                )
+            )
+        except Exception:  # noqa: BLE001
+            knowledge_graph = LeadKnowledgeGraph(
+                warnings=[
+                    *graph_context.warnings,
+                    (
+                        "knowledge graph projection unavailable; returned empty "
+                        "graph"
+                    ),
+                ]
+            )
         related = [
             RelatedLead(
-                lead_id="demo-related-001",
-                label=f"{lead.company} related inbound",
-                reason="Same company appeared in fixture history",
+                lead_id=item.lead_id,
+                label=item.label,
+                reason=item.reason,
             )
+            for item in graph_context.related_leads
         ]
         return {
             "related_leads": related,
+            "knowledge_graph": knowledge_graph,
             "activity_log": [
                 *state.get("activity_log", []),
-                "knowledge_graph_builder: completed",
+                (
+                    "knowledge_graph_builder: completed "
+                    f"with {len(related)} related lead(s)"
+                ),
                 _human_review_activity(state),
             ],
         }
 
     return {
         DETERMINISTIC_ENRICHMENT_NODE: deterministic_enrichment,
+        KNOWLEDGE_GRAPH_INGEST_NODE: knowledge_graph_ingest,
+        GRAPH_CONTEXT_RETRIEVAL_NODE: graph_context_retrieval,
         DETERMINISTIC_SCORING_NODE: deterministic_scoring,
         AGENT_RESEARCH_AND_DRAFTING_NODE: agent_research_and_drafting,
         KNOWLEDGE_GRAPH_NODE: knowledge_graph_builder,
@@ -160,3 +262,10 @@ def _human_review_activity(state: SignalState) -> str:
     if state["gates"].status == "passed" and state.get("draft") is not None:
         return "human_review: awaiting approval"
     return "human_review: skipped because no draft was produced"
+
+
+def _graph_warning_activity(
+    node_name: str,
+    graph_context: KnowledgeGraphContext,
+) -> list[str]:
+    return [f"{node_name}: {warning}" for warning in graph_context.warnings]

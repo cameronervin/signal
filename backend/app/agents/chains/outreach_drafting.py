@@ -10,8 +10,8 @@ from langchain_core.tools import BaseTool
 from app.agents.prompts.outreach import OUTREACH_DRAFT_INSTRUCTIONS
 from app.agents.tools.tool_prompts import TOOL_PROMPT_REGISTRY, ToolPromptKey
 from app.core.config import Settings
-from app.infrastructure.llm import get_llm_provider
 from app.infrastructure.llm.base import BaseLLMProvider, DraftOutreachResult
+from app.infrastructure.llm.factory import get_llm_provider
 from app.schemas.lead import (
     Enrichment,
     GateResult,

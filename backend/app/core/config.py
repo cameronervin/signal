@@ -81,6 +81,26 @@ class Settings(BaseSettings):
         default="postgresql+asyncpg://postgres:postgres@localhost:5433/signal",
         validation_alias="DATABASE_URL",
     )
+    knowledge_graph_enabled: bool = Field(
+        default=False,
+        validation_alias="SIGNAL_KNOWLEDGE_GRAPH_ENABLED",
+    )
+    neo4j_uri: str = Field(
+        default="bolt://localhost:7687",
+        validation_alias="SIGNAL_NEO4J_URI",
+    )
+    neo4j_user: str = Field(
+        default="neo4j",
+        validation_alias="SIGNAL_NEO4J_USER",
+    )
+    neo4j_password: str = Field(
+        default="signal-local-neo4j",
+        validation_alias="SIGNAL_NEO4J_PASSWORD",
+    )
+    neo4j_database: str | None = Field(
+        default="neo4j",
+        validation_alias="SIGNAL_NEO4J_DATABASE",
+    )
     celery_broker_url: str = Field(
         default="redis://localhost:6379/0",
         validation_alias="SIGNAL_CELERY_BROKER_URL",

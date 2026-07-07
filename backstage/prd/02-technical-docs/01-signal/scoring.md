@@ -46,6 +46,10 @@ Total score target: 0-100.
 
 Bonuses are bounded by a max score of 100.
 
+The Neo4j-backed knowledge graph can add explainable talking points and related
+lead context, but this implementation does not change score weights, tier
+thresholds, or the planned related-graph bonus.
+
 ## Tiers
 
 | Tier | Score |

@@ -53,4 +53,13 @@ SIGNAL_NEWS_API_KEY=optional
 SIGNAL_NOMINATIM_EMAIL=optional-contact@example.com
 SIGNAL_AGENT_RESEARCH_TOOLS_ENABLED=true
 SIGNAL_AGENT_RESEARCH_MAX_TOOL_ROUNDS=3
+SIGNAL_KNOWLEDGE_GRAPH_ENABLED=false
+SIGNAL_NEO4J_URI=bolt://localhost:7687
+SIGNAL_NEO4J_USER=neo4j
+SIGNAL_NEO4J_PASSWORD=optional-local-password
+SIGNAL_NEO4J_DATABASE=neo4j
 ```
+
+Neo4j is optional. Disabled or unavailable graph storage returns a bounded
+current-lead graph projection with explicit graph warnings instead of falling
+back to fixture relationship data.

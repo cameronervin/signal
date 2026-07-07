@@ -27,10 +27,11 @@ async def _execute_signal_agent_run(initial_state: dict[str, Any]) -> dict[str, 
     if worker_resources is None:
         executor = SignalPipelineExecutor()
     else:
-        graph_provider, public_data_client = worker_resources
+        graph_provider, public_data_client, knowledge_graph_service = worker_resources
         executor = SignalPipelineExecutor(
             graph_provider=graph_provider,
             public_data_client=public_data_client,
+            knowledge_graph_service=knowledge_graph_service,
         )
     result = await executor.execute(state)
     return _json_safe(result)

@@ -35,3 +35,19 @@ def test_settings_reads_signal_llm_model(
     settings = Settings(_env_file=None)
 
     assert settings.llm_model == "signal-chat"
+
+
+def test_settings_reads_knowledge_graph_configuration(monkeypatch) -> None:
+    monkeypatch.setenv("SIGNAL_KNOWLEDGE_GRAPH_ENABLED", "true")
+    monkeypatch.setenv("SIGNAL_NEO4J_URI", "bolt://neo4j:7687")
+    monkeypatch.setenv("SIGNAL_NEO4J_USER", "neo4j")
+    monkeypatch.setenv("SIGNAL_NEO4J_PASSWORD", "local-password")
+    monkeypatch.setenv("SIGNAL_NEO4J_DATABASE", "neo4j")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.knowledge_graph_enabled is True
+    assert settings.neo4j_uri == "bolt://neo4j:7687"
+    assert settings.neo4j_user == "neo4j"
+    assert settings.neo4j_password == "local-password"
+    assert settings.neo4j_database == "neo4j"

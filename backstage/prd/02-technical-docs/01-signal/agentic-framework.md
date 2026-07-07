@@ -8,6 +8,8 @@ testable, and production-ready.
 ```text
 START
   -> deterministic_enrichment
+  -> knowledge_graph_ingest
+  -> graph_context_retrieval
   -> deterministic_scoring
   -> agent_research_and_drafting
   -> knowledge_graph_builder
@@ -28,6 +30,8 @@ State lives in `backend/app/agents/states/signal_state.py` and includes:
 - `flags`
 - `draft`
 - `related_leads`
+- `graph_context`
+- `knowledge_graph`
 - `activity_log`
 
 Nodes return partial state updates.
@@ -63,11 +67,28 @@ mocked or fixed data explicitly.
 
 The compiled graph is provided by `SignalGraphProvider`, which caches compiled
 graphs by settings/checkpointer identity. `SignalPipelineExecutor` injects a
-`SignalRuntimeContext` containing settings and the public data provider into
-each `ainvoke` call, so adapters are selected per run without recompiling the
-graph.
+`SignalRuntimeContext` containing settings, the public data provider, and the
+knowledge graph service into each `ainvoke` call, so adapters are selected per
+run without recompiling the graph.
 
-## Node 2 - Deterministic Scoring
+## Node 2 - Knowledge Graph Ingest
+
+Responsibilities:
+
+- Build deterministic graph entity ids from lead input and enrichment facts.
+- Write the current lead graph to Neo4j when graph storage is enabled.
+- Return explicit graph warnings when Neo4j is disabled or unavailable.
+
+## Node 3 - Graph Context Retrieval
+
+Responsibilities:
+
+- Retrieve prior related-lead candidates from the graph repository.
+- Apply deterministic relationship rules for same-company, same-market,
+  shared-trigger, and shared-source context.
+- Keep graph context bounded and explainable before scoring and drafting.
+
+## Node 4 - Deterministic Scoring
 
 Responsibilities:
 
@@ -77,7 +98,7 @@ Responsibilities:
 - Use scoring defaults from the backend scoring config, or load an override
   from `SIGNAL_SCORING_CONFIG_PATH`.
 
-## Node 3 - Agent Research And Drafting
+## Node 5 - Agent Research And Drafting
 
 Responsibilities:
 
@@ -91,15 +112,17 @@ The LiteLLM provider boundary lives under `backend/app/infrastructure/llm/`.
 Model-backed drafting preserves the human review gate. Empty or failed model
 responses produce an explicit no-draft failure state.
 
-## Node 4 - Knowledge Graph Builder
+## Node 6 - Knowledge Graph Builder
 
 Responsibilities:
 
-- Link contact, company, property, and market context.
-- Surface related leads.
+- Project current lead, contact, company, property, market, source fact,
+  trigger, and related lead context into `LeadResponse.knowledge_graph`.
+- Surface graph-backed related leads through the legacy `related_leads` field.
 - Mark the run as awaiting human review when gates pass.
 
-V1 uses lightweight related records. A graph database is out of scope.
+Neo4j is optional and scoped to graph context. Postgres remains the source of
+truth for lead and run snapshots.
 
 ## Loop Guardrails
 

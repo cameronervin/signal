@@ -1,8 +1,8 @@
 from app.agents.utils.scoring import score_lead
 from app.infrastructure.public_data.fixtures import demo_enrichment
 from app.schemas.lead import DraftEmail, GateResult, LeadCreate
-from app.services.agent_run_builder import build_agent_run_response
-from app.services.lead_response_builder import build_lead_response
+from app.services.agent_execution_service import AgentExecutionService
+from tests.fakes import FakeSignalRepository
 
 
 def _lead() -> LeadCreate:
@@ -18,11 +18,13 @@ def _lead() -> LeadCreate:
     )
 
 
-def test_lead_response_builder_defaults_optional_graph_outputs() -> None:
+def test_execution_service_lead_response_defaults_optional_graph_outputs() -> None:
     lead = _lead()
     gates = GateResult(status="passed")
     enrichment = demo_enrichment(lead.company, lead.city, lead.state)
-    response = build_lead_response(
+    service = AgentExecutionService(FakeSignalRepository())
+
+    response = service._build_lead_response(
         lead_id="lead_test",
         run_id="run_test",
         lead=lead,
@@ -41,13 +43,16 @@ def test_lead_response_builder_defaults_optional_graph_outputs() -> None:
     assert response.talking_points == []
     assert response.flags == []
     assert response.related_leads == []
+    assert response.knowledge_graph.nodes == []
 
 
-def test_agent_run_builder_preserves_human_review_gate() -> None:
+def test_execution_service_preserves_human_review_gate() -> None:
     lead = _lead()
     gates = GateResult(status="passed")
     enrichment = demo_enrichment(lead.company, lead.city, lead.state)
-    response = build_lead_response(
+    service = AgentExecutionService(FakeSignalRepository())
+
+    response = service._build_lead_response(
         lead_id="lead_test",
         run_id="run_test",
         lead=lead,
@@ -66,7 +71,7 @@ def test_agent_run_builder_preserves_human_review_gate() -> None:
         },
     )
 
-    run = build_agent_run_response(
+    run = service._build_agent_run_response(
         lead=response,
         activity_log=["deterministic_enrichment: completed"],
     )
@@ -78,11 +83,13 @@ def test_agent_run_builder_preserves_human_review_gate() -> None:
     assert run.steps[-1].status == "pending"
 
 
-def test_agent_run_builder_marks_model_drafting_failure() -> None:
+def test_execution_service_marks_model_drafting_failure() -> None:
     lead = _lead()
     gates = GateResult(status="passed")
     enrichment = demo_enrichment(lead.company, lead.city, lead.state)
-    response = build_lead_response(
+    service = AgentExecutionService(FakeSignalRepository())
+
+    response = service._build_lead_response(
         lead_id="lead_test",
         run_id="run_test",
         lead=lead,
@@ -97,7 +104,7 @@ def test_agent_run_builder_marks_model_drafting_failure() -> None:
         },
     )
 
-    run = build_agent_run_response(
+    run = service._build_agent_run_response(
         lead=response,
         activity_log=["agent_research_and_drafting: model drafting failed"],
     )
@@ -111,11 +118,13 @@ def test_agent_run_builder_marks_model_drafting_failure() -> None:
     assert run.steps[-1].status == "skipped"
 
 
-def test_agent_run_builder_marks_gate_failed_lead_completed() -> None:
+def test_execution_service_marks_gate_failed_lead_completed() -> None:
     lead = _lead()
     gates = GateResult(status="failed", failures=["personal email domain"])
     enrichment = demo_enrichment(lead.company, lead.city, lead.state)
-    response = build_lead_response(
+    service = AgentExecutionService(FakeSignalRepository())
+
+    response = service._build_lead_response(
         lead_id="lead_test",
         run_id="run_test",
         lead=lead,
@@ -130,7 +139,7 @@ def test_agent_run_builder_marks_gate_failed_lead_completed() -> None:
         },
     )
 
-    run = build_agent_run_response(lead=response, activity_log=[])
+    run = service._build_agent_run_response(lead=response, activity_log=[])
 
     assert run.status == "completed"
     assert run.current_stage == "gate_failed"

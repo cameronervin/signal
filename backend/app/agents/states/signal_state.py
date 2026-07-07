@@ -1,5 +1,6 @@
 from typing import NotRequired, TypedDict
 
+from app.schemas.knowledge_graph import KnowledgeGraphContext, LeadKnowledgeGraph
 from app.schemas.lead import (
     DraftEmail,
     Enrichment,
@@ -21,4 +22,6 @@ class SignalState(TypedDict):
     flags: NotRequired[list[str]]
     draft: NotRequired[DraftEmail | None]
     related_leads: NotRequired[list[RelatedLead]]
+    graph_context: NotRequired[KnowledgeGraphContext]
+    knowledge_graph: NotRequired[LeadKnowledgeGraph]
     activity_log: NotRequired[list[str]]

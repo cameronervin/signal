@@ -118,6 +118,7 @@ function mapLeadResponse(lead: LeadResponseDto): FixtureLead {
     talkingPoints: lead.talking_points,
     marketSignals: buildMarketSignals(lead),
     related: lead.related_leads.map((related) => ({ label: related.label, reason: related.reason })),
+    knowledgeGraph: lead.knowledge_graph,
     draft: lead.draft
       ? {
           subject: lead.draft.subject,

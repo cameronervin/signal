@@ -5,6 +5,8 @@ from app.agents.chains.outreach_drafting import OUTREACH_DRAFT_CHAIN
 from app.agents.nodes import (
     DETERMINISTIC_ENRICHMENT_NODE,
     DETERMINISTIC_SCORING_NODE,
+    GRAPH_CONTEXT_RETRIEVAL_NODE,
+    KNOWLEDGE_GRAPH_INGEST_NODE,
     KNOWLEDGE_GRAPH_NODE,
     SCORING_AND_DRAFTING_NODE,
 )
@@ -35,6 +37,8 @@ def test_signal_pipeline_builder_uses_named_chain_tool_and_node_keys() -> None:
     assert set(nodes) == {"signal_pipeline"}
     assert set(nodes["signal_pipeline"]) == {
         DETERMINISTIC_ENRICHMENT_NODE,
+        KNOWLEDGE_GRAPH_INGEST_NODE,
+        GRAPH_CONTEXT_RETRIEVAL_NODE,
         DETERMINISTIC_SCORING_NODE,
         SCORING_AND_DRAFTING_NODE,
         KNOWLEDGE_GRAPH_NODE,

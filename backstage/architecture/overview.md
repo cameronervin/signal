@@ -10,32 +10,44 @@ Signal is a small monorepo with three collaboration surfaces:
 
 ```text
 POST /api/v1/leads
-  -> LeadService.create_and_enrich
+  -> LeadIntakeService.create_and_enrich
+  -> AgentExecutionService.execute_for_inbound_lead
   -> SignalPipelineExecutor
      -> deterministic_enrichment
+     -> knowledge_graph_ingest
+     -> graph_context_retrieval
      -> deterministic_scoring
      -> agent_research_and_drafting
      -> knowledge_graph_builder
-  -> PostgresSignalRepository
+  -> SignalSnapshotRepository
   -> LeadResponse + AgentRunResponse
 ```
 
 ## Boundaries
 
-- Routes parse and return DTOs.
+- Routes parse and return DTOs, with FastAPI dependency wiring centralized in
+  `backend/app/api/v1/dependencies.py`.
 - Services orchestrate use cases.
 - Repositories persist product records.
 - Agent executors run bounded LangGraph graphs.
 - Agent nodes transform typed state.
 - Infrastructure normalizes public API payloads into source facts.
 - Infrastructure owns swappable DB, LLM, and public data provider setup.
+- Infrastructure owns optional Neo4j driver setup and graph repository
+  implementations.
 
 ## V1 Persistence
 
-Signal uses `PostgresSignalRepository`, which stores stable Pydantic response
+Signal uses `SignalSnapshotRepository`, which stores stable Pydantic response
 DTO snapshots in Postgres through SQLAlchemy async sessions while indexing queue
-and run fields. Alembic owns schema creation and migrations. This preserves API
+and run fields such as tier, score, market, gate status, run status, and run
+trigger. Alembic owns schema creation and migrations. This preserves API
 response models while the relational model matures.
+
+Neo4j is an optional relationship store for lead graph context. It is enabled
+with `SIGNAL_KNOWLEDGE_GRAPH_ENABLED` and stores current lead, contact, company,
+property, market, source fact, trigger, and related-lead relationships. Postgres
+remains the canonical source of truth for lead and run snapshots.
 
 ## V1 Agent Runtime
 
@@ -83,11 +95,20 @@ facts.
 
 The FastAPI lifespan owns app-duration infrastructure: settings, DB
 sessionmaker, a shared HTTPX async client, public-data provider, LiteLLM
-provider, and compiled Signal graph provider are warmed once and attached to
-`app.state`. Startup is intentionally warm-only; it does not connect to the
-database, call public APIs, verify LiteLLM, or create schemas. Celery workers
-own the same kind of process-local resources through worker lifecycle signals
-so queued graph execution can reuse compiled graphs and shared HTTP pooling.
+provider, optional knowledge graph service, and compiled Signal graph provider
+are warmed once and attached to `app.state`. Startup is intentionally warm-only;
+it does not connect to the database, call public APIs, verify LiteLLM, verify
+Neo4j connectivity, or create schemas. Celery workers own the same kind of
+process-local resources through worker lifecycle signals so queued graph
+execution can reuse compiled graphs and shared HTTP pooling.
+
+## Knowledge Graph Boundary
+
+`backend/app/services/knowledge_graph_service.py` owns deterministic entity
+normalization, current-lead graph projection, and related-lead relationship
+rules. `backend/app/infrastructure/knowledge_graph/` owns the disabled fallback
+repository, Neo4j async driver setup, and Cypher. Disabled or unavailable Neo4j
+returns a current-lead graph projection with explicit graph warnings.
 
 ## LLM Boundary
 

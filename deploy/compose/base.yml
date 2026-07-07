@@ -28,6 +28,23 @@ services:
       retries: 5
     restart: unless-stopped
 
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/${SIGNAL_NEO4J_PASSWORD:-signal-local-neo4j}
+    volumes:
+      - signal_neo4j_data:/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "cypher-shell -u neo4j -p $${SIGNAL_NEO4J_PASSWORD:-signal-local-neo4j} 'RETURN 1'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+    restart: unless-stopped
+
   litellm:
     image: ghcr.io/berriai/litellm-database:${LITELLM_IMAGE_TAG:-latest}
     command: ["--config", "/app/config.yaml", "--port", "4000"]
@@ -51,3 +68,4 @@ services:
 volumes:
   signal_postgres_data:
   signal_valkey_data:
+  signal_neo4j_data:

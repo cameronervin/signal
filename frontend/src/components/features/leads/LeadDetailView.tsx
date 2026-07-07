@@ -149,6 +149,9 @@ function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: 
             ) : (
               <span>No related leads found for this lead.</span>
             )}
+            {lead.knowledgeGraph?.warnings.map((warning) => (
+              <span key={warning}>{warning}</span>
+            ))}
           </div>
         </div>
       </div>

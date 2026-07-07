@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field
 
+from app.schemas.knowledge_graph import LeadKnowledgeGraph
+
 Tier = Literal["A", "B", "C"]
 GateStatus = Literal["passed", "failed"]
 
@@ -76,4 +78,5 @@ class LeadResponse(BaseModel):
     flags: list[str] = Field(default_factory=list)
     draft: DraftEmail | None = None
     related_leads: list[RelatedLead] = Field(default_factory=list)
+    knowledge_graph: LeadKnowledgeGraph = Field(default_factory=LeadKnowledgeGraph)
     run_id: str

@@ -37,13 +37,15 @@ docker compose \
   --env-file deploy/envs/.env.litellm.local \
   -f deploy/compose/base.yml \
   -f deploy/compose/local.yml \
-  up -d postgres valkey litellm
+  up -d postgres valkey neo4j litellm
 ```
 
 This starts:
 
 - Postgres on `localhost:5433`
 - Valkey on `localhost:6379`
+- Neo4j Browser on `localhost:7474`
+- Neo4j Bolt on `localhost:7687`
 - LiteLLM on `localhost:4000`
 
 Use the `signal` Compose project name from `deploy/envs/.env.local`; do not
@@ -82,6 +84,10 @@ Password: postgres
 
 Compose services still use `postgres:5432` internally because `5432` is the
 Postgres container port. The local developer-facing port is `localhost:5433`.
+
+The backend uses `bolt://localhost:7687` when running on the host. If a backend
+container is added later, use `bolt://neo4j:7687` for container-to-container
+Neo4j access.
 
 If port `5050` is already in use, set `DB_UI_PORT` in
 `deploy/envs/.env.local` before starting the service. To change the local

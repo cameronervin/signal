@@ -1,12 +1,36 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 
+import { KnowledgeGraph } from "@/components/features/leads/KnowledgeGraph";
 import { LeadDetailView } from "@/components/features/leads/LeadDetailView";
 import { getLead } from "@/lib/fixtures/leads";
+import type { FixtureLead } from "@/types/lead";
 
 jest.mock("@xyflow/react", () => ({
   Background: () => null,
-  ReactFlow: ({ children }: { children: ReactNode }) => <div data-testid="knowledge-graph">{children}</div>
+  ReactFlow: ({
+    children,
+    nodes = [],
+    edges = []
+  }: {
+    children: ReactNode;
+    nodes?: Array<{ id: string; data?: { label?: string } }>;
+    edges?: Array<{ id: string; label?: string }>;
+  }) => (
+    <div data-testid="knowledge-graph">
+      {nodes.map((node) => (
+        <span key={node.id} data-testid={`graph-node-${node.id}`}>
+          {node.data?.label}
+        </span>
+      ))}
+      {edges.map((edge) => (
+        <span key={edge.id} data-testid={`graph-edge-${edge.id}`}>
+          {edge.label}
+        </span>
+      ))}
+      {children}
+    </div>
+  )
 }));
 
 describe("LeadDetailView", () => {
@@ -44,4 +68,72 @@ describe("LeadDetailView", () => {
     expect(screen.getByText("No draft generated")).toBeInTheDocument();
     expect(screen.queryByText("Drafted email")).not.toBeInTheDocument();
   });
+
+  it("renders backend knowledge graph nodes and edges", () => {
+    const lead = withKnowledgeGraph();
+
+    render(<LeadDetailView lead={lead} />);
+
+    expect(screen.getByTestId("graph-node-lead_backend")).toHaveTextContent("Backend Contact");
+    expect(screen.getByTestId("graph-node-company_backend")).toHaveTextContent("Backend Company");
+    expect(screen.getByTestId("graph-edge-edge_backend")).toHaveTextContent("WORKS_AT");
+  });
+
+  it("renders an empty graph state gracefully", () => {
+    const lead = withKnowledgeGraph({
+      nodes: [],
+      edges: [],
+      sources: [],
+      related_leads: [],
+      warnings: []
+    });
+
+    render(<KnowledgeGraph lead={lead} />);
+
+    expect(screen.getByText("No graph context available.")).toBeInTheDocument();
+  });
 });
+
+function withKnowledgeGraph(
+  knowledgeGraph: FixtureLead["knowledgeGraph"] = {
+    nodes: [
+      {
+        id: "lead_backend",
+        kind: "lead",
+        label: "Backend Contact",
+        subtitle: "Current inbound lead",
+        source_fact_ids: []
+      },
+      {
+        id: "company_backend",
+        kind: "company",
+        label: "Backend Company",
+        subtitle: "Submitted company",
+        source_fact_ids: []
+      }
+    ],
+    edges: [
+      {
+        id: "edge_backend",
+        source: "lead_backend",
+        target: "company_backend",
+        relationship: "WORKS_AT",
+        reason: "Submitted company.",
+        confidence: 0.9,
+        source_fact_ids: []
+      }
+    ],
+    sources: [],
+    related_leads: [],
+    warnings: []
+  }
+): FixtureLead {
+  const lead = getLead("lead-sarah-chen");
+  expect(lead).toBeDefined();
+  return {
+    ...lead!,
+    name: "Backend Contact",
+    company: "Backend Company",
+    knowledgeGraph
+  };
+}

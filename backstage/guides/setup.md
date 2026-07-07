@@ -96,6 +96,19 @@ Scoring override:
 SIGNAL_SCORING_CONFIG_PATH=/path/to/scoring.json
 ```
 
+Knowledge graph storage:
+
+```bash
+SIGNAL_KNOWLEDGE_GRAPH_ENABLED=false
+SIGNAL_NEO4J_URI=bolt://localhost:7687
+SIGNAL_NEO4J_USER=neo4j
+SIGNAL_NEO4J_PASSWORD=signal-local-neo4j
+SIGNAL_NEO4J_DATABASE=neo4j
+```
+
+Use `bolt://localhost:7687` when the backend runs on the host. Use
+`bolt://neo4j:7687` for container-to-container backend connections.
+
 ## Local Infrastructure
 
 Signal's local dependency stack lives under `deploy/`, following the smaller
@@ -107,7 +120,7 @@ deploy/envs/      Local env templates
 deploy/litellm/   LiteLLM proxy config
 ```
 
-Start Postgres, Valkey, and LiteLLM:
+Start Postgres, Valkey, Neo4j, and LiteLLM:
 
 ```bash
 cp deploy/envs/.env.local.example deploy/envs/.env.local
@@ -118,7 +131,7 @@ docker compose \
   --env-file deploy/envs/.env.litellm.local \
   -f deploy/compose/base.yml \
   -f deploy/compose/local.yml \
-  up -d postgres valkey litellm
+  up -d postgres valkey neo4j litellm
 ```
 
 This exposes local infrastructure on:
@@ -127,6 +140,8 @@ This exposes local infrastructure on:
 | --- | --- |
 | Postgres | `5433` |
 | Valkey | `6379` |
+| Neo4j Browser | `7474` |
+| Neo4j Bolt | `7687` |
 | LiteLLM | `4000` |
 
 Use the `signal` Compose project name from `deploy/envs/.env.local`; do not

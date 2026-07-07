@@ -75,7 +75,7 @@ async def test_litellm_provider_calls_configured_proxy(
     assert result.draft is not None
     assert result.draft.body == "Model-backed outreach draft"
     assert result.draft.sources == _draft_kwargs(settings)["enrichment"].sources
-    assert captured["model"] == "signal-chat"
+    assert captured["model"] == "openai/signal-chat"
     assert captured["api_base"] == "http://localhost:4000"
     assert captured["api_key"] == "sk-test"
     assert captured["temperature"] == 0.2

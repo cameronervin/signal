@@ -69,7 +69,7 @@ class LiteLLMProvider:
             )
             try:
                 response = await litellm.acompletion(
-                    model=self.settings.llm_model,
+                    model=_litellm_sdk_model(self.settings.llm_model),
                     api_base=self.settings.litellm_api_base,
                     api_key=self.settings.litellm_api_key,
                     messages=messages,
@@ -128,6 +128,12 @@ class LiteLLMProvider:
                 tool_call_names=tuple(tool_call_names),
                 warnings=tuple(warnings),
             )
+
+
+def _litellm_sdk_model(model: str) -> str:
+    if "/" in model:
+        return model
+    return f"openai/{model}"
 
 
 def _draft_messages(

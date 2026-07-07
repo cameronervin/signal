@@ -10,6 +10,62 @@ export interface SourceFact {
   url?: string | null;
 }
 
+export type KnowledgeGraphNodeKind =
+  | "lead"
+  | "contact"
+  | "company"
+  | "property"
+  | "market"
+  | "source_fact"
+  | "trigger";
+
+export type KnowledgeGraphRelationship =
+  | "HAS_CONTACT"
+  | "WORKS_AT"
+  | "ABOUT_PROPERTY"
+  | "IN_MARKET"
+  | "HAS_SOURCE_FACT"
+  | "HAS_TRIGGER"
+  | "RELATED_TO";
+
+export interface KnowledgeGraphNodeDto {
+  id: string;
+  kind: KnowledgeGraphNodeKind;
+  label: string;
+  subtitle?: string | null;
+  source_fact_ids: string[];
+}
+
+export interface KnowledgeGraphEdgeDto {
+  id: string;
+  source: string;
+  target: string;
+  relationship: KnowledgeGraphRelationship;
+  reason: string;
+  confidence: number;
+  source_fact_ids: string[];
+}
+
+export interface KnowledgeGraphRelatedLeadDto {
+  lead_id: string;
+  label: string;
+  reason: string;
+  confidence: number;
+  source_fact_ids: string[];
+}
+
+export interface KnowledgeGraphSourceDto extends SourceFact {
+  id: string;
+}
+
+export interface LeadKnowledgeGraphDto {
+  nodes: KnowledgeGraphNodeDto[];
+  edges: KnowledgeGraphEdgeDto[];
+  sources: KnowledgeGraphSourceDto[];
+  related_leads: KnowledgeGraphRelatedLeadDto[];
+  warnings: string[];
+}
+
 export interface FixtureLead {
   id: string;
   name: string;
@@ -31,6 +87,7 @@ export interface FixtureLead {
   talkingPoints: string[];
   marketSignals: Array<{ label: string; value: string }>;
   related: Array<{ label: string; reason: string }>;
+  knowledgeGraph?: LeadKnowledgeGraphDto;
   draft: {
     subject: string;
     body: string;
@@ -125,6 +182,7 @@ export interface LeadResponseDto {
     sources: SourceFact[];
   } | null;
   related_leads: Array<{ lead_id: string; label: string; reason: string }>;
+  knowledge_graph: LeadKnowledgeGraphDto;
   run_id: string;
 }
 

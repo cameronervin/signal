@@ -26,6 +26,19 @@ def test_worker_resource_lifecycle_is_idempotent() -> None:
     assert worker_app._worker_loop is None
 
 
+def test_worker_shutdown_signal_tears_down_ready_resources() -> None:
+    worker_app.teardown_worker_resources()
+    worker_app.init_worker_resources()
+    first_http_client = worker_app._worker_http_client
+
+    worker_app.worker_shutdown.send(sender=None)
+
+    assert first_http_client is not None
+    assert first_http_client.is_closed is True
+    assert worker_app.get_worker_resources() is None
+    assert worker_app._worker_loop is None
+
+
 @pytest.mark.asyncio
 async def test_worker_execution_returns_json_safe_state(
     monkeypatch: pytest.MonkeyPatch,
@@ -63,7 +76,9 @@ def test_worker_execution_reuses_initialized_resources(
 ) -> None:
     worker_app.teardown_worker_resources()
     worker_app.init_worker_resources()
-    graph_provider, public_data_client = worker_app.get_worker_resources()
+    graph_provider, public_data_client, knowledge_graph_service = (
+        worker_app.get_worker_resources()
+    )
     captured: dict[str, object] = {}
 
     class FakeExecutor:
@@ -100,5 +115,6 @@ def test_worker_execution_reuses_initialized_resources(
 
     assert captured["graph_provider"] is graph_provider
     assert captured["public_data_client"] is public_data_client
+    assert captured["knowledge_graph_service"] is knowledge_graph_service
     assert result["lead"]["email"] == "sarah@meridianresidential.example"
     worker_app.teardown_worker_resources()

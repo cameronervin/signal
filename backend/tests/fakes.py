@@ -1,4 +1,7 @@
+from collections import Counter
+
 from app.infrastructure.public_data.fixtures import demo_enrichment
+from app.schemas.analytics import AnalyticsSummaryResponse, MarketSummary
 from app.schemas.lead import LeadCreate, LeadResponse
 from app.schemas.run import AgentRunResponse
 
@@ -41,5 +44,26 @@ class FakeSignalRepository:
     async def get_agent_run(self, run_id: str) -> AgentRunResponse | None:
         return self._runs.get(run_id)
 
-    async def commit(self) -> None:
-        return None
+    async def analytics_summary(self) -> AnalyticsSummaryResponse:
+        leads = await self.list_leads()
+        runs = await self.list_agent_runs()
+        tier_distribution = {"A": 0, "B": 0, "C": 0}
+        for lead in leads:
+            tier_distribution[lead.score.tier] += 1
+        market_counts = Counter(lead.enrichment.market for lead in leads)
+        total_score = sum(lead.score.total for lead in leads)
+        return AnalyticsSummaryResponse(
+            total_leads=len(leads),
+            tier_distribution=tier_distribution,
+            awaiting_review_count=sum(
+                1 for run in runs if run.status == "awaiting_review"
+            ),
+            gate_failed_count=sum(
+                1 for lead in leads if lead.gates.status == "failed"
+            ),
+            average_score=round(total_score / len(leads), 1) if leads else 0.0,
+            top_markets=[
+                MarketSummary(market=market, lead_count=count)
+                for market, count in market_counts.most_common(5)
+            ],
+        )

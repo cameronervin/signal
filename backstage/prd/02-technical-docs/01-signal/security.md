@@ -11,6 +11,8 @@ environment.
 - Do not log full emails, raw request bodies, draft bodies, prompts, tokens, or
   raw provider payloads.
 - Do not trust client-supplied score, tier, gate status, or draft text.
+- Do not trust client-supplied graph confidence, related-lead, or gate-pass
+  fields.
 - Do not generate drafts for hard-gate-failed leads.
 - Keep outbound actions behind human review.
 
@@ -22,6 +24,7 @@ V1 stores only:
 - Normalized enrichment facts.
 - Scoring breakdown.
 - Flags.
+- Bounded graph relationships and source-backed graph warnings.
 - Draft if gates pass.
 - Run status and activity log.
 

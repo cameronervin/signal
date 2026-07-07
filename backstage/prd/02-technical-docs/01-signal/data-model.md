@@ -65,6 +65,25 @@ Hard gate failures suppress draft generation.
 
 Drafts are absent for gate-failed leads.
 
+## Knowledge Graph
+
+`LeadKnowledgeGraph` contains:
+
+- `nodes`: bounded graph nodes for the current lead, contact, company,
+  property, market, source facts, triggers, and related leads.
+- `edges`: graph relationships with `reason`, `confidence`, and supporting
+  source fact ids.
+- `sources`: citable graph source facts derived from normalized enrichment
+  facts.
+- `related_leads`: structured related-lead records used to preserve the legacy
+  `related_leads` response field.
+- `warnings`: explicit graph storage or retrieval warnings.
+
+Neo4j stores relationship-native graph context when
+`SIGNAL_KNOWLEDGE_GRAPH_ENABLED=true`. Postgres remains the canonical store for
+lead and run DTO snapshots. Disabled or unavailable graph storage returns a
+current-lead projection plus graph warnings.
+
 ## Agent Run
 
 `AgentRunResponse` tracks:
@@ -83,10 +102,12 @@ The v1 status surface is enough for polling. Streaming can be added later.
 
 Signal writes:
 
-- `signal_leads`: lead id, run id, tier, score total, and the serialized
-  `LeadResponse` payload.
-- `signal_agent_runs`: run id, lead id, status, current stage, and the
-  serialized `AgentRunResponse` payload.
+- `signal_leads`: lead id, run id, tier, score total, market, gate status,
+  timestamps, and the serialized `LeadResponse` payload.
+- `signal_agent_runs`: run id, lead id, status, trigger, current stage,
+  timestamps, and the serialized `AgentRunResponse` payload.
+- Neo4j, when enabled, stores graph relationships for lead context. It does not
+  replace Postgres snapshots as the source of truth.
 
 The JSON snapshot approach is intentional for this slice. It keeps the backend
 aligned with the current Pydantic contracts while leaving room to normalize

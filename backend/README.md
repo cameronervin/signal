@@ -19,7 +19,7 @@ DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Seed sample leads into Postgres for local evaluation:
+Seed example leads into Postgres for local evaluation:
 
 ```bash
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
@@ -31,7 +31,7 @@ uv run python scripts/seed_demo_leads.py
 Celery worker entrypoint for agent execution:
 
 ```bash
-uv run celery -A app.workers.app.celery_app worker --loglevel=INFO
+uv run celery -A app.workers.app:celery_app worker --loglevel=INFO
 ```
 
 ## Test
@@ -46,6 +46,7 @@ uv run ruff check .
 ```text
 app/api/v1             thin route handlers
 app/services           product orchestration
+app/services/knowledge_graph deterministic graph projection and relation rules
 app/repositories       Postgres persistence boundary
 app/models             SQLAlchemy records for Postgres-backed DTO snapshots
 app/agents/builders    chain/node/graph composition and compilation
@@ -58,6 +59,7 @@ app/agents/executors   inline/worker-facing graph execution
 app/agents/tools       public-data tool wrappers
 app/agents/utils       pure scoring/talking-point/text helpers
 app/infrastructure/db  SQLAlchemy async engine/session setup
+app/infrastructure/knowledge_graph Neo4j and disabled graph repositories
 app/infrastructure/llm LiteLLM provider boundary
 app/infrastructure/public_data live public API adapters and cache boundary
 app/workers            Celery app and agent task entrypoints
@@ -93,4 +95,17 @@ Scoring defaults are built in. To test a local scoring override, set:
 
 ```bash
 SIGNAL_SCORING_CONFIG_PATH=/path/to/scoring.json
+```
+
+## Knowledge Graph
+
+Neo4j-backed graph storage is optional. Disabled mode still returns a
+current-lead graph projection with explicit graph warnings.
+
+```bash
+SIGNAL_KNOWLEDGE_GRAPH_ENABLED=false
+SIGNAL_NEO4J_URI=bolt://localhost:7687
+SIGNAL_NEO4J_USER=neo4j
+SIGNAL_NEO4J_PASSWORD=signal-local-neo4j
+SIGNAL_NEO4J_DATABASE=neo4j
 ```
