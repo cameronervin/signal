@@ -32,7 +32,7 @@ explaining the sales workflow value.
 Before production use:
 
 - Add auth and role-based access.
-- Replace in-memory persistence with a durable database.
+- Add production backup and restore procedures for Postgres.
 - Add audit logs for approve/send actions.
 - Expand provider retry policies beyond current bounded request timeouts and
   fixture fallback.

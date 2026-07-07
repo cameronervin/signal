@@ -15,9 +15,7 @@ POST /api/v1/leads
      -> deterministic_enrichment
      -> agent_scoring_and_drafting
      -> knowledge_graph_builder
-  -> SignalRepository
-     -> InMemorySignalRepository by default
-     -> PostgresSignalRepository when SIGNAL_REPOSITORY_BACKEND=postgres
+  -> PostgresSignalRepository
   -> LeadResponse + AgentRunResponse
 ```
 
@@ -33,11 +31,10 @@ POST /api/v1/leads
 
 ## V1 Persistence
 
-The default scaffold still uses `InMemorySignalRepository` to keep setup fast.
-Set `SIGNAL_REPOSITORY_BACKEND=postgres` to use `PostgresSignalRepository`,
-which stores stable Pydantic response DTO snapshots in Postgres through
-SQLAlchemy async sessions while indexing queue and run fields. This preserves
-API response models while the relational model matures.
+Signal uses `PostgresSignalRepository`, which stores stable Pydantic response
+DTO snapshots in Postgres through SQLAlchemy async sessions while indexing queue
+and run fields. Alembic owns schema creation and migrations. This preserves API
+response models while the relational model matures.
 
 ## V1 Agent Runtime
 

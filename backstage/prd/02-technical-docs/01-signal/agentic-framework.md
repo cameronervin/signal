@@ -72,6 +72,8 @@ Responsibilities:
 - Assign tier and why-line.
 - Generate talking points.
 - Generate cited outreach draft only if gates pass.
+- Use scoring defaults from the backend scoring config, or load an override
+  from `SIGNAL_SCORING_CONFIG_PATH`.
 
 Future LLM integration belongs here, but the scaffold keeps a deterministic
 draft so tests and demos are reliable.
@@ -96,5 +98,6 @@ V1 uses lightweight related records. A graph database is out of scope.
 - Typed state.
 - Hard gate short-circuit for drafts.
 - Human review required before outreach.
+- Approve/pause transitions update run status only and never send outreach.
 - Fixture fallback for public data.
 - Activity log for demo traceability.

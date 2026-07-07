@@ -10,10 +10,16 @@ Backend tests cover:
 - Health endpoint.
 - Gate-passed lead gets score, tier, why-line, related context, and draft.
 - Gate-failed lead gets C-tier and no draft.
+- Demo seed records produce deterministic A, B, C, gate-failed,
+  missing-trigger, and warning-only outcomes.
+- Agent run approve/pause transitions preserve the human review gate.
+- Analytics summary derives dashboard KPIs from persisted lead/run snapshots.
+- Scoring defaults preserve current tier behavior and can load from a config
+  path.
 
 ## Required Fixture Set
 
-Maintain fixtures for:
+Maintain seed records for:
 
 - A-tier large-portfolio senior contact.
 - B-tier good fit without urgency.
@@ -23,11 +29,8 @@ Maintain fixtures for:
 
 ## Future Evals
 
-- Score distribution check across seeded leads.
-- Draft citation check: every personalization claim maps to a source fact.
-- Gate-fail safety check: no draft body or send action is exposed.
 - Public API fallback check: outage returns cached/fixture values.
-- Human review check: agent runs cannot advance to send without approval.
+- Broader calibration checks after pilot outcome data exists.
 
 ## Manual Demo Checks
 

@@ -8,6 +8,7 @@ def build_agent_run_response(
     *,
     lead: LeadResponse,
     activity_log: list[str],
+    trigger: str = "api_insert",
 ) -> AgentRunResponse:
     """Build the API-facing agent run snapshot for an enriched lead."""
     gates_passed = lead.gates.status == "passed"
@@ -15,7 +16,7 @@ def build_agent_run_response(
         run_id=lead.run_id,
         lead_id=lead.id,
         status="awaiting_review" if gates_passed else "completed",
-        trigger="api_insert",
+        trigger=trigger,
         current_stage="human_review" if gates_passed else "gate_failed",
         steps=[
             AgentStep(

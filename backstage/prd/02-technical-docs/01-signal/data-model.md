@@ -1,9 +1,8 @@
 # Data Model
 
-Signal v1 uses Pydantic contracts at the API boundary. The default local
-repository remains in-memory for demo reliability, and the optional Postgres
-repository stores DTO snapshots through SQLAlchemy async models without changing
-API responses.
+Signal v1 uses Pydantic contracts at the API boundary. Postgres stores DTO
+snapshots through SQLAlchemy async models without changing API responses, and
+Alembic owns schema creation and migrations.
 
 ## Lead Input
 
@@ -81,7 +80,7 @@ The v1 status surface is enough for polling. Streaming can be added later.
 
 ## Persistence Records
 
-When `SIGNAL_REPOSITORY_BACKEND=postgres`, Signal writes:
+Signal writes:
 
 - `signal_leads`: lead id, run id, tier, score total, and the serialized
   `LeadResponse` payload.

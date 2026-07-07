@@ -68,9 +68,54 @@ Returns current and historical v1 runs.
 
 Returns one run or 404.
 
-## Planned Endpoints
+## Approve Agent Run
 
-- `POST /leads/seed` for demo fixture reset.
-- `POST /agent-runs/{run_id}/approve` for human review.
-- `POST /agent-runs/{run_id}/pause` for run control.
-- `GET /analytics/summary` for dashboard KPIs.
+`POST /agent-runs/{run_id}/approve`
+
+Marks an `awaiting_review` run as reviewed and completed. Approval never sends
+outreach. Invalid transitions return 409.
+
+Response: `200 AgentRunResponse`
+
+## Pause Agent Run
+
+`POST /agent-runs/{run_id}/pause`
+
+Marks a `queued`, `running`, or `awaiting_review` run as paused. Invalid
+transitions return 409.
+
+Response: `200 AgentRunResponse`
+
+## Analytics Summary
+
+`GET /analytics/summary`
+
+Returns dashboard KPIs derived from current lead and run records:
+
+```json
+{
+  "total_leads": 6,
+  "tier_distribution": {"A": 2, "B": 2, "C": 2},
+  "awaiting_review_count": 5,
+  "gate_failed_count": 1,
+  "average_score": 67.5,
+  "top_markets": [{"market": "Austin, TX", "lead_count": 2}]
+}
+```
+
+## Demo Seed Script
+
+Seed demo data through the backend script, not a public API endpoint:
+
+```bash
+cd backend
+uv run alembic upgrade head
+uv run python scripts/seed_demo_leads.py
+```
+
+The script writes deterministic A/B/C, gate-failed, missing-trigger, and
+warning-only records through the normal service and repository path.
+
+## Deferred Endpoints
+
+- Send/outreach endpoints remain out of scope for v1.

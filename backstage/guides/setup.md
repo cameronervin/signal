@@ -12,18 +12,29 @@
 ```bash
 cd backend
 uv sync --group dev
+uv run alembic upgrade head
 uv run pytest -v
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Optional Postgres-backed backend:
+Backend with the local Compose Postgres port:
 
 ```bash
 cd backend
-SIGNAL_REPOSITORY_BACKEND=postgres \
-SIGNAL_DATABASE_URL=postgresql+asyncpg://signal:signal@localhost:5433/signal \
-SIGNAL_CREATE_DB_SCHEMA_ON_STARTUP=true \
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
+uv run alembic upgrade head
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Seed deterministic demo data into the configured Postgres database:
+
+```bash
+cd backend
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
+uv run alembic upgrade head
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
+uv run python scripts/seed_demo_leads.py
 ```
 
 Optional Celery worker for agent execution:
@@ -45,7 +56,9 @@ pnpm dev
 ## Environment
 
 Copy `backend/.env.example` to `backend/.env` only when you need local backend
-overrides. Do not commit `.env` files.
+overrides. Do not commit `.env` files. The env examples use grouped section
+headers for application, public data, database, workers, scoring, LLM, and
+frontend settings.
 
 Default mode uses fixtures:
 
@@ -71,6 +84,12 @@ LiteLLM settings:
 SIGNAL_LITELLM_API_BASE=http://localhost:4000
 SIGNAL_LITELLM_API_KEY=optional-local-key
 SIGNAL_LLM_MODEL=signal-chat
+```
+
+Scoring override:
+
+```bash
+SIGNAL_SCORING_CONFIG_PATH=/path/to/scoring.json
 ```
 
 ## Demo Dependencies
@@ -100,6 +119,7 @@ Run the application processes directly while Compose provides dependencies:
 
 ```bash
 cd backend
+uv run alembic upgrade head
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 uv run celery -A app.workers.app:celery_app worker --loglevel=INFO
 

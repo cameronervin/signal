@@ -51,3 +51,21 @@ def test_qualification_gates_keep_subscale_portfolio_as_warning() -> None:
     assert result.status == "passed"
     assert result.failures == []
     assert result.warnings == ["sub-scale portfolio"]
+
+
+def test_qualification_gates_fail_for_unresolved_company() -> None:
+    result = evaluate_gates(
+        _lead(),
+        _enrichment(
+            sources=[
+                SourceFact(
+                    source="Company registry",
+                    label="Company resolution",
+                    value="Unresolved company",
+                )
+            ]
+        ),
+    )
+
+    assert result.status == "failed"
+    assert "company could not resolve" in result.failures

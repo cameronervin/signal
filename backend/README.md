@@ -6,16 +6,26 @@ FastAPI backend for triggered inbound lead enrichment.
 
 ```bash
 uv sync --group dev
+uv run alembic upgrade head
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Postgres-backed local run:
+Local Postgres dependency from Compose runs on `localhost:5433`:
 
 ```bash
-SIGNAL_REPOSITORY_BACKEND=postgres \
-SIGNAL_DATABASE_URL=postgresql+asyncpg://signal:signal@localhost:5432/signal \
-SIGNAL_CREATE_DB_SCHEMA_ON_STARTUP=true \
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
+uv run alembic upgrade head
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Seed deterministic demo leads into Postgres:
+
+```bash
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
+uv run alembic upgrade head
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
+uv run python scripts/seed_demo_leads.py
 ```
 
 Celery worker entrypoint for agent execution:
@@ -36,7 +46,7 @@ uv run ruff check .
 ```text
 app/api/v1             thin route handlers
 app/services           product orchestration
-app/repositories       memory and Postgres persistence boundaries
+app/repositories       Postgres persistence boundary
 app/models             SQLAlchemy records for Postgres-backed DTO snapshots
 app/agents/builders    chain/node/graph composition and compilation
 app/agents/chains      outreach drafting workflow units
@@ -71,4 +81,10 @@ SIGNAL_CENSUS_API_KEY=optional
 SIGNAL_FRED_API_KEY=optional
 SIGNAL_NEWS_API_KEY=optional
 SIGNAL_NOMINATIM_EMAIL=optional-contact@example.com
+```
+
+Scoring defaults are built in. To test a local scoring override, set:
+
+```bash
+SIGNAL_SCORING_CONFIG_PATH=/path/to/scoring.json
 ```

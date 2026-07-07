@@ -9,6 +9,7 @@ PERSONAL_EMAIL_DOMAINS = {
     "outlook.com",
     "icloud.com",
     "aol.com",
+    "personal.example",
 }
 
 
@@ -25,6 +26,8 @@ def evaluate_gates(lead: LeadCreate, enrichment: Enrichment) -> GateResult:
         failures.append("address did not resolve")
     if _source_value(enrichment, "Corporate domain MX") == "No MX records found":
         failures.append("email domain has no MX records")
+    if _company_unresolved(enrichment):
+        failures.append("company could not resolve")
     if (enrichment.company_units or 0) < 10000:
         warnings.append("sub-scale portfolio")
 
@@ -40,3 +43,15 @@ def _source_value(enrichment: Enrichment, label: str) -> str | None:
         if source.label == label:
             return source.value
     return None
+
+
+def _company_unresolved(enrichment: Enrichment) -> bool:
+    if enrichment.company_units is None:
+        return True
+    for source in enrichment.sources:
+        if source.label not in {"Company background", "Company resolution"}:
+            continue
+        value = source.value.lower()
+        if "unresolved" in value or "not found" in value:
+            return True
+    return False

@@ -1,6 +1,8 @@
 # Scoring
 
-Signal uses gates, weighted fit/opportunity, and bounded bonuses.
+Signal uses gates, weighted fit/opportunity, and bounded bonuses. The default
+weights live in the backend scoring config object and can be overridden with
+`SIGNAL_SCORING_CONFIG_PATH` without changing API contracts.
 
 ## Stage 1 - Hard Gates
 

@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Signal FastAPI and LangGraph backend."
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.16.0",
     "asyncpg>=0.30.0",
     "celery>=5.4.0",
     "dnspython>=2.6.1",
@@ -49,3 +50,7 @@ ignore = ["B008"]
 [tool.coverage.run]
 source = ["app"]
 branch = true
+
+[tool.alembic]
+script_location = "%(here)s/alembic"
+prepend_sys_path = ["."]

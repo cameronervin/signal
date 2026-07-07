@@ -7,7 +7,7 @@ from app.agents.guardrails.qualification import evaluate_gates
 from app.agents.runtime_context import SignalRuntimeContext
 from app.agents.states.signal_state import SignalState
 from app.agents.tools.tool_registry import PUBLIC_DATA_ENRICHMENT_TOOL
-from app.agents.utils.scoring import score_lead
+from app.agents.utils.scoring import load_scoring_config, score_lead
 from app.agents.utils.talking_points import talking_points_for_enrichment
 from app.schemas.lead import RelatedLead
 
@@ -41,11 +41,19 @@ def create_lead_intelligence_nodes(
             "activity_log": ["deterministic_enrichment: completed"],
         }
 
-    async def agent_scoring_and_drafting(state: SignalState) -> dict[str, Any]:
+    async def agent_scoring_and_drafting(
+        state: SignalState,
+        runtime: Runtime[SignalRuntimeContext],
+    ) -> dict[str, Any]:
         lead = state["lead"]
         gates = state["gates"]
         enrichment = state["enrichment"]
-        score = score_lead(lead, gates, enrichment)
+        score = score_lead(
+            lead,
+            gates,
+            enrichment,
+            config=load_scoring_config(runtime.context.settings),
+        )
         talking_points = talking_points_for_enrichment(enrichment)
         draft = (
             None

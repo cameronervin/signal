@@ -8,6 +8,9 @@
 | GET | `/api/v1/leads/{lead_id}` | Get lead detail |
 | GET | `/api/v1/agent-runs` | List agent runs |
 | GET | `/api/v1/agent-runs/{run_id}` | Get run detail |
+| POST | `/api/v1/agent-runs/{run_id}/approve` | Mark a review-gated run approved without sending outreach |
+| POST | `/api/v1/agent-runs/{run_id}/pause` | Pause a queued, running, or review-gated run |
+| GET | `/api/v1/analytics/summary` | Dashboard KPI summary |
 
 See `backstage/prd/02-technical-docs/01-signal/api-specification.md` for
 request and response shapes.

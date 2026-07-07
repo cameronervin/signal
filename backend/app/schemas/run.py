@@ -2,7 +2,14 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-RunStatus = Literal["queued", "running", "awaiting_review", "completed", "failed"]
+RunStatus = Literal[
+    "queued",
+    "running",
+    "awaiting_review",
+    "paused",
+    "completed",
+    "failed",
+]
 StepStatus = Literal["pending", "running", "done", "failed", "skipped"]
 
 

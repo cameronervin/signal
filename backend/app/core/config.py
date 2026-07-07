@@ -11,6 +11,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        populate_by_name=True,
     )
 
     env: str = "local"
@@ -25,10 +26,22 @@ class Settings(BaseSettings):
     public_data_cache_ttl_seconds: int = Field(default=3600, ge=0)
     scoring_config_path: str | None = None
     max_agent_retries: int = Field(default=2, ge=0, le=5)
-    repository_backend: Literal["memory", "postgres"] = "memory"
-    database_url: str = "postgresql+asyncpg://signal:signal@localhost:5432/signal"
-    create_db_schema_on_startup: bool = False
-    agent_execution_backend: Literal["inline", "celery"] = "inline"
+    postgres_user: str = Field(
+        default="postgres",
+        validation_alias="POSTGRES_USER",
+    )
+    postgres_password: str = Field(
+        default="postgres",
+        validation_alias="POSTGRES_PASSWORD",
+    )
+    postgres_db: str = Field(
+        default="signal",
+        validation_alias="POSTGRES_DB",
+    )
+    database_url: str = Field(
+        default="postgresql+asyncpg://postgres:postgres@localhost:5433/signal",
+        validation_alias="DATABASE_URL",
+    )
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_result_backend: str = "redis://localhost:6379/1"
     llm_provider: Literal["litellm"] = "litellm"

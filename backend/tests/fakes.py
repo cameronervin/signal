@@ -2,7 +2,7 @@ from app.schemas.lead import LeadResponse
 from app.schemas.run import AgentRunResponse
 
 
-class InMemorySignalRepository:
+class FakeSignalRepository:
     def __init__(self) -> None:
         self._leads: dict[str, LeadResponse] = {}
         self._runs: dict[str, AgentRunResponse] = {}

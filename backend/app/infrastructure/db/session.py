@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app.core.config import Settings, get_settings
-from app.infrastructure.db.base import Base
 
 _engine_cache: dict[str, AsyncEngine] = {}
 _sessionmaker_cache: dict[str, async_sessionmaker[AsyncSession]] = {}
@@ -34,14 +33,6 @@ def get_sessionmaker(
             expire_on_commit=False,
         )
     return _sessionmaker_cache[database_url]
-
-
-async def create_db_schema(settings: Settings | None = None) -> None:
-    from app.models import signal  # noqa: F401
-
-    engine = get_engine(settings)
-    async with engine.begin() as connection:
-        await connection.run_sync(Base.metadata.create_all)
 
 
 async def close_db_engine(settings: Settings | None = None) -> None:

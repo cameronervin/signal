@@ -44,6 +44,7 @@ The MVP is not a system of record and must not send outreach automatically.
 - Keep outbound messaging behind explicit human review.
 - Treat lead and draft data as sensitive even in demo environments.
 - Use cached or fixture-backed enrichment whenever live providers fail.
+- Seed local demo records with `cd backend && uv run alembic upgrade head && uv run python scripts/seed_demo_leads.py`.
 - Log score components and gate reasons, not full emails, raw request bodies,
   raw drafts, prompts, provider payloads, tokens, or secrets.
 

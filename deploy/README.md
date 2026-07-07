@@ -23,6 +23,10 @@ cp backend/.env.example backend/.env
 Edit `deploy/envs/.env.litellm.local` with a real upstream model and API key
 before using live LLM drafting. Keep private env files out of git.
 
+The env templates use grouped Signal sections for application, public data,
+database, workers, scoring, LLM, and frontend settings. Keep the `SIGNAL_`
+prefix for backend settings; the backend config loader depends on it.
+
 ## Start Dependencies
 
 ```bash
@@ -73,4 +77,17 @@ Frontend:
 cd frontend
 pnpm install
 pnpm dev
+```
+
+## Seed Demo Leads
+
+With Postgres running, seed deterministic A/B/C, gate-failed, missing-trigger,
+and warning-only records through the backend service path:
+
+```bash
+cd backend
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
+uv run alembic upgrade head
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
+uv run python scripts/seed_demo_leads.py
 ```
