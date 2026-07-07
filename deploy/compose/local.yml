@@ -1,6 +1,7 @@
 services:
   postgres:
     ports:
+      # Host tools use localhost:5433; Compose services use postgres:5432.
       - "${POSTGRES_HOST_PORT:-5433}:5432"
     env_file:
       - path: ../envs/.env.local
@@ -9,6 +10,29 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-signal}
+
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:26.1.0
+    ports:
+      - "${DB_UI_PORT:-5050}:8978"
+    environment:
+      CB_SERVER_NAME: Signal Local DB UI
+      CB_SERVER_URL: http://localhost:${DB_UI_PORT:-5050}/
+      CB_ADMIN_NAME: signal
+      CB_ADMIN_PASSWORD: ${DB_UI_ADMIN_PASSWORD:-signal-local-db-ui}
+      CLOUDBEAVER_APP_SUPPORTS_CUSTOM_CONNECTIONS: ${DB_UI_CUSTOM_CONNECTIONS_ENABLED:-true}
+    volumes:
+      - cloudbeaver_workspace:/opt/cloudbeaver/workspace
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8978/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   valkey:
     ports:
@@ -45,6 +69,7 @@ services:
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-local-litellm-master-key}
       LITELLM_SALT_KEY: ${LITELLM_SALT_KEY:-sk-local-litellm-salt-key-change-me}
+      # LiteLLM runs inside Compose, so it uses the Postgres container port.
       LITELLM_DATABASE_URL: ${LITELLM_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/litellm}
       SIGNAL_LITELLM_UPSTREAM_MODEL: ${SIGNAL_LITELLM_UPSTREAM_MODEL:-openai/gpt-5.4-mini}
       SIGNAL_LITELLM_UPSTREAM_API_BASE: ${SIGNAL_LITELLM_UPSTREAM_API_BASE:-https://api.openai.com/v1}
@@ -54,3 +79,7 @@ services:
         condition: service_healthy
       litellm-db-init:
         condition: service_completed_successfully
+
+volumes:
+  cloudbeaver_workspace:
+    name: signal_cloudbeaver_workspace

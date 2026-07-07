@@ -107,7 +107,7 @@ deploy/envs/      Local env templates
 deploy/litellm/   LiteLLM proxy config
 ```
 
-Start Postgres, Valkey, and LiteLLM:
+Start Postgres, the DB UI, Valkey, and LiteLLM:
 
 ```bash
 cp deploy/envs/.env.local.example deploy/envs/.env.local
@@ -115,6 +115,35 @@ cp deploy/envs/.env.litellm.local.example deploy/envs/.env.litellm.local
 cp backend/.env.example backend/.env
 make compose-up
 ```
+
+This exposes local infrastructure on:
+
+| Component | Local host port |
+| --- | --- |
+| Postgres | `5433` |
+| CloudBeaver DB UI | `5050` |
+| Valkey | `6379` |
+| LiteLLM | `4000` |
+
+Open the DB UI at `http://localhost:5050` and log in with:
+
+```text
+Username: signal
+Password: signal-local-db-ui
+```
+
+Create a PostgreSQL connection through Signal's host-facing Postgres port:
+
+```text
+Host: host.docker.internal
+Port: 5433
+Database: signal
+Username: postgres
+Password: postgres
+```
+
+Compose services still use `postgres:5432` internally because `5432` is the
+Postgres container port. The local developer-facing port is `localhost:5433`.
 
 LiteLLM uses its database-backed image for the local proxy. On a fresh Postgres
 volume, the first boot can take several minutes while proxy migrations run.

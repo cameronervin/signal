@@ -5,13 +5,13 @@ COMPOSE = docker compose $(COMPOSE_ENV_FILES) $(COMPOSE_FILES)
 .PHONY: compose-up compose-down compose-logs compose-reset dev-backend dev-frontend test-backend lint-backend test-frontend lint-frontend docs-check verify
 
 compose-up:
-	$(COMPOSE) up -d postgres valkey litellm
+	$(COMPOSE) up -d postgres cloudbeaver valkey litellm
 
 compose-down:
 	$(COMPOSE) down
 
 compose-logs:
-	$(COMPOSE) logs -f postgres valkey litellm
+	$(COMPOSE) logs -f postgres cloudbeaver valkey litellm
 
 compose-reset:
 	$(COMPOSE) down -v

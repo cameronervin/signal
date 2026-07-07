@@ -1,32 +1,44 @@
 import { ChevronDown } from "lucide-react";
 
+import { DashboardCharts } from "@/components/features/dashboard/DashboardCharts";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { PageHeader } from "@/components/ui/PageHeader";
+import type { DashboardSummary, FixtureLead } from "@/types/lead";
 
-const metrics = [
-  { label: "New leads today", value: "42", detail: "+8 vs yesterday", tone: "positive" as const },
-  { label: "A-tier in queue", value: "11", detail: "Touch target under 15m", tone: "caution" as const },
-  { label: "Median speed-to-lead", value: "14m", detail: "Down from 41m baseline", tone: "positive" as const },
-  { label: "Drafts approved 7d", value: "128", detail: "Avg 4 edits per draft", tone: "muted" as const },
-  { label: "First-touch response", value: "34%", detail: "+6 pts", tone: "positive" as const }
-];
+interface Props {
+  leads: FixtureLead[];
+  summary: DashboardSummary;
+}
 
-const tierLegend = [
-  ["A", "var(--tier-a)"],
-  ["B", "var(--tier-b)"],
-  ["C", "var(--tier-c)"]
-] as const;
+export function DashboardView({ leads, summary }: Props) {
+  const metrics = [
+    { label: "Open leads", value: `${summary.totalLeads}`, detail: "Loaded from Signal API", tone: "muted" as const },
+    {
+      label: "A-tier in queue",
+      value: `${summary.tierDistribution.A}`,
+      detail: "Touch target under 15m",
+      tone: "caution" as const
+    },
+    {
+      label: "Awaiting review",
+      value: `${summary.awaitingReviewCount}`,
+      detail: "Human gate before outreach",
+      tone: "positive" as const
+    },
+    {
+      label: "Gate failed",
+      value: `${summary.gateFailedCount}`,
+      detail: "No draft exposed",
+      tone: "caution" as const
+    },
+    {
+      label: "Average score",
+      value: `${Math.round(summary.averageScore)}`,
+      detail: "Across open queue",
+      tone: "positive" as const
+    }
+  ];
 
-const markets = [
-  { name: "Austin", score: 91 },
-  { name: "Charlotte", score: 84 },
-  { name: "Nashville", score: 79 },
-  { name: "Phoenix", score: 73 },
-  { name: "Denver", score: 68 },
-  { name: "Seattle", score: 64 }
-];
-
-export function DashboardView() {
   return (
     <>
       <PageHeader
@@ -48,59 +60,7 @@ export function DashboardView() {
             <MetricCard key={metric.label} {...metric} />
           ))}
         </section>
-        <section className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-          <div className="surface-card p-5">
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="section-title">Inbound volume by tier</h2>
-              <div className="flex gap-4 text-[11px] font-semibold text-[var(--ink-600)]">
-                {tierLegend.map(([label, color]) => (
-                  <span key={label} className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-sm" style={{ background: color }} />
-                    {label}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="mt-5 flex h-52 items-end gap-3" aria-label="Stacked bar placeholder">
-              {Array.from({ length: 14 }).map((_, index) => (
-                <div key={index} className="flex flex-1 flex-col overflow-hidden rounded-md bg-[var(--track)]">
-                  <span style={{ height: `${18 + index * 2}%` }} className="bg-[var(--tier-c)]" />
-                  <span style={{ height: `${16 + (index % 4) * 4}%` }} className="bg-[var(--tier-b)]" />
-                  <span style={{ height: `${10 + (index % 5) * 5}%` }} className="bg-[var(--tier-a)]" />
-                </div>
-              ))}
-            </div>
-            <div className="mono mt-3 grid grid-cols-7 text-[10px] text-[var(--ink-400)]">
-              {["D-13", "D-11", "D-9", "D-7", "D-5", "D-3", "Today"].map((label) => (
-                <span key={label}>{label}</span>
-              ))}
-            </div>
-          </div>
-          <div className="surface-card p-5">
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="section-title">Score distribution</h2>
-              <span className="mono text-[11px] font-semibold text-[var(--ink-400)]">187 leads</span>
-            </div>
-            <div className="mt-5 grid h-52 grid-cols-8 items-end gap-2">
-              {[42, 54, 88, 76, 52, 34, 22, 14].map((height, index) => (
-                <div
-                  key={index}
-                  className="rounded-md"
-                  style={{
-                    background:
-                      index > 4 ? "var(--tier-a)" : index > 2 ? "var(--tier-b)" : "var(--tier-c)",
-                    height: `${height}%`
-                  }}
-                />
-              ))}
-            </div>
-            <div className="mt-4 flex justify-between text-xs font-semibold text-[var(--ink-600)]">
-              <span>C 61%</span>
-              <span>B 24%</span>
-              <span>A 15%</span>
-            </div>
-          </div>
-        </section>
+        <DashboardCharts leads={leads} />
         <section className="surface-card p-5">
           <div className="flex items-center justify-between gap-4">
             <h2 className="section-title">Top markets by opportunity</h2>
@@ -109,19 +69,13 @@ export function DashboardView() {
             </button>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {markets.map((market) => (
-              <div key={market.name} className="market-bar">
-                <span className="text-sm font-semibold">{market.name}</span>
+            {summary.topMarkets.map((market) => (
+              <div key={market.market} className="market-bar">
+                <span className="text-sm font-semibold">{market.market}</span>
                 <span className="meter-track h-2">
-                  <span
-                    className="meter-fill"
-                    style={{
-                      background: market.score >= 75 ? "var(--brand-primary)" : "var(--tier-b)",
-                      width: `${market.score}%`
-                    }}
-                  />
+                  <span className={`meter-fill ${market.score >= 75 ? "is-high" : "is-medium"}`} style={{ width: `${market.score}%` }} />
                 </span>
-                <span className="mono text-sm font-semibold">{market.score}</span>
+                <span className="mono text-sm font-semibold">{market.leadCount}</span>
               </div>
             ))}
           </div>

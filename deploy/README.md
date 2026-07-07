@@ -38,11 +38,36 @@ make compose-up
 This starts:
 
 - Postgres on `localhost:5433`
+- CloudBeaver DB UI on `localhost:5050`
 - Valkey on `localhost:6379`
 - LiteLLM on `localhost:4000`
 
 LiteLLM uses its database-backed image for the local proxy. On a fresh Postgres
 volume, the first boot can take several minutes while proxy migrations run.
+
+Open the DB UI at `http://localhost:5050` and log in with:
+
+```text
+Username: signal
+Password: signal-local-db-ui
+```
+
+Create a PostgreSQL connection through Signal's host-facing Postgres port:
+
+```text
+Host: host.docker.internal
+Port: 5433
+Database: signal
+Username: postgres
+Password: postgres
+```
+
+Compose services still use `postgres:5432` internally because `5432` is the
+Postgres container port. The local developer-facing port is `localhost:5433`.
+
+If port `5050` is already in use, set `DB_UI_PORT` in
+`deploy/envs/.env.local` before starting the service. To change the local
+CloudBeaver admin password, set `DB_UI_ADMIN_PASSWORD`.
 
 Stop the stack with:
 

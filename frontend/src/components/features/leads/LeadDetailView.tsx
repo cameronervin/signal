@@ -1,9 +1,16 @@
-import { ChevronLeft, Copy, RefreshCw, Send } from "lucide-react";
-import Link from "next/link";
+"use client";
 
+import { AlertTriangle, ChevronLeft, Copy, ExternalLink, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+
+import { KnowledgeGraph } from "@/components/features/leads/KnowledgeGraph";
+import { Button } from "@/components/ui/Button";
+import { EditableDraft } from "@/components/ui/EditableDraft";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SourceChip } from "@/components/ui/SourceChip";
 import { TierBadge } from "@/components/ui/TierBadge";
+import { Toast } from "@/components/ui/Toast";
 import { routes } from "@/lib/constants/routes";
 import type { FixtureLead } from "@/types/lead";
 
@@ -19,6 +26,12 @@ interface FieldProps {
 
 export function LeadDetailView({ lead }: Props) {
   const failed = lead.gates.status === "failed";
+  const [toast, setToast] = useState<string | null>(null);
+
+  function showToast(message: string) {
+    setToast(message);
+    window.setTimeout(() => setToast(null), 2200);
+  }
 
   return (
     <>
@@ -30,21 +43,22 @@ export function LeadDetailView({ lead }: Props) {
             <Link className="button secondary" href={routes.leads}>
               <ChevronLeft size={16} /> Back
             </Link>
-            {!failed && (
-              <button className="button primary" type="button">
-                Assign agent
-              </button>
+            {!failed && lead.runId && (
+              <Link className="button primary" href={routes.agentRunDetail(lead.runId)}>
+                <ExternalLink size={16} /> View agent run
+              </Link>
             )}
           </div>
         }
       />
       <main className="content stack">
+        <Toast message={toast} />
         <div className="flex items-center gap-3">
           <TierBadge tier={lead.score.tier} />
           <span className="mono text-sm font-semibold">{lead.score.total}</span>
           <span className="text-sm text-[var(--ink-600)]">{lead.score.whyLine}</span>
         </div>
-        {failed ? <GateFailedLead lead={lead} /> : <WorkableLeadDetail lead={lead} />}
+        {failed ? <GateFailedLead lead={lead} /> : <WorkableLeadDetail lead={lead} showToast={showToast} />}
       </main>
     </>
   );
@@ -53,8 +67,10 @@ export function LeadDetailView({ lead }: Props) {
 function GateFailedLead({ lead }: Props) {
   return (
     <section className="detail-grid">
-      <div className="surface-card border-[var(--danger-border)] bg-[#FDF5F5] p-5">
-        <h2 className="section-title text-[var(--danger-text)]">Hard gates failed</h2>
+      <div className="surface-card danger-panel p-5">
+        <h2 className="section-title danger-title">
+          <AlertTriangle size={16} /> Hard gates failed — do not work this lead
+        </h2>
         <ul className="mt-4 grid gap-3 text-sm font-semibold text-[var(--danger-text)]">
           {lead.flags.map((flag) => (
             <li key={flag}>x {flag}</li>
@@ -79,7 +95,15 @@ function GateFailedLead({ lead }: Props) {
   );
 }
 
-function WorkableLeadDetail({ lead }: Props) {
+function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: string) => void }) {
+  const [subject, setSubject] = useState(lead.draft?.subject ?? "");
+  const [body, setBody] = useState(lead.draft?.body ?? "");
+
+  async function copyDraft() {
+    await navigator.clipboard.writeText(`${subject}\n\n${body}`);
+    showToast(`Draft copied for ${lead.name}`);
+  }
+
   return (
     <section className="detail-grid">
       <div className="stack">
@@ -109,10 +133,22 @@ function WorkableLeadDetail({ lead }: Props) {
           </ul>
         </div>
         <div className="surface-card p-5">
-          <h2 className="section-title">Knowledge graph</h2>
-          <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-4 text-sm text-[var(--ink-600)]">
-            Contact {"->"} Company {"->"} Property {"->"} Market. Related context:
-            {lead.related.map((item) => ` ${item.reason}`).join("; ")}
+          <div className="flex items-center justify-between">
+            <h2 className="section-title">Knowledge graph</h2>
+            <span className="filter-chip active">{lead.related.length} related</span>
+          </div>
+          <KnowledgeGraph lead={lead} />
+          <div className="related-list">
+            {lead.related.length ? (
+              lead.related.map((item) => (
+                <span key={`${item.label}-${item.reason}`}>
+                  <strong>{item.label}</strong>
+                  {item.reason}
+                </span>
+              ))
+            ) : (
+              <span>No related leads found for this lead.</span>
+            )}
           </div>
         </div>
       </div>
@@ -120,36 +156,33 @@ function WorkableLeadDetail({ lead }: Props) {
         <div className="flex items-center justify-between">
           <h2 className="section-title">Drafted email</h2>
           <span className="rounded-md bg-[var(--brand-tint)] px-2 py-1 text-xs font-bold text-[var(--brand-deep)]">
-            Review and send
+            Review gate
           </span>
         </div>
         <div className="mt-4 grid gap-2 border-b border-[var(--border)] pb-4 text-sm">
           <span>
             <strong>To:</strong> {lead.email}
           </span>
-          <span>
-            <strong>Subject:</strong> {lead.draft?.subject}
-          </span>
         </div>
-        <pre className="mt-4 whitespace-pre-wrap rounded-lg bg-[var(--surface-2)] p-4 text-sm leading-6 text-[var(--ink-700)]">
-          {lead.draft?.body}
-        </pre>
+        <EditableDraft subject={subject} body={body} onSubjectChange={setSubject} onBodyChange={setBody} />
         <div className="mt-4 flex flex-wrap gap-2">
           {lead.draft?.sources.map((source) => (
             <SourceChip key={`${source.source}-${source.label}`} source={source} />
           ))}
         </div>
         <div className="mt-auto flex justify-between pt-5">
-          <button className="button secondary" type="button">
+          <Button disabled title="Draft regeneration requires a backend drafting endpoint">
             <RefreshCw size={15} /> Regenerate
-          </button>
+          </Button>
           <div className="flex gap-2">
-            <button className="button secondary" type="button">
+            <Button onClick={() => void copyDraft()}>
               <Copy size={15} /> Copy
-            </button>
-            <button className="button primary" type="button">
-              <Send size={15} /> Send
-            </button>
+            </Button>
+            {lead.runId && (
+              <Link className="button primary" href={routes.agentRunDetail(lead.runId)}>
+                Approve review
+              </Link>
+            )}
           </div>
         </div>
       </div>

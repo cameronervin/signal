@@ -37,7 +37,8 @@ export const leads: FixtureLead[] = [
         { source: "FRED", label: "Rent growth", value: "8.1% YoY" },
         { source: "News", label: "Trigger", value: "Regional portfolio expansion" }
       ]
-    }
+    },
+    runId: "run-8842"
   },
   {
     id: "lead-marcus-webb",
@@ -74,7 +75,8 @@ export const leads: FixtureLead[] = [
         { source: "Census ACS", label: "Renter share", value: "61%" },
         { source: "FRED", label: "Labor market", value: "3.2% unemployment" }
       ]
-    }
+    },
+    runId: "run-9011"
   },
   {
     id: "lead-robert-diaz",
@@ -185,7 +187,8 @@ export const leads: FixtureLead[] = [
         { source: "Census ACS", label: "Renter share", value: "49%" },
         { source: "FRED", label: "Rent growth", value: "6.2% YoY" }
       ]
-    }
+    },
+    runId: "run-7750"
   },
   {
     id: "lead-lin-zhao",
@@ -286,6 +289,7 @@ export const leads: FixtureLead[] = [
 export const agentRuns: FixtureAgentRun[] = [
   {
     runId: "run-8842",
+    leadId: "lead-sarah-chen",
     agent: "Outreach Agent",
     kind: "Draft review",
     lead: "Sarah Chen · Meridian Residential",
@@ -293,6 +297,10 @@ export const agentRuns: FixtureAgentRun[] = [
     stage: "Human review",
     stageIndex: 3,
     status: "Awaiting you",
+    rawStatus: "awaiting_review",
+    trigger: "api insert",
+    runtime: "10.3s",
+    apisCalled: "6 / 6",
     steps: [
       { name: "Deterministic enrichment", status: "done", summary: "Public data and domain checks completed." },
       {
@@ -311,10 +319,17 @@ export const agentRuns: FixtureAgentRun[] = [
       "11:42:08 draft generated with 3 cited facts",
       "11:42:09 knowledge graph linked 1 related lead",
       "11:42:11 awaiting human review"
-    ]
+    ],
+    output: {
+      score: 92,
+      tier: "A",
+      summary: "Large portfolio · senior contact · 8.1% rent growth · recent trigger event",
+      leadId: "lead-sarah-chen"
+    }
   },
   {
     runId: "run-9011",
+    leadId: "lead-marcus-webb",
     agent: "Enrichment Agent",
     kind: "Lead enrichment",
     lead: "Marcus Webb · Northstar Living",
@@ -322,6 +337,10 @@ export const agentRuns: FixtureAgentRun[] = [
     stage: "Scoring",
     stageIndex: 2,
     status: "In progress",
+    rawStatus: "running",
+    trigger: "api insert",
+    runtime: "n/a",
+    apisCalled: "2 resolved",
     steps: [
       { name: "Deterministic enrichment", status: "done", summary: "Public data resolved." },
       { name: "Agent scoring and drafting", status: "active", summary: "Building score and draft." },
@@ -332,6 +351,7 @@ export const agentRuns: FixtureAgentRun[] = [
   },
   {
     runId: "run-7750",
+    leadId: "lead-david-okafor",
     agent: "Outreach Agent",
     kind: "Draft review",
     lead: "David Okafor · Sunhaven Residential",
@@ -339,6 +359,10 @@ export const agentRuns: FixtureAgentRun[] = [
     stage: "Sent",
     stageIndex: 4,
     status: "Sent",
+    rawStatus: "completed",
+    trigger: "api insert",
+    runtime: "12.0s",
+    apisCalled: "6 / 6",
     steps: [
       { name: "Deterministic enrichment", status: "done", summary: "Public data resolved." },
       { name: "Agent scoring and drafting", status: "done", summary: "Score 71, B-tier, draft generated." },
@@ -357,6 +381,7 @@ export const agentRuns: FixtureAgentRun[] = [
     stage: "Human approval policy",
     stageIndex: 0,
     status: "Next release",
+    rawStatus: "queued",
     disabled: true,
     steps: [],
     activityLog: []
