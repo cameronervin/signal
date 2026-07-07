@@ -34,5 +34,6 @@ Before production use:
 - Add auth and role-based access.
 - Replace in-memory persistence with a durable database.
 - Add audit logs for approve/send actions.
-- Add provider timeout and retry policies.
+- Expand provider retry policies beyond current bounded request timeouts and
+  fixture fallback.
 - Add retention policy for lead and draft data.

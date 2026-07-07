@@ -1,16 +1,32 @@
+from collections.abc import AsyncIterator
 from functools import lru_cache
 from uuid import uuid4
 
-from app.agents.graph import run_signal_pipeline
-from app.agents.state import SignalState
+from fastapi import Depends
+
+from app.agents.executors.signal_pipeline import SignalPipelineExecutor
+from app.agents.states.signal_state import SignalState
+from app.core.config import Settings, get_settings
+from app.infrastructure.db.session import get_sessionmaker
+from app.infrastructure.public_data import get_public_data_client
+from app.repositories.base import SignalRepository
 from app.repositories.memory import InMemorySignalRepository
+from app.repositories.postgres import PostgresSignalRepository
 from app.schemas.lead import LeadCreate, LeadResponse
-from app.schemas.run import AgentRunResponse, AgentStep
+from app.schemas.run import AgentRunResponse
+from app.services.agent_run_builder import build_agent_run_response
+from app.services.lead_response_builder import build_lead_response
 
 
 class LeadService:
-    def __init__(self, repository: InMemorySignalRepository) -> None:
+    def __init__(
+        self,
+        repository: SignalRepository,
+        *,
+        pipeline_executor: SignalPipelineExecutor | None = None,
+    ) -> None:
         self.repository = repository
+        self.pipeline_executor = pipeline_executor or SignalPipelineExecutor()
 
     async def create_and_enrich(self, lead: LeadCreate) -> LeadResponse:
         lead_id = f"lead_{uuid4().hex[:10]}"
@@ -21,62 +37,20 @@ class LeadService:
             "lead": lead,
             "activity_log": ["api_insert: lead received"],
         }
-        result = await run_signal_pipeline(initial_state)
-        response = LeadResponse(
-            id=lead_id,
-            input=lead,
-            gates=result["gates"],
-            enrichment=result["enrichment"],
-            score=result["score"],
-            talking_points=result.get("talking_points", []),
-            flags=result.get("flags", []),
-            draft=result.get("draft"),
-            related_leads=result.get("related_leads", []),
-            run_id=run_id,
-        )
-        run = AgentRunResponse(
-            run_id=run_id,
+        result = await self.pipeline_executor.execute(initial_state)
+        response = build_lead_response(
             lead_id=lead_id,
-            status=(
-                "awaiting_review"
-                if response.gates.status == "passed"
-                else "completed"
-            ),
-            current_stage=(
-                "human_review" if response.gates.status == "passed" else "gate_failed"
-            ),
-            steps=[
-                AgentStep(
-                    name="Deterministic enrichment",
-                    status="done",
-                    summary="Geography, market, company, and domain signals resolved.",
-                ),
-                AgentStep(
-                    name="Agent scoring and drafting",
-                    status="skipped" if response.gates.status == "failed" else "done",
-                    summary=(
-                        "Draft suppressed because hard gates failed."
-                        if response.gates.status == "failed"
-                        else "Score, why-line, talking points, and draft prepared."
-                    ),
-                ),
-                AgentStep(
-                    name="Knowledge graph",
-                    status="done",
-                    summary="Related-lead context attached.",
-                ),
-                AgentStep(
-                    name="Human review",
-                    status=(
-                        "pending" if response.gates.status == "passed" else "skipped"
-                    ),
-                    summary="Awaiting SDR review before any outreach action.",
-                ),
-            ],
+            run_id=run_id,
+            lead=lead,
+            result=result,
+        )
+        run = build_agent_run_response(
+            lead=response,
             activity_log=result.get("activity_log", []),
         )
         await self.repository.save_lead(response)
         await self.repository.save_agent_run(run)
+        await self.repository.commit()
         return response
 
     async def list_leads(self) -> list[LeadResponse]:
@@ -93,9 +67,29 @@ class LeadService:
 
 
 @lru_cache
-def get_repository() -> InMemorySignalRepository:
+def get_memory_repository() -> InMemorySignalRepository:
     return InMemorySignalRepository()
 
 
-def get_lead_service() -> LeadService:
-    return LeadService(get_repository())
+async def get_lead_service(
+    settings: Settings = Depends(get_settings),
+) -> AsyncIterator[LeadService]:
+    if settings.repository_backend == "memory":
+        yield LeadService(
+            get_memory_repository(),
+            pipeline_executor=SignalPipelineExecutor(
+                settings=settings,
+                public_data_client=get_public_data_client(settings),
+            ),
+        )
+        return
+
+    session_factory = get_sessionmaker(settings)
+    async with session_factory() as session:
+        yield LeadService(
+            PostgresSignalRepository(session),
+            pipeline_executor=SignalPipelineExecutor(
+                settings=settings,
+                public_data_client=get_public_data_client(settings),
+            ),
+        )

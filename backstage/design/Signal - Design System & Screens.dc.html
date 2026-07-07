@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;background:#ECEEED;font-family:'Figtree',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;color:#0F1613;}
+</style>
+</helmet>
+
+<div style="padding:60px 64px 100px;display:flex;flex-direction:column;gap:14px;width:max-content;min-width:100%;">
+
+  <!-- ===== COVER ===== -->
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;width:1460px;margin-bottom:6px;">
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div style="width:46px;height:46px;border-radius:12px;background:#6D4DF6;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(109,77,246,.32);">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 15.5c3.2 0 3.2-7 6.4-7s3.2 7 6.4 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="19.4" cy="6" r="2.1" fill="#fff"/></svg>
+      </div>
+      <div>
+        <div style="font-size:30px;font-weight:800;letter-spacing:-0.02em;line-height:1;">Signal</div>
+        <div style="font-size:14px;color:#56605C;margin-top:6px;">Inbound lead intelligence for multifamily leasing teams</div>
+      </div>
+    </div>
+    <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#7A847F;line-height:1.7;">
+      <div style="color:#0F1613;font-weight:600;">DESIGN SYSTEM v0.1</div>
+      <div>Foundations + 6 core screens</div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 01 — FOUNDATIONS                                             -->
+  <!-- ============================================================ -->
+  <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:0.1em;color:#7A847F;margin-top:34px;">01 — FOUNDATIONS</div>
+
+  <div style="width:1460px;background:#fff;border:1px solid #E4E8E6;border-radius:18px;box-shadow:0 1px 2px rgba(15,22,19,.04),0 18px 40px rgba(15,22,19,.05);overflow:hidden;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;">
+
+      <!-- Color -->
+      <div style="padding:36px 38px;border-right:1px solid #EEF1F0;border-bottom:1px solid #EEF1F0;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#9AA39E;text-transform:uppercase;margin-bottom:18px;">Color</div>
+        <div style="font-size:11px;font-weight:600;color:#7A847F;margin-bottom:10px;">Brand</div>
+        <div style="display:flex;gap:10px;margin-bottom:22px;">
+          <div style="flex:1;"><div style="height:64px;border-radius:10px;background:#0E0B1A;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#56605C;margin-top:7px;">Ink / #0E0B1A</div></div>
+          <div style="flex:1;"><div style="height:64px;border-radius:10px;background:#4A32C4;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#56605C;margin-top:7px;">Deep / #4A32C4</div></div>
+          <div style="flex:1;"><div style="height:64px;border-radius:10px;background:#6D4DF6;box-shadow:0 6px 16px rgba(109,77,246,.28);"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#56605C;margin-top:7px;">Primary / #6D4DF6</div></div>
+          <div style="flex:1;"><div style="height:64px;border-radius:10px;background:#EEEBFE;border:1px solid #DDD5FB;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#56605C;margin-top:7px;">Tint / #EEEBFE</div></div>
+        </div>
+        <div style="font-size:11px;font-weight:600;color:#7A847F;margin-bottom:10px;">Neutrals</div>
+        <div style="display:flex;gap:10px;margin-bottom:22px;">
+          <div style="flex:1;"><div style="height:48px;border-radius:9px;background:#0F1613;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#56605C;margin-top:6px;">Ink 900</div></div>
+          <div style="flex:1;"><div style="height:48px;border-radius:9px;background:#56605C;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#56605C;margin-top:6px;">Ink 600</div></div>
+          <div style="flex:1;"><div style="height:48px;border-radius:9px;background:#9AA39E;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#56605C;margin-top:6px;">Ink 400</div></div>
+          <div style="flex:1;"><div style="height:48px;border-radius:9px;background:#F5F7F6;border:1px solid #E4E8E6;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#56605C;margin-top:6px;">Surface 2</div></div>
+          <div style="flex:1;"><div style="height:48px;border-radius:9px;background:#fff;border:1px solid #E4E8E6;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#56605C;margin-top:6px;">Surface</div></div>
+        </div>
+        <div style="font-size:11px;font-weight:600;color:#7A847F;margin-bottom:10px;">Tiers &amp; status</div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;"><div style="height:40px;border-radius:9px;background:#6D4DF6;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#56605C;margin-top:6px;">A · #6D4DF6</div></div>
+          <div style="flex:1;"><div style="height:40px;border-radius:9px;background:#F5A623;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#56605C;margin-top:6px;">B · #F5A623</div></div>
+          <div style="flex:1;"><div style="height:40px;border-radius:9px;background:#98A29C;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#56605C;margin-top:6px;">C · #98A29C</div></div>
+          <div style="flex:1;"><div style="height:40px;border-radius:9px;background:#E5484D;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#56605C;margin-top:6px;">Flag · #E5484D</div></div>
+        </div>
+      </div>
+
+      <!-- Type -->
+      <div style="padding:36px 38px;border-bottom:1px solid #EEF1F0;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#9AA39E;text-transform:uppercase;margin-bottom:18px;">Typography</div>
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:4px;"><div style="font-size:34px;font-weight:800;letter-spacing:-0.02em;">Figtree</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9AA39E;">Display / UI</div></div>
+        <div style="font-size:13px;color:#56605C;margin-bottom:22px;">Close analogue to the brand's Proxima Nova — geometric, humanist, ADA-legible at small sizes.</div>
+        <div style="border-top:1px solid #EEF1F0;padding-top:16px;display:flex;flex-direction:column;gap:11px;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:28px;font-weight:800;letter-spacing:-0.02em;">Display 28/800</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9AA39E;">Page titles</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:19px;font-weight:700;">Heading 19/700</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9AA39E;">Card titles</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:14px;font-weight:600;">Label 14/600</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9AA39E;">Table &amp; controls</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:13.5px;font-weight:400;color:#333B37;">Body 13.5/400 — enrichment copy</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9AA39E;">Content</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;">JetBrains Mono 92 · A-TIER</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9AA39E;">Scores · IDs · stats</span></div>
+        </div>
+      </div>
+
+      <!-- Components -->
+      <div style="padding:32px 38px;grid-column:1 / -1;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#9AA39E;text-transform:uppercase;margin-bottom:20px;">Components</div>
+        <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start;">
+
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#7A847F;margin-bottom:12px;">Buttons</div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <button style="border:none;background:#6D4DF6;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer;box-shadow:0 2px 6px rgba(109,77,246,.28);">Assign agent</button>
+              <button style="border:1px solid #E4E8E6;background:#fff;color:#0F1613;font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer;">Copy draft</button>
+              <button style="border:none;background:transparent;color:#4A32C4;font-family:inherit;font-size:13px;font-weight:600;padding:9px 12px;border-radius:9px;cursor:pointer;">Dismiss</button>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#7A847F;margin-bottom:12px;">Tier badges</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#4A32C4;background:#EEEBFE;border:1px solid #DDD5FB;padding:4px 9px;border-radius:7px;"><span style="width:6px;height:6px;border-radius:50%;background:#6D4DF6;"></span>A</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#9A6207;background:#FEF3DA;border:1px solid #F7E2B0;padding:4px 9px;border-radius:7px;"><span style="width:6px;height:6px;border-radius:50%;background:#F5A623;"></span>B</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#5A635E;background:#F0F2F1;border:1px solid #E1E5E3;padding:4px 9px;border-radius:7px;"><span style="width:6px;height:6px;border-radius:50%;background:#98A29C;"></span>C</span>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#7A847F;margin-bottom:12px;">Flags</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#B4272B;background:#FDECEC;border:1px solid #F6D2D3;padding:4px 9px;border-radius:7px;">⚑ Personal email</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#9A6207;background:#FEF3DA;border:1px solid #F7E2B0;padding:4px 9px;border-radius:7px;">⚑ Non-US property</span>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#7A847F;margin-bottom:12px;">Source chip</div>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:#4A32C4;background:#F5F3FE;border:1px dashed #C9BEF7;padding:4px 9px;border-radius:7px;"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;">Census ACS</span> · 61% renters</span>
+          </div>
+
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#7A847F;margin-bottom:12px;">Score meter</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;color:#0F1613;">92</span>
+              <div style="width:120px;height:7px;border-radius:4px;background:#EEF1F0;overflow:hidden;"><div style="width:92%;height:100%;background:#6D4DF6;border-radius:4px;"></div></div>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#7A847F;margin-bottom:12px;">Input / search</div>
+            <div style="display:flex;align-items:center;gap:8px;width:220px;border:1px solid #E4E8E6;background:#fff;border-radius:9px;padding:8px 12px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#9AA39E" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg>
+              <span style="font-size:13px;color:#9AA39E;">Search leads…</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 02 — DASHBOARD                                               -->
+  <!-- ============================================================ -->
+  <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:0.1em;color:#7A847F;margin-top:44px;">02 — DASHBOARD</div>
+
+  <div style="width:1460px;background:#fff;border:1px solid #E4E8E6;border-radius:18px;box-shadow:0 1px 2px rgba(15,22,19,.04),0 18px 40px rgba(15,22,19,.05);overflow:hidden;display:flex;height:920px;">
+    <!-- sidebar -->
+    <div style="width:70px;background:#0E0B1A;display:flex;flex-direction:column;align-items:center;padding:18px 0;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:11px;background:#6D4DF6;display:flex;align-items:center;justify-content:center;margin-bottom:26px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 15.5c3.2 0 3.2-7 6.4-7s3.2 7 6.4 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="19.4" cy="6" r="2.1" fill="#fff"/></svg></div>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:center;">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(109,77,246,.18);border:1px solid rgba(109,77,246,.55);display:flex;align-items:center;justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5" stroke="#B9A6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.5V19a1 1 0 001 1h10a1 1 0 001-1V9.5" stroke="#B9A6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 20v-5h4v5" stroke="#B9A6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M22 12h-6l-2 3h-4l-2-3H2" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/><rect x="13" y="4" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/><rect x="4" y="13" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/><rect x="13" y="13" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/></svg></div>
+      </div>
+      <div style="margin-top:auto;width:32px;height:32px;border-radius:50%;background:#4A32C4;color:#D9CDFF;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">SD</div>
+    </div>
+    <!-- main -->
+    <div style="flex:1;display:flex;flex-direction:column;background:#F5F7F6;min-width:0;">
+      <div style="height:66px;background:#fff;border-bottom:1px solid #EAEEEC;display:flex;align-items:center;justify-content:space-between;padding:0 30px;flex-shrink:0;">
+        <div style="font-size:20px;font-weight:800;letter-spacing:-0.01em;">Dashboard</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="display:flex;align-items:center;gap:7px;border:1px solid #E4E8E6;border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:600;color:#333B37;">Last 14 days <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#7A847F" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+          <div style="width:32px;height:32px;border-radius:50%;background:#0E0B1A;color:#D9CDFF;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">SD</div>
+        </div>
+      </div>
+
+      <div style="padding:26px 30px;display:flex;flex-direction:column;gap:20px;overflow:hidden;">
+        <!-- KPIs -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;">
+          <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;padding:16px 18px;">
+            <div style="font-size:12px;font-weight:600;color:#7A847F;">New leads today</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:600;margin-top:8px;">42</div>
+            <div style="font-size:11.5px;font-weight:600;color:#4A32C4;margin-top:4px;">▲ 8 vs. yesterday</div>
+          </div>
+          <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;padding:16px 18px;">
+            <div style="font-size:12px;font-weight:600;color:#7A847F;">A-tier in queue</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:600;margin-top:8px;">11</div>
+            <div style="font-size:11.5px;font-weight:600;color:#9A6207;margin-top:4px;">SLA: touch &lt; 15 min</div>
+          </div>
+          <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;padding:16px 18px;">
+            <div style="font-size:12px;font-weight:600;color:#7A847F;">Median speed-to-lead</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:600;margin-top:8px;">14<span style="font-size:15px;color:#7A847F;">m</span></div>
+            <div style="font-size:11.5px;font-weight:600;color:#4A32C4;margin-top:4px;">▼ from 41m baseline</div>
+          </div>
+          <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;padding:16px 18px;">
+            <div style="font-size:12px;font-weight:600;color:#7A847F;">Drafts sent (7d)</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:600;margin-top:8px;">128</div>
+            <div style="font-size:11.5px;font-weight:600;color:#7A847F;margin-top:4px;">Avg 4 edits / draft</div>
+          </div>
+          <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;padding:16px 18px;">
+            <div style="font-size:12px;font-weight:600;color:#7A847F;">First-touch response</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:600;margin-top:8px;">34<span style="font-size:15px;color:#7A847F;">%</span></div>
+            <div style="font-size:11.5px;font-weight:600;color:#4A32C4;margin-top:4px;">▲ 6 pts vs. baseline</div>
+          </div>
+        </div>
+
+        <!-- charts -->
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:14px;">
+          <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;padding:20px 22px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+              <div style="font-size:14.5px;font-weight:700;">Inbound volume by tier</div>
+              <div style="display:flex;gap:14px;font-size:11px;font-weight:600;color:#56605C;">
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:#6D4DF6;"></span>A</span>
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:#F5A623;"></span>B</span>
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:#D3D9D6;"></span>C</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:9px;height:200px;">
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:30%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:26%;background:#F5A623;"></div><div style="height:14%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:34%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:22%;background:#F5A623;"></div><div style="height:18%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:28%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:30%;background:#F5A623;"></div><div style="height:20%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:40%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:26%;background:#F5A623;"></div><div style="height:16%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:24%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:34%;background:#F5A623;"></div><div style="height:22%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:36%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:24%;background:#F5A623;"></div><div style="height:26%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:30%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:28%;background:#F5A623;"></div><div style="height:20%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:44%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:22%;background:#F5A623;"></div><div style="height:18%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:32%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:30%;background:#F5A623;"></div><div style="height:24%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:38%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:26%;background:#F5A623;"></div><div style="height:28%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:30%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:32%;background:#F5A623;"></div><div style="height:22%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:26%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:28%;background:#F5A623;"></div><div style="height:30%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:34%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:30%;background:#F5A623;"></div><div style="height:24%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;"><div style="height:40%;background:#D3D9D6;border-radius:3px 3px 0 0;"></div><div style="height:26%;background:#F5A623;"></div><div style="height:30%;background:#6D4DF6;border-radius:0 0 3px 3px;"></div></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#9AA39E;margin-top:10px;"><span>Sep 8</span><span>Sep 15</span><span>Sep 21</span></div>
+          </div>
+
+          <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;padding:20px 22px;">
+            <div style="font-size:14.5px;font-weight:700;margin-bottom:4px;">Score distribution</div>
+            <div style="font-size:11.5px;color:#7A847F;margin-bottom:18px;">Current open queue · 187 leads</div>
+            <div style="display:flex;align-items:flex-end;gap:6px;height:150px;">
+              <div style="flex:1;height:12%;background:#EBEEEC;border-radius:3px;"></div>
+              <div style="flex:1;height:22%;background:#EBEEEC;border-radius:3px;"></div>
+              <div style="flex:1;height:40%;background:#D3D9D6;border-radius:3px;"></div>
+              <div style="flex:1;height:64%;background:#D3D9D6;border-radius:3px;"></div>
+              <div style="flex:1;height:82%;background:#F5CE86;border-radius:3px;"></div>
+              <div style="flex:1;height:100%;background:#F5A623;border-radius:3px;"></div>
+              <div style="flex:1;height:74%;background:#B9A6FF;border-radius:3px;"></div>
+              <div style="flex:1;height:52%;background:#6D4DF6;border-radius:3px;"></div>
+              <div style="flex:1;height:30%;background:#6D4DF6;border-radius:3px;"></div>
+              <div style="flex:1;height:16%;background:#4A32C4;border-radius:3px;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#9AA39E;margin-top:10px;"><span>0</span><span>50</span><span>100</span></div>
+            <div style="display:flex;gap:16px;margin-top:14px;font-size:11px;font-weight:600;color:#56605C;border-top:1px solid #EEF1F0;padding-top:12px;">
+              <span>C · 61%</span><span>B · 24%</span><span>A · 15%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- more dashboard -->
+        <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;padding:20px 22px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div style="font-size:14.5px;font-weight:700;">Top markets by opportunity score</div>
+            <div style="font-size:11.5px;font-weight:600;color:#4A32C4;">View all markets →</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:44px;row-gap:13px;">
+            <div style="display:flex;align-items:center;gap:14px;"><div style="width:130px;font-size:12.5px;font-weight:600;">Austin, TX</div><div style="flex:1;height:8px;background:#EEF1F0;border-radius:4px;overflow:hidden;"><div style="width:91%;height:100%;background:#6D4DF6;border-radius:4px;"></div></div><div style="width:28px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;">91</div></div>
+            <div style="display:flex;align-items:center;gap:14px;"><div style="width:130px;font-size:12.5px;font-weight:600;">Charlotte, NC</div><div style="flex:1;height:8px;background:#EEF1F0;border-radius:4px;overflow:hidden;"><div style="width:84%;height:100%;background:#6D4DF6;border-radius:4px;"></div></div><div style="width:28px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;">84</div></div>
+            <div style="display:flex;align-items:center;gap:14px;"><div style="width:130px;font-size:12.5px;font-weight:600;">Nashville, TN</div><div style="flex:1;height:8px;background:#EEF1F0;border-radius:4px;overflow:hidden;"><div style="width:79%;height:100%;background:#6D4DF6;border-radius:4px;"></div></div><div style="width:28px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;">79</div></div>
+            <div style="display:flex;align-items:center;gap:14px;"><div style="width:130px;font-size:12.5px;font-weight:600;">Phoenix, AZ</div><div style="flex:1;height:8px;background:#EEF1F0;border-radius:4px;overflow:hidden;"><div style="width:73%;height:100%;background:#F5A623;border-radius:4px;"></div></div><div style="width:28px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;">73</div></div>
+            <div style="display:flex;align-items:center;gap:14px;"><div style="width:130px;font-size:12.5px;font-weight:600;">Denver, CO</div><div style="flex:1;height:8px;background:#EEF1F0;border-radius:4px;overflow:hidden;"><div style="width:68%;height:100%;background:#F5A623;border-radius:4px;"></div></div><div style="width:28px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;">68</div></div>
+            <div style="display:flex;align-items:center;gap:14px;"><div style="width:130px;font-size:12.5px;font-weight:600;">Seattle, WA</div><div style="flex:1;height:8px;background:#EEF1F0;border-radius:4px;overflow:hidden;"><div style="width:64%;height:100%;background:#F5A623;border-radius:4px;"></div></div><div style="width:28px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;">64</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 03 — INBOUND LEADS                                           -->
+  <!-- ============================================================ -->
+  <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:0.1em;color:#7A847F;margin-top:44px;">03 — INBOUND LEADS · RANKED QUEUE</div>
+
+  <div style="width:1460px;background:#fff;border:1px solid #E4E8E6;border-radius:18px;box-shadow:0 1px 2px rgba(15,22,19,.04),0 18px 40px rgba(15,22,19,.05);overflow:hidden;display:flex;height:920px;">
+    <div style="width:70px;background:#0E0B1A;display:flex;flex-direction:column;align-items:center;padding:18px 0;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:11px;background:#6D4DF6;display:flex;align-items:center;justify-content:center;margin-bottom:26px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 15.5c3.2 0 3.2-7 6.4-7s3.2 7 6.4 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="19.4" cy="6" r="2.1" fill="#fff"/></svg></div>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:center;">
+        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.5V19a1 1 0 001 1h10a1 1 0 001-1V9.5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 20v-5h4v5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(109,77,246,.18);border:1px solid rgba(109,77,246,.55);display:flex;align-items:center;justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M22 12h-6l-2 3h-4l-2-3H2" stroke="#B9A6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" stroke="#B9A6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/><rect x="13" y="4" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/><rect x="4" y="13" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/><rect x="13" y="13" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/></svg></div>
+      </div>
+      <div style="margin-top:auto;width:32px;height:32px;border-radius:50%;background:#4A32C4;color:#D9CDFF;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">SD</div>
+    </div>
+
+    <div style="flex:1;display:flex;flex-direction:column;background:#F5F7F6;min-width:0;">
+      <div style="height:66px;background:#fff;border-bottom:1px solid #EAEEEC;display:flex;align-items:center;justify-content:space-between;padding:0 30px;flex-shrink:0;">
+        <div style="display:flex;align-items:baseline;gap:12px;"><div style="font-size:20px;font-weight:800;letter-spacing:-0.01em;">Inbound Leads</div><div style="font-size:12.5px;color:#7A847F;">187 open · sorted by tier</div></div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button style="display:flex;align-items:center;gap:7px;border:1px solid #E4E8E6;background:#fff;border-radius:9px;padding:8px 13px;font-size:12.5px;font-weight:600;color:#333B37;cursor:pointer;font-family:inherit;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 5h18M6 12h12M10 19h4" stroke="#56605C" stroke-width="2" stroke-linecap="round"/></svg>Filter</button>
+          <div style="display:flex;align-items:center;gap:8px;width:240px;border:1px solid #E4E8E6;background:#fff;border-radius:9px;padding:8px 12px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#9AA39E" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg><span style="font-size:13px;color:#9AA39E;">Search leads…</span></div>
+        </div>
+      </div>
+
+      <!-- filter chips -->
+      <div style="padding:14px 30px 0;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:12px;font-weight:600;color:#4A32C4;background:#EEEBFE;border:1px solid #DDD5FB;padding:5px 11px;border-radius:8px;">Tier A · 11</span>
+        <span style="font-size:12px;font-weight:600;color:#56605C;background:#fff;border:1px solid #E4E8E6;padding:5px 11px;border-radius:8px;">Corporate email</span>
+        <span style="font-size:12px;font-weight:600;color:#56605C;background:#fff;border:1px solid #E4E8E6;padding:5px 11px;border-radius:8px;">Unassigned</span>
+        <span style="font-size:12px;font-weight:600;color:#9AA39E;padding:5px 4px;">+ Add filter</span>
+      </div>
+
+      <!-- table -->
+      <div style="padding:14px 30px 26px;overflow:hidden;">
+        <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;overflow:hidden;">
+          <!-- header -->
+          <div style="display:grid;grid-template-columns:56px 1.5fr 1.4fr 1.1fr 72px 96px 2.1fr 150px 34px;align-items:center;gap:14px;padding:12px 18px;background:#FAFBFB;border-bottom:1px solid #EEF1F0;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.06em;color:#9AA39E;text-transform:uppercase;">
+            <div>Tier</div><div>Lead</div><div>Company</div><div>Market</div><div>Units</div><div>Score</div><div>Why this lead</div><div>Draft</div><div></div>
+          </div>
+          <!-- rows -->
+          <div style="display:grid;grid-template-columns:56px 1.5fr 1.4fr 1.1fr 72px 96px 2.1fr 150px 34px;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid #F2F4F3;background:#FAF9FE;">
+            <div><span style="display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#4A32C4;background:#EEEBFE;border:1px solid #DDD5FB;padding:3px 8px;border-radius:6px;"><span style="width:5px;height:5px;border-radius:50%;background:#6D4DF6;"></span>A</span></div>
+            <div><div style="font-size:13.5px;font-weight:600;">Sarah Chen</div><div style="font-size:11.5px;color:#7A847F;">VP, Leasing</div></div>
+            <div style="font-size:13px;font-weight:500;">Greystar</div>
+            <div style="font-size:13px;color:#333B37;">Austin, TX</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;">794k</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;">92</span><div style="width:40px;height:6px;border-radius:3px;background:#EEF1F0;overflow:hidden;"><div style="width:92%;height:100%;background:#6D4DF6;"></div></div></div>
+            <div style="font-size:12px;color:#333B37;line-height:1.4;">Top-50 operator · acquisition news 3d ago · 8% rent growth</div>
+            <div><button style="display:inline-flex;align-items:center;gap:6px;border:1px solid #E4E8E6;background:#fff;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:#0F1613;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="8" y="8" width="12" height="12" rx="2" stroke="#4A32C4" stroke-width="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" stroke="#4A32C4" stroke-width="2"/></svg>Copy draft</button></div>
+            <div style="display:flex;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:56px 1.5fr 1.4fr 1.1fr 72px 96px 2.1fr 150px 34px;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid #F2F4F3;">
+            <div><span style="display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#4A32C4;background:#EEEBFE;border:1px solid #DDD5FB;padding:3px 8px;border-radius:6px;"><span style="width:5px;height:5px;border-radius:50%;background:#6D4DF6;"></span>A</span></div>
+            <div><div style="font-size:13.5px;font-weight:600;">Marcus Webb</div><div style="font-size:11.5px;color:#7A847F;">Director, Operations</div></div>
+            <div style="font-size:13px;font-weight:500;">Cortland</div>
+            <div style="font-size:13px;color:#333B37;">Charlotte, NC</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;">85k</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;">84</span><div style="width:40px;height:6px;border-radius:3px;background:#EEF1F0;overflow:hidden;"><div style="width:84%;height:100%;background:#6D4DF6;"></div></div></div>
+            <div style="font-size:12px;color:#333B37;line-height:1.4;">61% renter share · tight labor market · senior title</div>
+            <div><button style="display:inline-flex;align-items:center;gap:6px;border:1px solid #E4E8E6;background:#fff;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:#0F1613;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="8" y="8" width="12" height="12" rx="2" stroke="#4A32C4" stroke-width="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" stroke="#4A32C4" stroke-width="2"/></svg>Copy draft</button></div>
+            <div style="display:flex;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:56px 1.5fr 1.4fr 1.1fr 72px 96px 2.1fr 150px 34px;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid #F2F4F3;">
+            <div><span style="display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#4A32C4;background:#EEEBFE;border:1px solid #DDD5FB;padding:3px 8px;border-radius:6px;"><span style="width:5px;height:5px;border-radius:50%;background:#6D4DF6;"></span>A</span></div>
+            <div><div style="font-size:13.5px;font-weight:600;">Priya Nair</div><div style="font-size:11.5px;color:#7A847F;">Regional Manager</div></div>
+            <div style="font-size:13px;font-weight:500;">Bozzuto</div>
+            <div style="font-size:13px;color:#333B37;">Arlington, VA</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;">44k</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;">78</span><div style="width:40px;height:6px;border-radius:3px;background:#EEF1F0;overflow:hidden;"><div style="width:78%;height:100%;background:#6D4DF6;"></div></div></div>
+            <div style="font-size:12px;color:#333B37;line-height:1.4;">High-density submarket · repeat inbound (+10)</div>
+            <div><button style="display:inline-flex;align-items:center;gap:6px;border:1px solid #E4E8E6;background:#fff;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:#0F1613;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="8" y="8" width="12" height="12" rx="2" stroke="#4A32C4" stroke-width="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" stroke="#4A32C4" stroke-width="2"/></svg>Copy draft</button></div>
+            <div style="display:flex;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:56px 1.5fr 1.4fr 1.1fr 72px 96px 2.1fr 150px 34px;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid #F2F4F3;">
+            <div><span style="display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#9A6207;background:#FEF3DA;border:1px solid #F7E2B0;padding:3px 8px;border-radius:6px;"><span style="width:5px;height:5px;border-radius:50%;background:#F5A623;"></span>B</span></div>
+            <div><div style="font-size:13.5px;font-weight:600;">Robert Diaz</div><div style="font-size:11.5px;color:#7A847F;">VP, Portfolio</div></div>
+            <div style="font-size:13px;font-weight:500;">Avenue5</div>
+            <div style="font-size:13px;color:#333B37;">Seattle, WA</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;">85k</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;">74</span><div style="width:40px;height:6px;border-radius:3px;background:#EEF1F0;overflow:hidden;"><div style="width:74%;height:100%;background:#F5A623;"></div></div></div>
+            <div style="font-size:12px;color:#333B37;line-height:1.4;">3rd-party manager · mixed asset types · solid market</div>
+            <div><button style="display:inline-flex;align-items:center;gap:6px;border:1px solid #E4E8E6;background:#fff;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:#0F1613;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="8" y="8" width="12" height="12" rx="2" stroke="#4A32C4" stroke-width="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" stroke="#4A32C4" stroke-width="2"/></svg>Copy draft</button></div>
+            <div style="display:flex;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:56px 1.5fr 1.4fr 1.1fr 72px 96px 2.1fr 150px 34px;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid #F2F4F3;">
+            <div><span style="display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#9A6207;background:#FEF3DA;border:1px solid #F7E2B0;padding:3px 8px;border-radius:6px;"><span style="width:5px;height:5px;border-radius:50%;background:#F5A623;"></span>B</span></div>
+            <div><div style="font-size:13.5px;font-weight:600;">David Okafor</div><div style="font-size:11.5px;color:#7A847F;">Asset Manager</div></div>
+            <div style="font-size:13px;font-weight:500;">MAA</div>
+            <div style="font-size:13px;color:#333B37;">Nashville, TN</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;">102k</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;">71</span><div style="width:40px;height:6px;border-radius:3px;background:#EEF1F0;overflow:hidden;"><div style="width:71%;height:100%;background:#F5A623;"></div></div></div>
+            <div style="font-size:12px;color:#333B37;line-height:1.4;">REIT scale · mid-seniority title · strong Sun Belt growth</div>
+            <div><button style="display:inline-flex;align-items:center;gap:6px;border:1px solid #E4E8E6;background:#fff;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:#0F1613;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="8" y="8" width="12" height="12" rx="2" stroke="#4A32C4" stroke-width="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" stroke="#4A32C4" stroke-width="2"/></svg>Copy draft</button></div>
+            <div style="display:flex;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:56px 1.5fr 1.4fr 1.1fr 72px 96px 2.1fr 150px 34px;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid #F2F4F3;">
+            <div><span style="display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#9A6207;background:#FEF3DA;border:1px solid #F7E2B0;padding:3px 8px;border-radius:6px;"><span style="width:5px;height:5px;border-radius:50%;background:#F5A623;"></span>B</span></div>
+            <div><div style="font-size:13.5px;font-weight:600;">Lin Zhao</div><div style="font-size:11.5px;color:#7A847F;">Director, Leasing</div></div>
+            <div style="font-size:13px;font-weight:500;">Willow Bridge</div>
+            <div style="font-size:13px;color:#333B37;">Phoenix, AZ</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;">180k</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;">69</span><div style="width:40px;height:6px;border-radius:3px;background:#EEF1F0;overflow:hidden;"><div style="width:69%;height:100%;background:#F5A623;"></div></div></div>
+            <div style="font-size:12px;color:#333B37;line-height:1.4;">Large footprint · rent trend flat · no recent trigger</div>
+            <div><button style="display:inline-flex;align-items:center;gap:6px;border:1px solid #E4E8E6;background:#fff;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:#0F1613;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="8" y="8" width="12" height="12" rx="2" stroke="#4A32C4" stroke-width="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" stroke="#4A32C4" stroke-width="2"/></svg>Copy draft</button></div>
+            <div style="display:flex;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:56px 1.5fr 1.4fr 1.1fr 72px 96px 2.1fr 150px 34px;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid #F2F4F3;">
+            <div><span style="display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#9A6207;background:#FEF3DA;border:1px solid #F7E2B0;padding:3px 8px;border-radius:6px;"><span style="width:5px;height:5px;border-radius:50%;background:#F5A623;"></span>B</span></div>
+            <div><div style="font-size:13.5px;font-weight:600;">Jenna Cole</div><div style="font-size:11.5px;color:#7A847F;">Property Manager</div></div>
+            <div style="font-size:13px;font-weight:500;">Camden</div>
+            <div style="font-size:13px;color:#333B37;">Denver, CO</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;">58k</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;">64</span><div style="width:40px;height:6px;border-radius:3px;background:#EEF1F0;overflow:hidden;"><div style="width:64%;height:100%;background:#F5A623;"></div></div></div>
+            <div style="font-size:12px;color:#333B37;line-height:1.4;">Site-level title · single property · good renter density</div>
+            <div><button style="display:inline-flex;align-items:center;gap:6px;border:1px solid #E4E8E6;background:#fff;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:#0F1613;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="8" y="8" width="12" height="12" rx="2" stroke="#4A32C4" stroke-width="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" stroke="#4A32C4" stroke-width="2"/></svg>Copy draft</button></div>
+            <div style="display:flex;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+
+          <!-- gate-failed C row -->
+          <div style="display:grid;grid-template-columns:56px 1.5fr 1.4fr 1.1fr 72px 96px 2.1fr 150px 34px;align-items:center;gap:14px;padding:13px 18px;background:#FCFCFB;opacity:.92;">
+            <div><span style="display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#5A635E;background:#F0F2F1;border:1px solid #E1E5E3;padding:3px 8px;border-radius:6px;"><span style="width:5px;height:5px;border-radius:50%;background:#98A29C;"></span>C</span></div>
+            <div><div style="font-size:13.5px;font-weight:600;color:#56605C;">Tom Whitaker</div><div style="font-size:11.5px;color:#B4272B;">⚑ personal email · gmail.com</div></div>
+            <div style="font-size:13px;font-weight:500;color:#7A847F;">Unverified</div>
+            <div style="font-size:13px;color:#9AA39E;">Miami, FL</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#9AA39E;">—</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:#7A847F;">28</span><div style="width:40px;height:6px;border-radius:3px;background:#EEF1F0;overflow:hidden;"><div style="width:28%;height:100%;background:#98A29C;"></div></div></div>
+            <div style="font-size:12px;color:#7A847F;line-height:1.4;">Gate failed: no corporate domain · company won't resolve</div>
+            <div><span style="font-size:11.5px;font-weight:600;color:#B4272B;background:#FDECEC;border:1px solid #F6D2D3;padding:6px 10px;border-radius:8px;">Review flags</span></div>
+            <div style="display:flex;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#C7CDC9" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 04 — LEAD DETAIL / ROW VIEW                                  -->
+  <!-- ============================================================ -->
+  <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:0.1em;color:#7A847F;margin-top:44px;">04 — LEAD DETAIL · ROW VIEW</div>
+
+  <div style="width:1460px;background:#fff;border:1px solid #E4E8E6;border-radius:18px;box-shadow:0 1px 2px rgba(15,22,19,.04),0 18px 40px rgba(15,22,19,.05);overflow:hidden;display:flex;height:940px;">
+    <div style="width:70px;background:#0E0B1A;display:flex;flex-direction:column;align-items:center;padding:18px 0;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:11px;background:#6D4DF6;display:flex;align-items:center;justify-content:center;margin-bottom:26px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 15.5c3.2 0 3.2-7 6.4-7s3.2 7 6.4 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="19.4" cy="6" r="2.1" fill="#fff"/></svg></div>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:center;">
+        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.5V19a1 1 0 001 1h10a1 1 0 001-1V9.5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 20v-5h4v5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(109,77,246,.18);border:1px solid rgba(109,77,246,.55);display:flex;align-items:center;justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M22 12h-6l-2 3h-4l-2-3H2" stroke="#B9A6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" stroke="#B9A6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/><rect x="13" y="4" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/><rect x="4" y="13" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/><rect x="13" y="13" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/></svg></div>
+      </div>
+      <div style="margin-top:auto;width:32px;height:32px;border-radius:50%;background:#4A32C4;color:#D9CDFF;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">SD</div>
+    </div>
+
+    <div style="flex:1;display:flex;flex-direction:column;background:#F5F7F6;min-width:0;">
+      <!-- header -->
+      <div style="background:#fff;border-bottom:1px solid #EAEEEC;padding:16px 30px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:30px;height:30px;border-radius:8px;border:1px solid #E4E8E6;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="#56605C" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;font-weight:800;letter-spacing:-0.01em;">Sarah Chen</span><span style="display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#4A32C4;background:#EEEBFE;border:1px solid #DDD5FB;padding:3px 9px;border-radius:7px;"><span style="width:6px;height:6px;border-radius:50%;background:#6D4DF6;"></span>A-TIER · 92</span></div>
+            <div style="font-size:13px;color:#7A847F;margin-top:3px;">VP, Leasing · Greystar · Austin, TX</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button style="border:1px solid #E4E8E6;background:#fff;color:#0F1613;font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer;">Dismiss</button>
+          <button style="border:none;background:#6D4DF6;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 17px;border-radius:9px;cursor:pointer;box-shadow:0 2px 6px rgba(109,77,246,.28);display:flex;align-items:center;gap:7px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>Assign agent</button>
+        </div>
+      </div>
+
+      <!-- body grid -->
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:22px 30px;overflow:hidden;">
+
+        <!-- LEFT column -->
+        <div style="display:flex;flex-direction:column;gap:16px;min-height:0;">
+          <!-- full lead info -->
+          <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;padding:20px 22px;">
+            <div style="font-size:14.5px;font-weight:700;margin-bottom:16px;">Lead &amp; enrichment</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 22px;">
+              <div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.05em;color:#9AA39E;text-transform:uppercase;margin-bottom:5px;">Contact</div><div style="font-size:13px;font-weight:600;">sarah.chen@greystar.com</div><div style="font-size:12px;color:#4A32C4;margin-top:2px;">✓ Corporate domain · valid MX</div></div>
+              <div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.05em;color:#9AA39E;text-transform:uppercase;margin-bottom:5px;">Seniority</div><div style="font-size:13px;font-weight:600;">VP · executive tier</div><div style="font-size:12px;color:#7A847F;margin-top:2px;">Fit: 15 / 15 pts</div></div>
+              <div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.05em;color:#9AA39E;text-transform:uppercase;margin-bottom:5px;">Company</div><div style="font-size:13px;font-weight:600;">Greystar Real Estate</div><div style="font-size:12px;color:#7A847F;margin-top:2px;">NMHC #1 · 794k units · conventional MF</div></div>
+              <div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.05em;color:#9AA39E;text-transform:uppercase;margin-bottom:5px;">Property</div><div style="font-size:13px;font-weight:600;">The Domain · Austin, TX</div><div style="font-size:12px;color:#7A847F;margin-top:2px;">Walk Score 78 · tract 48453</div></div>
+            </div>
+            <div style="border-top:1px solid #EEF1F0;margin-top:16px;padding-top:16px;">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.05em;color:#9AA39E;text-transform:uppercase;margin-bottom:12px;">Market signals</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+                <div><div style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:600;color:#4A32C4;">61%</div><div style="font-size:11px;color:#7A847F;margin-top:2px;">Renter share</div></div>
+                <div><div style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:600;color:#4A32C4;">+8.1%</div><div style="font-size:11px;color:#7A847F;margin-top:2px;">Rent YoY</div></div>
+                <div><div style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:600;color:#4A32C4;">3.2%</div><div style="font-size:11px;color:#7A847F;margin-top:2px;">Unemployment</div></div>
+                <div><div style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:600;color:#4A32C4;">+4.4%</div><div style="font-size:11px;color:#7A847F;margin-top:2px;">HH growth</div></div>
+              </div>
+            </div>
+            <div style="border-top:1px solid #EEF1F0;margin-top:16px;padding-top:16px;">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.05em;color:#9AA39E;text-transform:uppercase;margin-bottom:10px;">Talking points</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;gap:9px;font-size:12.5px;color:#333B37;line-height:1.45;"><span style="color:#6D4DF6;font-weight:700;">›</span>Tight Austin labor market (3.2%) — leasing staffing is expensive to scale.</div>
+                <div style="display:flex;gap:9px;font-size:12.5px;color:#333B37;line-height:1.45;"><span style="color:#6D4DF6;font-weight:700;">›</span>Likely on Yardi / RealPage — reference native PMS integration.</div>
+                <div style="display:flex;gap:9px;font-size:12.5px;color:#333B37;line-height:1.45;"><span style="color:#6D4DF6;font-weight:700;">›</span>Portfolio (794k units) is 3× typical customer — lead with scale case studies.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- knowledge graph -->
+          <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;padding:20px 22px;flex:1;min-height:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div style="font-size:14.5px;font-weight:700;">Knowledge graph</div><span style="font-size:11px;font-weight:600;color:#4A32C4;background:#EEEBFE;border:1px solid #DDD5FB;padding:3px 9px;border-radius:7px;">2 related leads</span></div>
+            <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:18px;">
+              <!-- mini node-link -->
+              <div style="position:relative;height:172px;">
+                <svg viewBox="0 0 240 172" style="position:absolute;inset:0;width:100%;height:100%;"><path d="M56 34 L120 86" stroke="#D8D0F5" stroke-width="2"/><path d="M120 86 L56 138" stroke="#D8D0F5" stroke-width="2"/><path d="M120 86 L196 52" stroke="#D8D0F5" stroke-width="2"/><path d="M120 86 L196 128" stroke="#D8D0F5" stroke-width="2"/></svg>
+                <div style="position:absolute;left:120px;top:86px;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:50%;background:#6D4DF6;color:#fff;font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;box-shadow:0 4px 12px rgba(109,77,246,.32);">Sarah<br>Chen</div>
+                <div style="position:absolute;left:56px;top:34px;transform:translate(-50%,-50%);padding:5px 9px;border-radius:8px;background:#EEEBFE;border:1px solid #DDD5FB;font-size:10px;font-weight:600;color:#4A32C4;">Greystar</div>
+                <div style="position:absolute;left:56px;top:138px;transform:translate(-50%,-50%);padding:5px 9px;border-radius:8px;background:#F0F2F1;border:1px solid #E1E5E3;font-size:10px;font-weight:600;color:#56605C;">The Domain</div>
+                <div style="position:absolute;left:196px;top:52px;transform:translate(-50%,-50%);padding:5px 9px;border-radius:8px;background:#F0F2F1;border:1px solid #E1E5E3;font-size:10px;font-weight:600;color:#56605C;">Austin metro</div>
+                <div style="position:absolute;left:196px;top:128px;transform:translate(-50%,-50%);padding:5px 9px;border-radius:8px;background:#FEF3DA;border:1px solid #F7E2B0;font-size:10px;font-weight:600;color:#9A6207;">RealPage</div>
+              </div>
+              <!-- related leads -->
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.05em;color:#9AA39E;text-transform:uppercase;">Related leads</div>
+                <div style="border:1px solid #EEF1F0;border-radius:9px;padding:9px 11px;"><div style="font-size:12.5px;font-weight:600;">Alan Reyes</div><div style="font-size:11px;color:#7A847F;margin-top:1px;">Greystar · 2nd inbound this quarter</div></div>
+                <div style="border:1px solid #EEF1F0;border-radius:9px;padding:9px 11px;"><div style="font-size:12.5px;font-weight:600;">Nadia Owens</div><div style="font-size:11px;color:#7A847F;margin-top:1px;">Same Austin submarket · 3 leads / 30d</div></div>
+                <div style="font-size:11px;color:#4A32C4;font-weight:600;margin-top:2px;">Expand graph →</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT column: drafted email -->
+        <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;display:flex;flex-direction:column;min-height:0;overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid #EEF1F0;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:9px;"><div style="font-size:14.5px;font-weight:700;">Drafted email</div><span style="font-size:11px;font-weight:600;color:#7A847F;background:#F0F2F1;padding:2px 8px;border-radius:6px;">Review &amp; send</span></div>
+            <div style="display:flex;align-items:center;gap:7px;"><span style="font-size:11.5px;font-weight:600;color:#4A32C4;">✎ Editable</span></div>
+          </div>
+          <!-- email meta -->
+          <div style="padding:14px 20px;border-bottom:1px solid #EEF1F0;font-size:12.5px;">
+            <div style="display:flex;gap:10px;padding:3px 0;"><span style="width:44px;color:#9AA39E;">From</span><span style="font-weight:600;">You · Signal SDR</span></div>
+            <div style="display:flex;gap:10px;padding:3px 0;"><span style="width:44px;color:#9AA39E;">To</span><span style="font-weight:600;">sarah.chen@greystar.com</span></div>
+            <div style="display:flex;gap:10px;padding:3px 0;"><span style="width:44px;color:#9AA39E;">Subj</span><span style="font-weight:600;">Scaling leasing after the Austin expansion</span></div>
+          </div>
+          <!-- email body -->
+          <div style="padding:18px 22px;flex:1;overflow:hidden;font-size:13px;line-height:1.6;color:#28302C;">
+            <p style="margin:0 0 12px;">Hi Sarah,</p>
+            <p style="margin:0 0 12px;">Congrats on <span style="background:#EEEBFE;border-bottom:2px solid #6D4DF6;padding:0 2px;border-radius:2px;">Greystar's expansion in the Austin market last week</span> — timing like that usually means a wave of new units to staff and lease at once.</p>
+            <p style="margin:0 0 12px;">With <span style="background:#EEEBFE;border-bottom:2px solid #6D4DF6;padding:0 2px;border-radius:2px;">renters making up 61% of households</span> and <span style="background:#EEEBFE;border-bottom:2px solid #6D4DF6;padding:0 2px;border-radius:2px;">rents up 8% year over year</span>, leasing teams your size are fielding more inbound than they can answer fast enough. Teams on our platform respond to every prospect in seconds and hand tours to on-site staff already qualified.</p>
+            <p style="margin:0 0 12px;">Worth a 20-minute look at how this maps to a portfolio at Greystar's scale?</p>
+            <p style="margin:0;">Best,<br>Your name</p>
+          </div>
+          <!-- sources -->
+          <div style="padding:12px 20px;border-top:1px solid #EEF1F0;background:#FAFBFB;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.05em;color:#9AA39E;text-transform:uppercase;margin-bottom:8px;">Personalization sources</div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px;">
+              <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:#4A32C4;background:#F5F3FE;border:1px dashed #C9BEF7;padding:4px 9px;border-radius:7px;"><span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;">NewsAPI</span> Greystar Austin expansion · 3d ago</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:#4A32C4;background:#F5F3FE;border:1px dashed #C9BEF7;padding:4px 9px;border-radius:7px;"><span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;">Census</span> 61% renters</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:#4A32C4;background:#F5F3FE;border:1px dashed #C9BEF7;padding:4px 9px;border-radius:7px;"><span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;">FRED</span> rent +8% YoY</span>
+            </div>
+          </div>
+          <!-- actions -->
+          <div style="padding:14px 20px;border-top:1px solid #EEF1F0;display:flex;align-items:center;justify-content:space-between;">
+            <button style="display:flex;align-items:center;gap:7px;border:1px solid #E4E8E6;background:#fff;color:#333B37;font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:9px;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 018-8c2.5 0 4.7 1.1 6 2.9M20 4v4h-4" stroke="#56605C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Regenerate</button>
+            <div style="display:flex;align-items:center;gap:9px;">
+              <button style="display:flex;align-items:center;gap:7px;border:1px solid #E4E8E6;background:#fff;color:#0F1613;font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:9px;cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="8" y="8" width="12" height="12" rx="2" stroke="#4A32C4" stroke-width="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" stroke="#4A32C4" stroke-width="2"/></svg>Copy</button>
+              <button style="display:flex;align-items:center;gap:7px;border:none;background:#6D4DF6;color:#fff;font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 17px;border-radius:9px;cursor:pointer;box-shadow:0 2px 6px rgba(109,77,246,.28);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-2.5-6.5L4 12z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 05 — AGENT ASSIGNMENT                                        -->
+  <!-- ============================================================ -->
+  <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:0.1em;color:#7A847F;margin-top:44px;">05 — AGENT ASSIGNMENT · IN-PROGRESS</div>
+
+  <div style="width:1460px;background:#fff;border:1px solid #E4E8E6;border-radius:18px;box-shadow:0 1px 2px rgba(15,22,19,.04),0 18px 40px rgba(15,22,19,.05);overflow:hidden;display:flex;height:760px;">
+    <div style="width:70px;background:#0E0B1A;display:flex;flex-direction:column;align-items:center;padding:18px 0;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:11px;background:#6D4DF6;display:flex;align-items:center;justify-content:center;margin-bottom:26px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 15.5c3.2 0 3.2-7 6.4-7s3.2 7 6.4 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="19.4" cy="6" r="2.1" fill="#fff"/></svg></div>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:center;">
+        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.5V19a1 1 0 001 1h10a1 1 0 001-1V9.5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 20v-5h4v5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M22 12h-6l-2 3h-4l-2-3H2" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(109,77,246,.18);border:1px solid rgba(109,77,246,.55);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.6" stroke="#B9A6FF" stroke-width="2"/><rect x="13" y="4" width="7" height="7" rx="1.6" stroke="#B9A6FF" stroke-width="2"/><rect x="4" y="13" width="7" height="7" rx="1.6" stroke="#B9A6FF" stroke-width="2"/><rect x="13" y="13" width="7" height="7" rx="1.6" stroke="#B9A6FF" stroke-width="2"/></svg></div>
+      </div>
+      <div style="margin-top:auto;width:32px;height:32px;border-radius:50%;background:#4A32C4;color:#D9CDFF;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">SD</div>
+    </div>
+
+    <div style="flex:1;display:flex;flex-direction:column;background:#F5F7F6;min-width:0;">
+      <div style="height:66px;background:#fff;border-bottom:1px solid #EAEEEC;display:flex;align-items:center;justify-content:space-between;padding:0 30px;flex-shrink:0;">
+        <div style="display:flex;align-items:baseline;gap:12px;"><div style="font-size:20px;font-weight:800;letter-spacing:-0.01em;">Agent Assignment</div><div style="font-size:12.5px;color:#7A847F;">6 agents working</div></div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button style="display:flex;align-items:center;gap:7px;border:1px solid #E4E8E6;background:#fff;border-radius:9px;padding:8px 13px;font-size:12.5px;font-weight:600;color:#333B37;cursor:pointer;font-family:inherit;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 5h18M6 12h12M10 19h4" stroke="#56605C" stroke-width="2" stroke-linecap="round"/></svg>Filter</button>
+          <div style="display:flex;align-items:center;gap:8px;width:240px;border:1px solid #E4E8E6;background:#fff;border-radius:9px;padding:8px 12px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#9AA39E" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg><span style="font-size:13px;color:#9AA39E;">Search agents…</span></div>
+        </div>
+      </div>
+
+      <div style="padding:20px 30px;overflow:hidden;">
+        <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:1.3fr 1.5fr 0.9fr 2fr 1.1fr 34px;align-items:center;gap:16px;padding:12px 20px;background:#FAFBFB;border-bottom:1px solid #EEF1F0;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.06em;color:#9AA39E;text-transform:uppercase;">
+            <div>Agent</div><div>Working lead</div><div>Started</div><div>Stage</div><div>Status</div><div></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1.3fr 1.5fr 0.9fr 2fr 1.1fr 34px;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid #F2F4F3;">
+            <div style="display:flex;align-items:center;gap:10px;"><div style="width:28px;height:28px;border-radius:8px;background:#EEEBFE;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-2.5-6.5L4 12z" stroke="#4A32C4" stroke-width="2" stroke-linejoin="round"/></svg></div><span style="font-size:13px;font-weight:600;">Outreach Agent</span></div>
+            <div><div style="font-size:13px;font-weight:600;">Sarah Chen</div><div style="font-size:11.5px;color:#7A847F;">Greystar · A-tier</div></div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#56605C;">2m ago</div>
+            <div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;display:flex;gap:3px;"><div style="flex:1;height:5px;border-radius:3px;background:#6D4DF6;"></div><div style="flex:1;height:5px;border-radius:3px;background:#6D4DF6;"></div><div style="flex:1;height:5px;border-radius:3px;background:#F5A623;"></div><div style="flex:1;height:5px;border-radius:3px;background:#EEF1F0;"></div></div><span style="font-size:11px;font-weight:600;color:#56605C;white-space:nowrap;">Drafting</span></div>
+            <div><span style="font-size:11.5px;font-weight:600;color:#9A6207;background:#FEF3DA;border:1px solid #F7E2B0;padding:4px 10px;border-radius:7px;">In progress</span></div>
+            <div style="display:flex;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1.3fr 1.5fr 0.9fr 2fr 1.1fr 34px;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid #F2F4F3;">
+            <div style="display:flex;align-items:center;gap:10px;"><div style="width:28px;height:28px;border-radius:8px;background:#EEEBFE;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-2.5-6.5L4 12z" stroke="#4A32C4" stroke-width="2" stroke-linejoin="round"/></svg></div><span style="font-size:13px;font-weight:600;">Outreach Agent</span></div>
+            <div><div style="font-size:13px;font-weight:600;">Marcus Webb</div><div style="font-size:11.5px;color:#7A847F;">Cortland · A-tier</div></div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#56605C;">9m ago</div>
+            <div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;display:flex;gap:3px;"><div style="flex:1;height:5px;border-radius:3px;background:#6D4DF6;"></div><div style="flex:1;height:5px;border-radius:3px;background:#6D4DF6;"></div><div style="flex:1;height:5px;border-radius:3px;background:#6D4DF6;"></div><div style="flex:1;height:5px;border-radius:3px;background:#F5A623;"></div></div><span style="font-size:11px;font-weight:600;color:#56605C;white-space:nowrap;">Review</span></div>
+            <div><span style="font-size:11.5px;font-weight:600;color:#4A32C4;background:#EEEBFE;border:1px solid #DDD5FB;padding:4px 10px;border-radius:7px;">Awaiting you</span></div>
+            <div style="display:flex;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1.3fr 1.5fr 0.9fr 2fr 1.1fr 34px;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid #F2F4F3;">
+            <div style="display:flex;align-items:center;gap:10px;"><div style="width:28px;height:28px;border-radius:8px;background:#F5F7F6;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 100 18 9 9 0 000-18z" stroke="#7A847F" stroke-width="2"/><path d="M8 12l2.5 2.5L16 9" stroke="#7A847F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span style="font-size:13px;font-weight:600;">Enrichment Agent</span></div>
+            <div><div style="font-size:13px;font-weight:600;">Priya Nair</div><div style="font-size:11.5px;color:#7A847F;">Bozzuto · A-tier</div></div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#56605C;">just now</div>
+            <div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;display:flex;gap:3px;"><div style="flex:1;height:5px;border-radius:3px;background:#6D4DF6;"></div><div style="flex:1;height:5px;border-radius:3px;background:#F5A623;"></div><div style="flex:1;height:5px;border-radius:3px;background:#EEF1F0;"></div><div style="flex:1;height:5px;border-radius:3px;background:#EEF1F0;"></div></div><span style="font-size:11px;font-weight:600;color:#56605C;white-space:nowrap;">Enriching</span></div>
+            <div><span style="font-size:11.5px;font-weight:600;color:#9A6207;background:#FEF3DA;border:1px solid #F7E2B0;padding:4px 10px;border-radius:7px;">In progress</span></div>
+            <div style="display:flex;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1.3fr 1.5fr 0.9fr 2fr 1.1fr 34px;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid #F2F4F3;">
+            <div style="display:flex;align-items:center;gap:10px;"><div style="width:28px;height:28px;border-radius:8px;background:#EEEBFE;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-2.5-6.5L4 12z" stroke="#4A32C4" stroke-width="2" stroke-linejoin="round"/></svg></div><span style="font-size:13px;font-weight:600;">Outreach Agent</span></div>
+            <div><div style="font-size:13px;font-weight:600;">David Okafor</div><div style="font-size:11.5px;color:#7A847F;">MAA · B-tier</div></div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#56605C;">1h ago</div>
+            <div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;display:flex;gap:3px;"><div style="flex:1;height:5px;border-radius:3px;background:#6D4DF6;"></div><div style="flex:1;height:5px;border-radius:3px;background:#6D4DF6;"></div><div style="flex:1;height:5px;border-radius:3px;background:#6D4DF6;"></div><div style="flex:1;height:5px;border-radius:3px;background:#6D4DF6;"></div></div><span style="font-size:11px;font-weight:600;color:#4A32C4;white-space:nowrap;">Sent</span></div>
+            <div><span style="font-size:11.5px;font-weight:600;color:#4A32C4;background:#EEEBFE;border:1px solid #DDD5FB;padding:4px 10px;border-radius:7px;">Sent ✓</span></div>
+            <div style="display:flex;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+
+          <!-- next-release, greyed -->
+          <div style="display:grid;grid-template-columns:1.3fr 1.5fr 0.9fr 2fr 1.1fr 34px;align-items:center;gap:16px;padding:14px 20px;background:#FCFCFB;opacity:.6;">
+            <div style="display:flex;align-items:center;gap:10px;"><div style="width:28px;height:28px;border-radius:8px;background:#F0F2F1;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 2" stroke="#9AA39E" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="8" stroke="#9AA39E" stroke-width="2"/></svg></div><span style="font-size:13px;font-weight:600;color:#7A847F;">Follow-up Agent</span></div>
+            <div style="font-size:12.5px;color:#9AA39E;">Auto-cadence outreach</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#B7BDB9;">—</div>
+            <div style="font-size:12px;color:#9AA39E;">Human-in-the-loop approval · pending compliance review</div>
+            <div><span style="font-size:11.5px;font-weight:600;color:#7A847F;background:#F0F2F1;border:1px solid #E1E5E3;padding:4px 10px;border-radius:7px;">Next release</span></div>
+            <div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 06 — AGENT PROGRESS · RUN DETAIL                             -->
+  <!-- ============================================================ -->
+  <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:0.1em;color:#7A847F;margin-top:44px;">06 — AGENT PROGRESS · RUN DETAIL</div>
+
+  <div style="width:1460px;background:#fff;border:1px solid #E4E8E6;border-radius:18px;box-shadow:0 1px 2px rgba(15,22,19,.04),0 18px 40px rgba(15,22,19,.05);overflow:hidden;display:flex;height:900px;">
+    <div style="width:70px;background:#0E0B1A;display:flex;flex-direction:column;align-items:center;padding:18px 0;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:11px;background:#6D4DF6;display:flex;align-items:center;justify-content:center;margin-bottom:26px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 15.5c3.2 0 3.2-7 6.4-7s3.2 7 6.4 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="19.4" cy="6" r="2.1" fill="#fff"/></svg></div>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:center;">
+        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.5V19a1 1 0 001 1h10a1 1 0 001-1V9.5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 20v-5h4v5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M22 12h-6l-2 3h-4l-2-3H2" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(109,77,246,.18);border:1px solid rgba(109,77,246,.55);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.6" stroke="#B9A6FF" stroke-width="2"/><rect x="13" y="4" width="7" height="7" rx="1.6" stroke="#B9A6FF" stroke-width="2"/><rect x="4" y="13" width="7" height="7" rx="1.6" stroke="#B9A6FF" stroke-width="2"/><rect x="13" y="13" width="7" height="7" rx="1.6" stroke="#B9A6FF" stroke-width="2"/></svg></div>
+      </div>
+      <div style="margin-top:auto;width:32px;height:32px;border-radius:50%;background:#4A32C4;color:#D9CDFF;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">SD</div>
+    </div>
+
+    <div style="flex:1;display:flex;flex-direction:column;background:#F5F7F6;min-width:0;">
+      <!-- header -->
+      <div style="background:#fff;border-bottom:1px solid #EAEEEC;padding:16px 30px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:30px;height:30px;border-radius:8px;border:1px solid #E4E8E6;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="#56605C" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <div style="width:34px;height:34px;border-radius:9px;background:#EEEBFE;display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-2.5-6.5L4 12z" stroke="#4A32C4" stroke-width="2" stroke-linejoin="round"/></svg></div>
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;font-weight:800;letter-spacing:-0.01em;">Outreach Agent</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9AA39E;">run_8842</span></div>
+            <div style="font-size:13px;color:#7A847F;margin-top:3px;">Working <b style="color:#28302C;">Sarah Chen</b> · Greystar · <span style="color:#4A32C4;font-weight:600;">A-tier · 92</span></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#9A6207;background:#FEF3DA;border:1px solid #F7E2B0;padding:7px 12px;border-radius:9px;"><span style="width:7px;height:7px;border-radius:50%;background:#F5A623;"></span>Awaiting your review</span>
+          <button style="border:1px solid #E4E8E6;background:#fff;color:#0F1613;font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer;">Pause</button>
+          <button style="border:none;background:#6D4DF6;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 17px;border-radius:9px;cursor:pointer;box-shadow:0 2px 6px rgba(109,77,246,.28);display:flex;align-items:center;gap:7px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-2.5-6.5L4 12z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>Approve &amp; send</button>
+        </div>
+      </div>
+
+      <!-- metadata strip -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:20px 30px 0;">
+        <div style="background:#fff;border:1px solid #EAEEEC;border-radius:12px;padding:13px 16px;"><div style="font-size:11.5px;font-weight:600;color:#7A847F;">Trigger</div><div style="font-size:13.5px;font-weight:600;margin-top:4px;">API insert</div></div>
+        <div style="background:#fff;border:1px solid #EAEEEC;border-radius:12px;padding:13px 16px;"><div style="font-size:11.5px;font-weight:600;color:#7A847F;">Started</div><div style="font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:600;margin-top:4px;">11:42:01</div></div>
+        <div style="background:#fff;border:1px solid #EAEEEC;border-radius:12px;padding:13px 16px;"><div style="font-size:11.5px;font-weight:600;color:#7A847F;">Runtime</div><div style="font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:600;margin-top:4px;">10.3s</div></div>
+        <div style="background:#fff;border:1px solid #EAEEEC;border-radius:12px;padding:13px 16px;"><div style="font-size:11.5px;font-weight:600;color:#7A847F;">APIs called</div><div style="font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:600;margin-top:4px;color:#4A32C4;">6 / 6 ✓</div></div>
+      </div>
+
+      <!-- body -->
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px 30px 22px;min-height:0;">
+
+        <!-- pipeline stepper -->
+        <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;padding:20px 22px;display:flex;flex-direction:column;">
+          <div style="font-size:14.5px;font-weight:700;margin-bottom:18px;">Pipeline</div>
+
+          <!-- step 1 -->
+          <div style="display:flex;gap:14px;">
+            <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:20px;height:20px;border-radius:50%;background:#6D4DF6;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✓</div><div style="width:2px;flex:1;background:#6D4DF6;margin:4px 0;"></div></div>
+            <div style="padding-bottom:16px;">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;"><span style="font-size:13.5px;font-weight:600;">Deterministic enrichment</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9AA39E;">3.1s</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;">
+                <span style="font-size:10.5px;font-weight:500;color:#4A32C4;background:#F5F3FE;border:1px solid #DDD5FB;padding:3px 8px;border-radius:6px;">Nominatim ✓</span>
+                <span style="font-size:10.5px;font-weight:500;color:#4A32C4;background:#F5F3FE;border:1px solid #DDD5FB;padding:3px 8px;border-radius:6px;">Census ACS ✓</span>
+                <span style="font-size:10.5px;font-weight:500;color:#4A32C4;background:#F5F3FE;border:1px solid #DDD5FB;padding:3px 8px;border-radius:6px;">FRED ✓</span>
+                <span style="font-size:10.5px;font-weight:500;color:#4A32C4;background:#F5F3FE;border:1px solid #DDD5FB;padding:3px 8px;border-radius:6px;">NewsAPI ✓</span>
+                <span style="font-size:10.5px;font-weight:500;color:#4A32C4;background:#F5F3FE;border:1px solid #DDD5FB;padding:3px 8px;border-radius:6px;">Wikipedia ✓</span>
+                <span style="font-size:10.5px;font-weight:500;color:#4A32C4;background:#F5F3FE;border:1px solid #DDD5FB;padding:3px 8px;border-radius:6px;">MX/DNS ✓</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- step 2 -->
+          <div style="display:flex;gap:14px;">
+            <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:20px;height:20px;border-radius:50%;background:#6D4DF6;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✓</div><div style="width:2px;flex:1;background:#6D4DF6;margin:4px 0;"></div></div>
+            <div style="padding-bottom:16px;">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;"><span style="font-size:13.5px;font-weight:600;">Agent scoring &amp; drafting</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9AA39E;">6.4s</span></div>
+              <div style="font-size:12px;color:#56605C;line-height:1.5;margin-top:7px;">3 hard gates passed · score <b style="color:#0F1613;">92</b> (fit 57/60 · market 35/40) · why-line + 3 talking points · draft written with 3 cited sources.</div>
+            </div>
+          </div>
+
+          <!-- step 3 -->
+          <div style="display:flex;gap:14px;">
+            <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:20px;height:20px;border-radius:50%;background:#6D4DF6;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✓</div><div style="width:2px;flex:1;background:#E1E5E3;margin:4px 0;"></div></div>
+            <div style="padding-bottom:16px;">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;"><span style="font-size:13.5px;font-weight:600;">Knowledge graph</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9AA39E;">0.8s</span></div>
+              <div style="font-size:12px;color:#56605C;line-height:1.5;margin-top:7px;">Linked Contact → Company → Property → Market · surfaced 2 related leads.</div>
+            </div>
+          </div>
+
+          <!-- step 4 (active) -->
+          <div style="display:flex;gap:14px;">
+            <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #6D4DF6;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="width:7px;height:7px;border-radius:50%;background:#6D4DF6;"></span></div><div style="width:2px;flex:1;background:#E1E5E3;margin:4px 0;"></div></div>
+            <div style="padding-bottom:16px;">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;"><span style="font-size:13.5px;font-weight:600;">Human review</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9A6207;">now</span></div>
+              <div style="font-size:12px;color:#56605C;line-height:1.5;margin-top:7px;">Awaiting SDR approval before send — human-in-the-loop gate.</div>
+            </div>
+          </div>
+
+          <!-- step 5 (pending) -->
+          <div style="display:flex;gap:14px;">
+            <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:20px;height:20px;border-radius:50%;background:#EEF1F0;border:1px solid #E1E5E3;flex-shrink:0;"></div></div>
+            <div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;"><span style="font-size:13.5px;font-weight:600;color:#9AA39E;">Send</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#C7CDC9;">pending</span></div>
+              <div style="font-size:12px;color:#9AA39E;line-height:1.5;margin-top:7px;">Delivers on approval, then logs the touch to the lead timeline.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- right: activity log + output -->
+        <div style="display:flex;flex-direction:column;gap:16px;min-height:0;">
+          <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;padding:18px 20px;flex:1;min-height:0;display:flex;flex-direction:column;">
+            <div style="font-size:14.5px;font-weight:700;margin-bottom:14px;">Activity log</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.85;color:#56605C;overflow:hidden;">
+              <div><span style="color:#B7BDB9;">11:42:01</span>  Lead inserted via API trigger · <span style="color:#0F1613;">lead_8842</span></div>
+              <div><span style="color:#B7BDB9;">11:42:01</span>  Geocoded 11500 Domain Dr, Austin TX → tract 48453</div>
+              <div><span style="color:#B7BDB9;">11:42:02</span>  Census ACS: renters 61% · median rent $1,940</div>
+              <div><span style="color:#B7BDB9;">11:42:03</span>  FRED: Austin MSA 3.2% unemp · rent +8.1% YoY</div>
+              <div><span style="color:#B7BDB9;">11:42:04</span>  NewsAPI: "Greystar expands Austin portfolio" (3d)</div>
+              <div><span style="color:#B7BDB9;">11:42:04</span>  Wikipedia: matched Greystar (NMHC #1)</div>
+              <div><span style="color:#B7BDB9;">11:42:05</span>  MX check: greystar.com valid ✓</div>
+              <div><span style="color:#4A32C4;">11:42:05</span>  Gates passed · corporate ✓ company ✓ geocode ✓</div>
+              <div><span style="color:#4A32C4;">11:42:09</span>  Score 92 → A-tier (fit 57 · market 35)</div>
+              <div><span style="color:#B7BDB9;">11:42:10</span>  Draft generated · 3 cited sources</div>
+              <div><span style="color:#B7BDB9;">11:42:11</span>  Graph linked · 2 related leads found</div>
+              <div><span style="color:#9A6207;">11:42:11</span>  Awaiting human review ▍</div>
+            </div>
+          </div>
+
+          <div style="background:#FAF9FE;border:1px solid #DDD5FB;border-radius:13px;padding:16px 20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><div style="font-size:13.5px;font-weight:700;color:#4A32C4;">Output ready for review</div><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#4A32C4;">92 · A</span></div>
+            <div style="font-size:12.5px;color:#28302C;line-height:1.5;margin-bottom:14px;">Draft references the Austin expansion, 61% renter share, and 8% rent growth — all cited. Talking points and flags attached to the lead record.</div>
+            <div style="display:flex;gap:9px;">
+              <button style="flex:1;border:none;background:#6D4DF6;color:#fff;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;box-shadow:0 2px 6px rgba(109,77,246,.28);">Approve &amp; send</button>
+              <button style="border:1px solid #DDD5FB;background:#fff;color:#4A32C4;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;">Edit draft</button>
+              <button style="border:1px solid #DDD5FB;background:#fff;color:#4A32C4;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;">View lead</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 07 — GATE-FAILED LEAD STATE                                  -->
+  <!-- ============================================================ -->
+  <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:0.1em;color:#7A847F;margin-top:44px;">07 — GATE-FAILED LEAD STATE</div>
+
+  <div style="width:1460px;background:#fff;border:1px solid #E4E8E6;border-radius:18px;box-shadow:0 1px 2px rgba(15,22,19,.04),0 18px 40px rgba(15,22,19,.05);overflow:hidden;display:flex;height:560px;">
+    <div style="width:70px;background:#0E0B1A;display:flex;flex-direction:column;align-items:center;padding:18px 0;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:11px;background:#6D4DF6;display:flex;align-items:center;justify-content:center;margin-bottom:26px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 15.5c3.2 0 3.2-7 6.4-7s3.2 7 6.4 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="19.4" cy="6" r="2.1" fill="#fff"/></svg></div>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:center;">
+        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.5V19a1 1 0 001 1h10a1 1 0 001-1V9.5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 20v-5h4v5" stroke="#8E88B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(109,77,246,.18);border:1px solid rgba(109,77,246,.55);display:flex;align-items:center;justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M22 12h-6l-2 3h-4l-2-3H2" stroke="#B9A6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" stroke="#B9A6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/><rect x="13" y="4" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/><rect x="4" y="13" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/><rect x="13" y="13" width="7" height="7" rx="1.6" stroke="#8E88B0" stroke-width="2"/></svg></div>
+      </div>
+      <div style="margin-top:auto;width:32px;height:32px;border-radius:50%;background:#4A32C4;color:#D9CDFF;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">SD</div>
+    </div>
+
+    <div style="flex:1;display:flex;flex-direction:column;background:#F5F7F6;min-width:0;">
+      <div style="background:#fff;border-bottom:1px solid #EAEEEC;padding:16px 30px;flex-shrink:0;display:flex;align-items:center;gap:14px;">
+        <div style="width:30px;height:30px;border-radius:8px;border:1px solid #E4E8E6;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="#56605C" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <div><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;font-weight:800;letter-spacing:-0.01em;">Tom Whitaker</span><span style="display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#5A635E;background:#F0F2F1;border:1px solid #E1E5E3;padding:3px 9px;border-radius:7px;"><span style="width:6px;height:6px;border-radius:50%;background:#98A29C;"></span>C-TIER · 28</span></div><div style="font-size:13px;color:#7A847F;margin-top:3px;">Unverified company · Miami, FL</div></div>
+      </div>
+
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:22px 30px;">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div style="background:#FDF5F5;border:1px solid #F6D2D3;border-radius:13px;padding:20px 22px;">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3L2 20h20L12 3z" stroke="#B4272B" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="#B4272B" stroke-width="2" stroke-linecap="round"/></svg><div style="font-size:14.5px;font-weight:700;color:#B4272B;">Hard gates failed — do not work this lead</div></div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;gap:10px;font-size:12.5px;color:#28302C;"><span style="color:#B4272B;font-weight:700;">✕</span><div><b>No corporate email domain.</b> Submitted from tom.whitaker@gmail.com — fails MX + domain gate.</div></div>
+              <div style="display:flex;gap:10px;font-size:12.5px;color:#28302C;"><span style="color:#B4272B;font-weight:700;">✕</span><div><b>Company won't resolve.</b> No PM/ownership entity found via Wikipedia or news lookup.</div></div>
+              <div style="display:flex;gap:10px;font-size:12.5px;color:#28302C;"><span style="color:#9A6207;font-weight:700;">!</span><div><b>Portfolio unverifiable.</b> Unit count could not be established — scoring suppressed.</div></div>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;padding:18px 22px;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.05em;color:#9AA39E;text-transform:uppercase;margin-bottom:10px;">Why flags matter</div>
+            <div style="font-size:12.5px;color:#333B37;line-height:1.5;">Telling a rep what <i>not</i> to work is one of the highest-ROI outputs. A draft is intentionally withheld — sending outreach to an unverifiable lead risks the sender's domain reputation.</div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #EAEEEC;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">
+          <div style="width:52px;height:52px;border-radius:14px;background:#F5F7F6;display:flex;align-items:center;justify-content:center;margin-bottom:16px;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="2.5" stroke="#B7BDB9" stroke-width="2"/><path d="M4 8l8 5 8-5" stroke="#B7BDB9" stroke-width="2" stroke-linecap="round"/><path d="M4 4l16 16" stroke="#B4272B" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:6px;">No draft generated</div>
+          <div style="font-size:12.5px;color:#7A847F;line-height:1.5;max-width:300px;margin-bottom:18px;">Signal suppresses outreach for gate-failed leads. Verify the contact manually or dismiss to clear it from the queue.</div>
+          <div style="display:flex;gap:10px;">
+            <button style="border:1px solid #E4E8E6;background:#fff;color:#0F1613;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer;">Dismiss lead</button>
+            <button style="border:1px solid #E4E8E6;background:#fff;color:#0F1613;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer;">Verify manually</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

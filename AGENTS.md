@@ -35,7 +35,7 @@ backend/app/api/v1/               Thin FastAPI routers
 backend/app/services/             Product orchestration
 backend/app/repositories/         Persistence boundary
 backend/app/agents/               LangGraph state, nodes, graph, prompts
-backend/app/integrations/         Public API adapters and cache boundary
+backend/app/infrastructure/public_data/ Public API adapters and cache boundary
 backend/app/schemas/              Pydantic request and response contracts
 ```
 

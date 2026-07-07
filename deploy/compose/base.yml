@@ -1,0 +1,53 @@
+name: signal-demo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    volumes:
+      - signal_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER:-signal} -d $${POSTGRES_DB:-signal}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    command: valkey-server --appendonly yes
+    volumes:
+      - signal_valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  litellm:
+    image: ghcr.io/berriai/litellm-database:${LITELLM_IMAGE_TAG:-latest}
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    volumes:
+      - ../litellm/config.yaml:/app/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:4000/health/liveliness', timeout=5).read()\"",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 420s
+    restart: unless-stopped
+
+volumes:
+  signal_postgres_data:
+  signal_valkey_data:

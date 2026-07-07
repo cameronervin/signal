@@ -7,6 +7,7 @@ Signal uses gates, weighted fit/opportunity, and bounded bonuses.
 Failing any hard gate forces C-tier and suppresses drafts:
 
 - Personal email domain.
+- Email domain has no MX records when live domain validation is available.
 - Non-US property for v1.
 - Address or market cannot resolve.
 - Company cannot resolve to a plausible operating entity.

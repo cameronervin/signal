@@ -1,7 +1,9 @@
 # Data Model
 
-Signal v1 uses an in-memory repository with Pydantic contracts. The model is
-shaped so it can move to SQLAlchemy/PostgreSQL without changing API responses.
+Signal v1 uses Pydantic contracts at the API boundary. The default local
+repository remains in-memory for demo reliability, and the optional Postgres
+repository stores DTO snapshots through SQLAlchemy async models without changing
+API responses.
 
 ## Lead Input
 
@@ -76,3 +78,16 @@ Drafts are absent for gate-failed leads.
 - `activity_log`
 
 The v1 status surface is enough for polling. Streaming can be added later.
+
+## Persistence Records
+
+When `SIGNAL_REPOSITORY_BACKEND=postgres`, Signal writes:
+
+- `signal_leads`: lead id, run id, tier, score total, and the serialized
+  `LeadResponse` payload.
+- `signal_agent_runs`: run id, lead id, status, current stage, and the
+  serialized `AgentRunResponse` payload.
+
+The JSON snapshot approach is intentional for this slice. It keeps the backend
+aligned with the current Pydantic contracts while leaving room to normalize
+lead, enrichment, score, and run records later.

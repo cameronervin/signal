@@ -19,8 +19,8 @@ The first build is intentionally demo-safe:
 | Layer | Technology |
 | --- | --- |
 | Frontend | Next.js App Router, TypeScript, Tailwind CSS v4, TanStack Query, Zustand |
-| Backend | FastAPI, Pydantic v2, LangGraph, httpx, structlog |
-| Data v1 | In-memory repository with typed fixtures, ready to swap for SQLAlchemy |
+| Backend | FastAPI, Pydantic v2, LangGraph, Celery, LiteLLM, httpx, structlog |
+| Data v1 | In-memory default with optional Postgres/SQLAlchemy repository |
 | Tests | pytest for backend, Vitest and React Testing Library for frontend |
 
 ## Repository Map

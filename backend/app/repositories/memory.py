@@ -30,3 +30,6 @@ class InMemorySignalRepository:
 
     async def get_agent_run(self, run_id: str) -> AgentRunResponse | None:
         return self._runs.get(run_id)
+
+    async def commit(self) -> None:
+        return None

@@ -15,7 +15,7 @@ START
 
 ## State
 
-State lives in `backend/app/agents/state.py` and includes:
+State lives in `backend/app/agents/states/signal_state.py` and includes:
 
 - `lead_id`
 - `run_id`
@@ -31,6 +31,21 @@ State lives in `backend/app/agents/state.py` and includes:
 
 Nodes return partial state updates.
 
+## Package Shape
+
+Signal follows the Playbook agent structure directionally:
+
+- `agents/builders/` composes chains, nodes, and compiled graphs.
+- `agents/chains/outreach_drafting.py` contains the deterministic draft chain.
+- `agents/guardrails/qualification.py` contains deterministic hard-gate checks.
+- `agents/states/` contains typed graph state.
+- `agents/nodes/lead_intelligence.py` contains node factories and node keys.
+- `agents/graphs/lead_intelligence.py` wires uncompiled node topology.
+- `agents/executors/` runs the compiled graph inline or from a worker.
+- `agents/prompts/` holds prompt-facing instructions.
+- `agents/tools/` contains deterministic tool wrappers.
+- `agents/utils/` contains pure scoring and text helpers.
+
 ## Node 1 - Deterministic Enrichment
 
 Responsibilities:
@@ -41,7 +56,13 @@ Responsibilities:
 - Emit flags and activity log entries.
 
 Current scaffold uses fixture-backed enrichment. Live adapters should be added
-behind `backend/app/integrations/`.
+behind `backend/app/infrastructure/public_data/`.
+
+The compiled graph is provided by `SignalGraphProvider`, which caches compiled
+graphs by settings/checkpointer identity. `SignalPipelineExecutor` injects a
+`SignalRuntimeContext` containing settings and the public data provider into
+each `ainvoke` call, so adapters are selected per run without recompiling the
+graph.
 
 ## Node 2 - Agent Scoring And Drafting
 
@@ -54,6 +75,10 @@ Responsibilities:
 
 Future LLM integration belongs here, but the scaffold keeps a deterministic
 draft so tests and demos are reliable.
+
+The LiteLLM provider boundary lives under `backend/app/infrastructure/llm/`.
+Model-backed drafting should retain deterministic fallback behavior and the
+human review gate.
 
 ## Node 3 - Knowledge Graph Builder
 
