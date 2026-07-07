@@ -1,6 +1,7 @@
 # Security
 
-Signal handles lead and outreach data. Treat it as sensitive even in a demo.
+Signal handles lead and outreach data. Treat it as sensitive in every
+environment.
 
 ## Rules
 
@@ -35,5 +36,5 @@ Before production use:
 - Add production backup and restore procedures for Postgres.
 - Add audit logs for approve/send actions.
 - Expand provider retry policies beyond current bounded request timeouts and
-  fixture fallback.
+  explicit provider warning states.
 - Add retention policy for lead and draft data.

@@ -23,7 +23,7 @@ Anything that does not support those questions is out of scope for v1.
 - SDR queue sorted by tier and score.
 - Lead detail with enrichment, flags, related context, and draft.
 - Agent run status surface with human review gate.
-- Fixture/cache fallback for demo reliability.
+- Cache-backed public-data adapters with explicit provider warning states.
 
 ## Out of Scope For V1
 
@@ -32,7 +32,7 @@ Anything that does not support those questions is out of scope for v1.
 - Paid data providers.
 - Full graph database.
 - Production auth and permissions.
-- Large analytics dashboard beyond demo KPIs.
+- Large analytics dashboard beyond operational MVP KPIs.
 
 ## Docs
 
@@ -43,12 +43,12 @@ Anything that does not support those questions is out of scope for v1.
 | `02-technical-docs/01-signal/api-specification.md` | FastAPI contracts |
 | `02-technical-docs/01-signal/agentic-framework.md` | LangGraph pipeline |
 | `02-technical-docs/01-signal/scoring.md` | Gates, weights, tiers, assumptions |
-| `02-technical-docs/01-signal/integration-spec.md` | Public APIs and fallbacks |
-| `02-technical-docs/01-signal/eval-framework.md` | Demo and scoring eval strategy |
+| `02-technical-docs/01-signal/integration-spec.md` | Public APIs and failure handling |
+| `02-technical-docs/01-signal/eval-framework.md` | Contract and scoring eval strategy |
 | `02-technical-docs/01-signal/security.md` | Data handling and safety constraints |
-| `02-technical-docs/01-signal/rollout.md` | Demo, shadow, pilot, and rollout plan |
+| `02-technical-docs/01-signal/rollout.md` | Local evaluation, shadow, pilot, and rollout plan |
 | `03-implementation/_implementation-plan.md` | Phase roadmap |
 | `03-implementation/phase-1-foundations.md` | Completed scaffold and doc foundation |
 | `03-implementation/phase-2-live-public-api-adapters.md` | Cache-backed public data adapters |
 | `03-implementation/phase-3-sdr-workflow-polish.md` | SDR workspace and review workflow polish |
-| `03-implementation/phase-4-rollout-evaluation.md` | Demo readiness, evals, and rollout evidence |
+| `03-implementation/phase-4-rollout-evaluation.md` | Operational readiness, evals, and rollout evidence |

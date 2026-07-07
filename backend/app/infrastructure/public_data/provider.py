@@ -1,3 +1,4 @@
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from time import monotonic
 from typing import Any
@@ -5,7 +6,7 @@ from typing import Any
 from app.infrastructure.public_data.census import CensusAcsClient
 from app.infrastructure.public_data.datausa import DataUsaClient
 from app.infrastructure.public_data.domain import DomainMxClient
-from app.infrastructure.public_data.fixtures import company_units_hint, demo_enrichment
+from app.infrastructure.public_data.fixtures import company_units_hint
 from app.infrastructure.public_data.fred import FredClient
 from app.infrastructure.public_data.geocoding import NominatimClient
 from app.infrastructure.public_data.news import NewsApiClient
@@ -24,7 +25,6 @@ from app.schemas.lead import Enrichment, LeadCreate, SourceFact
 
 @dataclass(frozen=True)
 class PublicDataClientConfig:
-    use_fixtures: bool = True
     news_api_key: str | None = None
     fred_api_key: str | None = None
     census_api_key: str | None = None
@@ -57,22 +57,19 @@ class PublicDataClient:
         self.news = news or NewsApiClient(api_key=config.news_api_key)
         self.wikipedia = wikipedia or WikipediaClient(user_agent=config.user_agent)
         self.domain = domain or DomainMxClient()
-        self._cache: dict[str, tuple[float, Enrichment]] = {}
+        self._cache: dict[str, tuple[float, Any]] = {}
 
     async def enrich(self, lead: LeadCreate) -> Enrichment:
-        cache_key = lead.model_dump_json()
-        cached = self._cache.get(cache_key)
-        if cached and monotonic() - cached[0] < self.config.cache_ttl_seconds:
-            return cached[1]
+        cache_key = f"enrich:{lead.model_dump_json()}"
+        cached = self._get_cached(cache_key)
+        if isinstance(cached, Enrichment):
+            return cached
 
-        if self.config.use_fixtures:
-            enrichment = demo_enrichment(lead.company, lead.city, lead.state)
-            self._cache[cache_key] = (monotonic(), enrichment)
-            return enrichment
-
-        fallback = demo_enrichment(lead.company, lead.city, lead.state)
+        provider_warnings: list[str] = []
         geocoding = await _attempt(
-            self.geocoding.geocode(
+            provider_warnings,
+            "geocoding unavailable",
+            self.geocode_address(
                 street=lead.property_address,
                 city=lead.city,
                 state=lead.state,
@@ -80,21 +77,41 @@ class PublicDataClient:
             )
         )
         census = await _attempt(
-            self.census.market_snapshot(city=lead.city, state=lead.state)
+            provider_warnings,
+            "market demographics unavailable",
+            self.census_market_snapshot(city=lead.city, state=lead.state)
         )
-        datausa = await _attempt(self.datausa.state_snapshot(state=lead.state))
-        fred = await _attempt(self.fred.snapshot(state=lead.state))
-        news = await _attempt(self.news.recent_trigger(company=lead.company))
+        datausa = await _attempt(
+            provider_warnings,
+            "household growth data unavailable",
+            self.datausa_state_snapshot(state=lead.state),
+        )
+        fred = await _attempt(
+            provider_warnings,
+            "economic data unavailable",
+            self.fred_snapshot(state=lead.state),
+        )
+        news = await _attempt(
+            provider_warnings,
+            "company trigger data unavailable",
+            self.news_recent_trigger(company=lead.company),
+        )
         wikipedia = await _attempt(
-            self.wikipedia.company_snapshot(company=lead.company)
+            provider_warnings,
+            "company background unavailable",
+            self.wikipedia_company_snapshot(company=lead.company)
         )
-        domain = await _attempt(self.domain.domain_snapshot(email=str(lead.email)))
+        domain = await _attempt(
+            provider_warnings,
+            "domain validation unavailable",
+            self.domain_snapshot(email=str(lead.email)),
+        )
 
         enrichment = _merge_snapshots(
-            fallback=fallback,
             company=lead.company,
             city=lead.city,
             state=lead.state,
+            provider_warnings=provider_warnings,
             geocoding=geocoding,
             census=census,
             datausa=datausa,
@@ -103,23 +120,117 @@ class PublicDataClient:
             wikipedia=wikipedia,
             domain=domain,
         )
-        self._cache[cache_key] = (monotonic(), enrichment)
+        self._set_cached(cache_key, enrichment)
         return enrichment
 
+    async def geocode_address(
+        self,
+        *,
+        street: str,
+        city: str,
+        state: str,
+        country: str,
+    ) -> GeocodingResult | None:
+        return await self._cached_lookup(
+            f"geocode:{street}:{city}:{state}:{country}",
+            lambda: self.geocoding.geocode(
+                street=street,
+                city=city,
+                state=state,
+                country=country,
+            ),
+        )
 
-async def _attempt(awaitable: Any) -> Any:
+    async def census_market_snapshot(
+        self,
+        *,
+        city: str,
+        state: str,
+    ) -> CensusMarketSnapshot | None:
+        return await self._cached_lookup(
+            f"census:{city}:{state}",
+            lambda: self.census.market_snapshot(city=city, state=state),
+        )
+
+    async def datausa_state_snapshot(self, *, state: str) -> DataUsaSnapshot | None:
+        return await self._cached_lookup(
+            f"datausa:{state}",
+            lambda: self.datausa.state_snapshot(state=state),
+        )
+
+    async def fred_snapshot(self, *, state: str) -> FredSnapshot | None:
+        return await self._cached_lookup(
+            f"fred:{state}",
+            lambda: self.fred.snapshot(state=state),
+        )
+
+    async def news_recent_trigger(self, *, company: str) -> NewsSnapshot | None:
+        return await self._cached_lookup(
+            f"news:{company}",
+            lambda: self.news.recent_trigger(company=company),
+        )
+
+    async def wikipedia_company_snapshot(
+        self,
+        *,
+        company: str,
+    ) -> CompanySnapshot | None:
+        return await self._cached_lookup(
+            f"wikipedia:{company}",
+            lambda: self.wikipedia.company_snapshot(company=company),
+        )
+
+    async def domain_snapshot(self, *, email: str) -> DomainSnapshot:
+        domain = email.split("@")[-1].lower()
+        return await self._cached_lookup(
+            f"domain:{domain}",
+            lambda: self.domain.domain_snapshot(email=email),
+        )
+
+    async def domain_snapshot_for_domain(self, *, domain: str) -> DomainSnapshot:
+        normalized = domain.split("@")[-1].lower()
+        return await self.domain_snapshot(email=f"contact@{normalized}")
+
+    async def _cached_lookup[T](
+        self,
+        cache_key: str,
+        factory: Callable[[], Awaitable[T]],
+    ) -> T:
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+        value = await factory()
+        self._set_cached(cache_key, value)
+        return value
+
+    def _get_cached(self, cache_key: str) -> Any | None:
+        cached = self._cache.get(cache_key)
+        if cached and monotonic() - cached[0] < self.config.cache_ttl_seconds:
+            return cached[1]
+        return None
+
+    def _set_cached(self, cache_key: str, value: Any) -> None:
+        self._cache[cache_key] = (monotonic(), value)
+
+
+async def _attempt(
+    provider_warnings: list[str],
+    warning: str,
+    awaitable: Any,
+) -> Any:
     try:
         return await awaitable
     except Exception:  # noqa: BLE001
+        provider_warnings.append(warning)
         return None
 
 
 def _merge_snapshots(
     *,
-    fallback: Enrichment,
     company: str,
     city: str,
     state: str,
+    provider_warnings: list[str],
     geocoding: GeocodingResult | None,
     census: CensusMarketSnapshot | None,
     datausa: DataUsaSnapshot | None,
@@ -129,47 +240,26 @@ def _merge_snapshots(
     domain: DomainSnapshot | None,
 ) -> Enrichment:
     market = _market_label(city, state, geocoding)
-    renter_share = _first_not_none(
-        census.renter_share if census else None,
-        fallback.renter_share,
-    )
-    median_rent = _first_not_none(
-        census.median_rent if census else None,
-        fallback.median_rent,
-    )
-    rent_growth = _first_not_none(
-        fred.rent_growth_yoy if fred else None,
-        fallback.rent_growth_yoy,
-    )
-    household_growth = _first_not_none(
-        datausa.household_growth if datausa else None,
-        fallback.household_growth,
-    )
-    unemployment = _first_not_none(
-        fred.unemployment_rate if fred else None,
-        fallback.unemployment_rate,
-    )
-    recent_trigger = _first_not_none(
-        news.trigger if news else None,
-        fallback.recent_trigger,
-    )
-    sources = _source_facts(
-        renter_share=renter_share,
-        median_rent=median_rent,
-        rent_growth=rent_growth,
-        household_growth=household_growth,
-        unemployment=unemployment,
-        recent_trigger=recent_trigger,
-        news=news,
-        wikipedia=wikipedia,
-        domain=domain,
-    )
+    renter_share = census.renter_share if census else None
+    median_rent = census.median_rent if census else None
+    rent_growth = fred.rent_growth_yoy if fred else None
+    household_growth = datausa.household_growth if datausa else None
+    unemployment = fred.unemployment_rate if fred else None
+    recent_trigger = news.trigger if news else None
+    sources = [
+        *source_facts_for_census(census),
+        *source_facts_for_fred(fred),
+        *source_facts_for_datausa(datausa),
+        *source_facts_for_news(news),
+        *source_facts_for_wikipedia(wikipedia),
+        *source_facts_for_domain(domain),
+    ]
     return Enrichment(
         market=market,
         coordinates=(
             (geocoding.latitude, geocoding.longitude)
             if geocoding is not None
-            else fallback.coordinates
+            else None
         ),
         renter_share=renter_share,
         median_rent=median_rent,
@@ -178,7 +268,8 @@ def _merge_snapshots(
         unemployment_rate=unemployment,
         company_units=company_units_hint(company),
         recent_trigger=recent_trigger,
-        sources=sources or fallback.sources,
+        sources=sources,
+        provider_warnings=provider_warnings,
     )
 
 
@@ -192,87 +283,123 @@ def _market_label(
     return f"{city}, {state}"
 
 
-def _first_not_none[T](primary: T | None, fallback: T | None) -> T | None:
-    return primary if primary is not None else fallback
+def source_facts_for_geocoding(
+    geocoding: GeocodingResult | None,
+) -> list[SourceFact]:
+    if geocoding is None:
+        return []
+    return [
+        SourceFact(
+            source="OpenStreetMap Nominatim",
+            label="Geocoded property",
+            value=geocoding.display_name,
+        )
+    ]
 
 
-def _source_facts(
-    *,
-    renter_share: float | None,
-    median_rent: int | None,
-    rent_growth: float | None,
-    household_growth: float | None,
-    unemployment: float | None,
-    recent_trigger: str | None,
-    news: NewsSnapshot | None,
-    wikipedia: CompanySnapshot | None,
-    domain: DomainSnapshot | None,
+def source_facts_for_census(
+    census: CensusMarketSnapshot | None,
 ) -> list[SourceFact]:
     facts: list[SourceFact] = []
-    if renter_share is not None:
+    if census is None:
+        return facts
+    if census.renter_share is not None:
         facts.append(
             SourceFact(
-                source="Census ACS",
+                source=census.source_name,
                 label="Renter share",
-                value=f"{renter_share:.0%}",
+                value=f"{census.renter_share:.0%}",
             )
         )
-    if median_rent is not None:
+    if census.median_rent is not None:
         facts.append(
             SourceFact(
-                source="Census ACS",
+                source=census.source_name,
                 label="Median rent",
-                value=f"${median_rent:,}",
+                value=f"${census.median_rent:,}",
             )
         )
-    if rent_growth is not None:
+    if census.household_count is not None:
         facts.append(
             SourceFact(
-                source="FRED",
-                label="Rent growth",
-                value=f"{rent_growth:.1f}% YoY",
-            )
-        )
-    if household_growth is not None:
-        facts.append(
-            SourceFact(
-                source="DataUSA",
-                label="Household growth",
-                value=f"{household_growth:.1f}% YoY",
-            )
-        )
-    if unemployment is not None:
-        facts.append(
-            SourceFact(
-                source="FRED",
-                label="Unemployment rate",
-                value=f"{unemployment:.1f}%",
-            )
-        )
-    if recent_trigger is not None:
-        facts.append(
-            SourceFact(
-                source=news.source_name if news else "News",
-                label="Trigger event",
-                value=recent_trigger,
-                url=news.url if news else None,
-            )
-        )
-    if wikipedia and wikipedia.summary:
-        facts.append(
-            SourceFact(
-                source=wikipedia.source_name,
-                label="Company background",
-                value=wikipedia.summary,
-                url=wikipedia.url,
-            )
-        )
-    if domain and domain.has_mx is not None:
-        facts.append(
-            SourceFact(
-                source=domain.source_name,
-                label="Corporate domain MX",
-                value="MX records found" if domain.has_mx else "No MX records found",
+                source=census.source_name,
+                label="Household count",
+                value=f"{census.household_count:,}",
             )
         )
     return facts
+
+
+def source_facts_for_fred(fred: FredSnapshot | None) -> list[SourceFact]:
+    facts: list[SourceFact] = []
+    if fred is None:
+        return facts
+    if fred.rent_growth_yoy is not None:
+        facts.append(
+            SourceFact(
+                source=fred.source_name,
+                label="Rent growth",
+                value=f"{fred.rent_growth_yoy:.1f}% YoY",
+            )
+        )
+    if fred.unemployment_rate is not None:
+        facts.append(
+            SourceFact(
+                source=fred.source_name,
+                label="Unemployment rate",
+                value=f"{fred.unemployment_rate:.1f}%",
+            )
+        )
+    return facts
+
+
+def source_facts_for_datausa(datausa: DataUsaSnapshot | None) -> list[SourceFact]:
+    if datausa is None or datausa.household_growth is None:
+        return []
+    return [
+        SourceFact(
+            source=datausa.source_name,
+            label="Household growth",
+            value=f"{datausa.household_growth:.1f}% YoY",
+        )
+    ]
+
+
+def source_facts_for_news(news: NewsSnapshot | None) -> list[SourceFact]:
+    if news is None or news.trigger is None:
+        return []
+    return [
+        SourceFact(
+            source=news.source_name,
+            label="Trigger event",
+            value=news.trigger,
+            url=news.url,
+        )
+    ]
+
+
+def source_facts_for_wikipedia(
+    wikipedia: CompanySnapshot | None,
+) -> list[SourceFact]:
+    if wikipedia is None or not wikipedia.summary:
+        return []
+    return [
+        SourceFact(
+            source=wikipedia.source_name,
+            label="Company background",
+            value=wikipedia.summary,
+            url=wikipedia.url,
+        )
+    ]
+
+
+def source_facts_for_domain(domain: DomainSnapshot | None) -> list[SourceFact]:
+    if domain is None or domain.has_mx is None:
+        return []
+    return [
+        SourceFact(
+            source=domain.source_name,
+            label="Corporate domain MX",
+            value="MX records found" if domain.has_mx else "No MX records found",
+        )
+    ]

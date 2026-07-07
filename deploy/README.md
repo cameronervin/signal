@@ -1,7 +1,7 @@
-# Signal Demo Compose
+# Signal Local Infrastructure
 
-This folder contains the local demo dependencies that are easiest to keep in
-Docker Compose while running the app processes directly with `uv` and `pnpm`.
+This folder contains local infrastructure dependencies that are easiest to keep
+in Docker Compose while running the app processes directly with `uv` and `pnpm`.
 
 It mirrors the playbook deploy layout at a smaller scale:
 
@@ -20,12 +20,14 @@ cp deploy/envs/.env.litellm.local.example deploy/envs/.env.litellm.local
 cp backend/.env.example backend/.env
 ```
 
-Edit `deploy/envs/.env.litellm.local` with a real upstream model and API key
-before using live LLM drafting. Keep private env files out of git.
+Edit `deploy/envs/.env.litellm.local` with a real upstream API key before using
+LLM drafting. The tracked example routes the `signal-chat` alias to
+`openai/gpt-5.4-mini`. Keep private env files out of git.
 
 The env templates use grouped Signal sections for application, public data,
-database, workers, scoring, LLM, and frontend settings. Keep the `SIGNAL_`
-prefix for backend settings; the backend config loader depends on it.
+database, workers, scoring, LLM, and frontend settings. Backend settings use
+the exact key names from `backend/.env`; `DATABASE_URL` intentionally does not
+use a `SIGNAL_` prefix.
 
 ## Start Dependencies
 
@@ -79,10 +81,10 @@ pnpm install
 pnpm dev
 ```
 
-## Seed Demo Leads
+## Seed Sample Leads
 
-With Postgres running, seed deterministic A/B/C, gate-failed, missing-trigger,
-and warning-only records through the backend service path:
+With Postgres running, seed reproducible A/B/C, gate-failed, missing-trigger,
+and warning-only records through the backend service path for local evaluation:
 
 ```bash
 cd backend

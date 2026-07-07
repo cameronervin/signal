@@ -1,16 +1,39 @@
-"""Deterministic outreach drafting chain for Signal lead intelligence."""
+"""LiteLLM-backed outreach drafting chain for Signal lead intelligence."""
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
-from app.schemas.lead import DraftEmail, Enrichment, LeadCreate, SourceFact
+from langchain_core.tools import BaseTool
+
+from app.agents.prompts.outreach import OUTREACH_DRAFT_INSTRUCTIONS
+from app.agents.tools.tool_prompts import TOOL_PROMPT_REGISTRY, ToolPromptKey
+from app.core.config import Settings
+from app.infrastructure.llm import get_llm_provider
+from app.infrastructure.llm.base import BaseLLMProvider, DraftOutreachResult
+from app.schemas.lead import (
+    Enrichment,
+    GateResult,
+    LeadCreate,
+    ScoreBreakdown,
+)
 
 OUTREACH_DRAFT_CHAIN = "outreach_draft"
 
 
-class DeterministicOutreachDraftChain:
-    """Small chain-shaped adapter for demo-safe draft generation."""
+class LiteLLMOutreachDraftChain:
+    """Chain-shaped adapter around Signal's configured LLM provider."""
+
+    def __init__(
+        self,
+        *,
+        llm_provider: BaseLLMProvider,
+        tools: Sequence[BaseTool],
+    ) -> None:
+        self.llm_provider = llm_provider
+        self.tools = list(tools)
+        self.instructions = _compose_instructions(self.tools)
 
     async def ainvoke(
         self,
@@ -18,52 +41,53 @@ class DeterministicOutreachDraftChain:
         *,
         config: dict[str, object] | None = None,
         context: object | None = None,
-    ) -> DraftEmail:
+    ) -> DraftOutreachResult:
         lead = input["lead"]
+        gates = input["gates"]
         enrichment = input["enrichment"]
-        if not isinstance(lead, LeadCreate) or not isinstance(enrichment, Enrichment):
-            raise TypeError("Signal draft chain requires LeadCreate and Enrichment")
-        return _draft_email(lead, enrichment)
+        score = input["score"]
+        talking_points = input["talking_points"]
+        public_data_client = input["public_data_client"]
+        if (
+            not isinstance(lead, LeadCreate)
+            or not isinstance(gates, GateResult)
+            or not isinstance(enrichment, Enrichment)
+            or not isinstance(score, ScoreBreakdown)
+            or not isinstance(talking_points, list)
+            or public_data_client is None
+        ):
+            raise TypeError("Signal draft chain received invalid input types")
+        return await self.llm_provider.draft_outreach(
+            lead=lead,
+            gates=gates,
+            enrichment=enrichment,
+            score=score,
+            talking_points=talking_points,
+            instructions=self.instructions,
+            tools=self.tools,
+            public_data_client=public_data_client,
+        )
 
 
-def create_outreach_draft_chain() -> DeterministicOutreachDraftChain:
-    """Create the deterministic outreach draft chain."""
-    return DeterministicOutreachDraftChain()
-
-
-def _draft_email(lead: LeadCreate, enrichment: Enrichment) -> DraftEmail:
-    subject = f"Improving leasing response in {lead.city}"
-    cited_sources = _draft_sources(enrichment)
-    trigger_sentence = (
-        f"I noticed {enrichment.recent_trigger.lower()}."
-        if enrichment.recent_trigger
-        else f"I was looking at leasing demand signals around {enrichment.market}."
+def create_outreach_draft_chain(
+    *,
+    settings: Settings,
+    tools: Sequence[BaseTool] = (),
+    llm_provider: BaseLLMProvider | None = None,
+) -> LiteLLMOutreachDraftChain:
+    """Create the configured model-backed outreach draft chain."""
+    return LiteLLMOutreachDraftChain(
+        llm_provider=llm_provider or get_llm_provider(settings),
+        tools=tools,
     )
-    market_sentence = _market_sentence(enrichment)
-    body = (
-        f"Hi {lead.contact_name.split()[0]},\n\n"
-        f"{trigger_sentence} {market_sentence}\n\n"
-        "Signal flagged this as a strong fit because leasing teams can use faster "
-        "response, cleaner prioritization, and better follow-up visibility when "
-        "inbound demand spikes.\n\n"
-        "Would it be worth comparing how your team is handling those leads today?"
-    )
-    return DraftEmail(subject=subject, body=body, sources=cited_sources)
 
 
-def _market_sentence(enrichment: Enrichment) -> str:
-    facts = []
-    if enrichment.renter_share is not None:
-        facts.append(f"{enrichment.renter_share:.0%} renter share")
-    if enrichment.rent_growth_yoy is not None:
-        facts.append(f"{enrichment.rent_growth_yoy:.1f}% rent growth")
-    if not facts:
-        return "The available public facts point to a relevant leasing market."
-    return f"Public market data also points to {' and '.join(facts)}."
-
-
-def _draft_sources(enrichment: Enrichment) -> list[SourceFact]:
-    used_labels = {"Renter share", "Rent growth"}
-    if enrichment.recent_trigger:
-        used_labels.add("Trigger event")
-    return [source for source in enrichment.sources if source.label in used_labels]
+def _compose_instructions(tools: Sequence[BaseTool]) -> str:
+    parts = [OUTREACH_DRAFT_INSTRUCTIONS]
+    for tool in tools:
+        snippet = TOOL_PROMPT_REGISTRY.get(
+            ToolPromptKey(OUTREACH_DRAFT_CHAIN, tool.name)
+        )
+        if snippet:
+            parts.append(snippet)
+    return "\n".join(parts)

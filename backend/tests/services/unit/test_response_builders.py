@@ -1,6 +1,6 @@
 from app.agents.utils.scoring import score_lead
 from app.infrastructure.public_data.fixtures import demo_enrichment
-from app.schemas.lead import GateResult, LeadCreate
+from app.schemas.lead import DraftEmail, GateResult, LeadCreate
 from app.services.agent_run_builder import build_agent_run_response
 from app.services.lead_response_builder import build_lead_response
 
@@ -58,7 +58,11 @@ def test_agent_run_builder_preserves_human_review_gate() -> None:
             "gates": gates,
             "enrichment": enrichment,
             "score": score_lead(lead, gates, enrichment),
-            "draft": None,
+            "draft": DraftEmail(
+                subject="Improving leasing response in Austin",
+                body="Model-backed draft",
+                sources=enrichment.sources,
+            ),
         },
     )
 
@@ -72,6 +76,39 @@ def test_agent_run_builder_preserves_human_review_gate() -> None:
     assert run.current_stage == "human_review"
     assert run.steps[-1].name == "Human review"
     assert run.steps[-1].status == "pending"
+
+
+def test_agent_run_builder_marks_model_drafting_failure() -> None:
+    lead = _lead()
+    gates = GateResult(status="passed")
+    enrichment = demo_enrichment(lead.company, lead.city, lead.state)
+    response = build_lead_response(
+        lead_id="lead_test",
+        run_id="run_test",
+        lead=lead,
+        result={
+            "lead_id": "lead_test",
+            "run_id": "run_test",
+            "lead": lead,
+            "gates": gates,
+            "enrichment": enrichment,
+            "score": score_lead(lead, gates, enrichment),
+            "draft": None,
+        },
+    )
+
+    run = build_agent_run_response(
+        lead=response,
+        activity_log=["agent_research_and_drafting: model drafting failed"],
+    )
+
+    assert run.status == "failed"
+    assert run.current_stage == "model_drafting_failed"
+    assert run.steps[1].name == "Deterministic scoring"
+    assert run.steps[1].status == "done"
+    assert run.steps[2].name == "Agent research and drafting"
+    assert run.steps[2].status == "failed"
+    assert run.steps[-1].status == "skipped"
 
 
 def test_agent_run_builder_marks_gate_failed_lead_completed() -> None:
@@ -97,5 +134,6 @@ def test_agent_run_builder_marks_gate_failed_lead_completed() -> None:
 
     assert run.status == "completed"
     assert run.current_stage == "gate_failed"
-    assert run.steps[1].status == "skipped"
+    assert run.steps[1].status == "done"
+    assert run.steps[2].status == "skipped"
     assert run.steps[-1].status == "skipped"

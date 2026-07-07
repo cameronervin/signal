@@ -1,3 +1,5 @@
+import httpx
+
 from app.infrastructure.public_data.http import get_json
 from app.infrastructure.public_data.types import NewsSnapshot
 
@@ -5,8 +7,14 @@ NEWS_API_EVERYTHING_URL = "https://newsapi.org/v2/everything"
 
 
 class NewsApiClient:
-    def __init__(self, *, api_key: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        api_key: str | None = None,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
         self.api_key = api_key
+        self.transport = transport
 
     async def recent_trigger(self, *, company: str) -> NewsSnapshot | None:
         if not self.api_key:
@@ -20,6 +28,7 @@ class NewsApiClient:
                 "pageSize": 1,
                 "apiKey": self.api_key,
             },
+            transport=self.transport,
         )
         if not isinstance(payload, dict):
             return None

@@ -56,6 +56,6 @@ Bonuses are bounded by a max score of 100.
 
 ## Calibration Assumption
 
-All weights are hypotheses for the take-home MVP. A production rollout should
+All weights are hypotheses for the MVP. A production rollout should
 compare score bands against meeting conversion after roughly 90 days, then
 reweight the rubric in config.

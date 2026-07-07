@@ -6,8 +6,8 @@ Accepted.
 
 ## Context
 
-The assignment requires automation by schedule or trigger. Signal needs a demo
-path that is easy to explain and close to a production CRM workflow.
+Signal requires automation by schedule or trigger. The API-triggered path should
+be easy to operate and close to a production CRM workflow.
 
 ## Decision
 
@@ -17,6 +17,6 @@ pipeline that a production webhook would call.
 
 ## Consequences
 
-- Demo can show one lead being inserted and enriched immediately.
+- Local evaluation can show one lead being inserted and enriched immediately.
 - Production CRM integration is a boundary change, not a pipeline rewrite.
 - Scheduling can be added later for batch backfills but is not needed for v1.

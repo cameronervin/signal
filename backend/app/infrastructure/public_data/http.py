@@ -11,10 +11,12 @@ async def get_json(
     params: dict[str, Any] | None = None,
     headers: dict[str, str] | None = None,
     request_timeout: float = DEFAULT_TIMEOUT_SECONDS,
+    transport: httpx.AsyncBaseTransport | None = None,
 ) -> Any:
     async with httpx.AsyncClient(
         timeout=request_timeout,
         follow_redirects=True,
+        transport=transport,
     ) as client:
         response = await client.get(url, params=params, headers=headers)
         response.raise_for_status()

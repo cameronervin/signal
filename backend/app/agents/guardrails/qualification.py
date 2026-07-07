@@ -30,6 +30,7 @@ def evaluate_gates(lead: LeadCreate, enrichment: Enrichment) -> GateResult:
         failures.append("company could not resolve")
     if (enrichment.company_units or 0) < 10000:
         warnings.append("sub-scale portfolio")
+    warnings.extend(enrichment.provider_warnings)
 
     return GateResult(
         status="failed" if failures else "passed",

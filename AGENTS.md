@@ -21,8 +21,9 @@ and how urgently to act.
    inspectable, and easy to recalibrate.
 6. **Human review before outreach** - Draft and send flows must preserve a
    human-in-the-loop gate.
-7. **Demo reliability matters** - Public API clients need cached or fixture
-   fallbacks. Do not make the live demo depend on perfect external uptime.
+7. **Operational reliability matters** - Public API clients need typed failure
+   states, cache boundaries, and mocked contract tests. Do not hide provider
+   failures behind production fixture data.
 
 ## Architecture
 
@@ -43,7 +44,7 @@ backend/app/schemas/              Pydantic request and response contracts
 
 | Surface | Purpose |
 | --- | --- |
-| Dashboard | Queue health, tier distribution, top markets, demo KPIs |
+| Dashboard | Queue health, tier distribution, top markets, operational KPIs |
 | Inbound leads | Ranked SDR queue sorted by tier and score |
 | Lead detail | Enrichment, why-line, graph context, flags, cited draft |
 | Agent assignment | Runs currently enriching, drafting, or awaiting review |
@@ -73,7 +74,7 @@ backend/app/schemas/              Pydantic request and response contracts
 - Use Pydantic models for request and response boundaries.
 - Keep LangGraph state explicit and bounded; missing data should return flags,
   not hidden assumptions.
-- Prefer Next.js App Router conventions and typed fixtures for demo fallback.
+- Prefer Next.js App Router conventions and typed API/seed-data adapters.
 - Update docs after behavior changes, especially API, data model, scoring,
   integration, setup, and security docs.
 - End each change with a summary of changed files, verification commands, docs
@@ -85,7 +86,7 @@ Always:
 
 - Keep routes thin and business logic in services.
 - Use structured DTOs instead of raw dict contracts.
-- Add typed fixture adapters before live external API calls.
+- Add mocked contract tests before live external API calls.
 - Mask or omit raw emails and API keys in logs.
 - Preserve the human review gate for outbound messaging.
 

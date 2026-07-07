@@ -1,3 +1,4 @@
+import httpx
 import pytest
 
 from app.infrastructure.public_data import (
@@ -9,144 +10,279 @@ from app.infrastructure.public_data import (
     wikipedia,
 )
 from app.infrastructure.public_data.domain import DomainMxClient
+from app.infrastructure.public_data.http import get_json
 
 
 @pytest.mark.asyncio
-async def test_nominatim_client_parses_geocoding_response(monkeypatch) -> None:
-    captured = {}
+async def test_get_json_uses_transport_params_headers_and_status_errors() -> None:
+    requests: list[httpx.Request] = []
 
-    async def fake_get_json(url, *, params=None, headers=None):
-        captured.update({"url": url, "params": params, "headers": headers})
-        return [
-            {
-                "display_name": "100 Main St, Austin, Texas",
-                "lat": "30.1",
-                "lon": "-97.1",
-                "address": {"city": "Austin", "state": "Texas"},
-            }
-        ]
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path == "/error":
+            return httpx.Response(503, json={"error": "unavailable"})
+        return httpx.Response(200, json={"ok": True})
 
-    monkeypatch.setattr(geocoding, "get_json", fake_get_json)
+    transport = httpx.MockTransport(handler)
 
-    result = await geocoding.NominatimClient(user_agent="Signal tests").geocode(
+    payload = await get_json(
+        "https://api.example.test/search",
+        params={"q": "Austin"},
+        headers={"User-Agent": "Signal tests"},
+        transport=transport,
+    )
+
+    assert payload == {"ok": True}
+    assert requests[0].url == "https://api.example.test/search?q=Austin"
+    assert requests[0].headers["user-agent"] == "Signal tests"
+    with pytest.raises(httpx.HTTPStatusError):
+        await get_json("https://api.example.test/error", transport=transport)
+
+
+@pytest.mark.asyncio
+async def test_nominatim_client_sends_search_contract() -> None:
+    captured: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "display_name": "100 Main St, Austin, Texas",
+                    "lat": "30.1",
+                    "lon": "-97.1",
+                    "address": {"city": "Austin", "state": "Texas"},
+                }
+            ],
+        )
+
+    result = await geocoding.NominatimClient(
+        user_agent="Signal tests",
+        email="ops@example.test",
+        transport=httpx.MockTransport(handler),
+    ).geocode(
         street="100 Main St",
         city="Austin",
         state="TX",
         country="US",
     )
 
-    assert captured["url"] == geocoding.NOMINATIM_SEARCH_URL
-    assert captured["params"]["format"] == "jsonv2"
-    assert captured["headers"]["User-Agent"] == "Signal tests"
+    assert captured[0].url.host == "nominatim.openstreetmap.org"
+    assert captured[0].url.params["street"] == "100 Main St"
+    assert captured[0].url.params["format"] == "jsonv2"
+    assert captured[0].url.params["email"] == "ops@example.test"
+    assert captured[0].headers["user-agent"] == "Signal tests"
     assert result is not None
     assert result.latitude == 30.1
     assert result.city == "Austin"
 
 
 @pytest.mark.asyncio
-async def test_census_client_parses_acs_place_response(monkeypatch) -> None:
-    async def fake_get_json(url, *, params=None):
-        assert url == census.CENSUS_ACS_PROFILE_URL
-        assert params["for"] == "place:*"
-        assert params["in"] == "state:48"
-        return [
-            ["NAME", "DP04_0046PE", "DP04_0134E", "DP02_0001E", "state", "place"],
-            ["Austin city, Texas", "62.5", "1901", "500000", "48", "05000"],
-        ]
+async def test_nominatim_client_returns_none_for_malformed_payload() -> None:
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, json={}))
 
-    monkeypatch.setattr(census, "get_json", fake_get_json)
+    result = await geocoding.NominatimClient(
+        user_agent="Signal tests",
+        transport=transport,
+    ).geocode(
+        street="100 Main St",
+        city="Austin",
+        state="TX",
+        country="US",
+    )
 
-    result = await census.CensusAcsClient().market_snapshot(city="Austin", state="TX")
+    assert result is None
 
+
+@pytest.mark.asyncio
+async def test_census_client_sends_acs_place_contract() -> None:
+    captured: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        return httpx.Response(
+            200,
+            json=[
+                ["NAME", "DP04_0046PE", "DP04_0134E", "DP02_0001E", "state", "place"],
+                ["Austin city, Texas", "62.5", "1901", "500000", "48", "05000"],
+            ],
+        )
+
+    result = await census.CensusAcsClient(
+        api_key="census-key",
+        transport=httpx.MockTransport(handler),
+    ).market_snapshot(city="Austin", state="TX")
+
+    assert str(captured[0].url.copy_with(query=None)) == census.CENSUS_ACS_PROFILE_URL
+    assert captured[0].url.params["for"] == "place:*"
+    assert captured[0].url.params["in"] == "state:48"
+    assert captured[0].url.params["key"] == "census-key"
     assert result is not None
     assert result.renter_share == 0.625
     assert result.median_rent == 1901
 
 
 @pytest.mark.asyncio
-async def test_datausa_client_parses_state_household_growth(monkeypatch) -> None:
-    async def fake_get_json(url, *, params=None):
-        assert url == datausa.DATAUSA_API_URL
-        assert params["Geography"] == "04000US48"
-        return {"data": [{"Households": "110"}, {"Households": "100"}]}
+async def test_census_client_returns_none_for_empty_rows() -> None:
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, json=[]))
 
-    monkeypatch.setattr(datausa, "get_json", fake_get_json)
+    result = await census.CensusAcsClient(
+        transport=transport,
+    ).market_snapshot(city="Austin", state="TX")
 
-    result = await datausa.DataUsaClient().state_snapshot(state="TX")
+    assert result is None
 
+
+@pytest.mark.asyncio
+async def test_datausa_client_sends_household_growth_contract() -> None:
+    captured: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        return httpx.Response(
+            200,
+            json={"data": [{"Households": "110"}, {"Households": "100"}]},
+        )
+
+    result = await datausa.DataUsaClient(
+        transport=httpx.MockTransport(handler),
+    ).state_snapshot(state="TX")
+
+    assert str(captured[0].url.copy_with(query=None)) == datausa.DATAUSA_API_URL
+    assert captured[0].url.params["Geography"] == "04000US48"
+    assert captured[0].url.params["measure"] == "Households"
     assert result is not None
     assert result.household_growth == 10
 
 
 @pytest.mark.asyncio
-async def test_fred_client_parses_rent_and_unemployment(monkeypatch) -> None:
-    async def fake_get_json(url, *, params=None):
-        assert url == fred.FRED_OBSERVATIONS_URL
-        if params["series_id"] == fred.NATIONAL_RENT_SERIES_ID:
+async def test_fred_client_sends_rent_and_unemployment_contract() -> None:
+    captured: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        if request.url.params["series_id"] == fred.NATIONAL_RENT_SERIES_ID:
             values = list(range(100, 118))
         else:
             values = [3.4, 3.2]
-        return {
-            "observations": [
-                {"date": f"2025-{index + 1:02d}-01", "value": str(value)}
-                for index, value in enumerate(reversed(values))
-            ]
-        }
+        return httpx.Response(
+            200,
+            json={
+                "observations": [
+                    {"date": f"2025-{index + 1:02d}-01", "value": str(value)}
+                    for index, value in enumerate(reversed(values))
+                ]
+            },
+        )
 
-    monkeypatch.setattr(fred, "get_json", fake_get_json)
+    result = await fred.FredClient(
+        api_key="fred-key",
+        transport=httpx.MockTransport(handler),
+    ).snapshot(state="TX")
 
-    result = await fred.FredClient(api_key="test").snapshot(state="TX")
-
+    assert {request.url.params["series_id"] for request in captured} == {
+        fred.NATIONAL_RENT_SERIES_ID,
+        "TXUR",
+    }
+    assert all(request.url.params["api_key"] == "fred-key" for request in captured)
     assert result is not None
     assert round(result.rent_growth_yoy or 0, 1) == 11.4
     assert result.unemployment_rate == 3.2
 
 
 @pytest.mark.asyncio
-async def test_news_client_parses_recent_trigger(monkeypatch) -> None:
-    async def fake_get_json(url, *, params=None):
-        assert url == news.NEWS_API_EVERYTHING_URL
-        assert params["sortBy"] == "publishedAt"
-        return {"articles": [{"title": "Regional expansion", "url": "https://example.test"}]}
+async def test_fred_client_without_key_does_not_request() -> None:
+    called = False
 
-    monkeypatch.setattr(news, "get_json", fake_get_json)
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal called
+        called = True
+        return httpx.Response(200, json={})
 
-    result = await news.NewsApiClient(api_key="test").recent_trigger(
-        company="Example Homes"
-    )
+    result = await fred.FredClient(
+        transport=httpx.MockTransport(handler),
+    ).snapshot(state="TX")
 
+    assert result is None
+    assert called is False
+
+
+@pytest.mark.asyncio
+async def test_news_client_sends_everything_contract() -> None:
+    captured: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        return httpx.Response(
+            200,
+            json={"articles": [{"title": "Regional expansion", "url": "https://example.test"}]},
+        )
+
+    result = await news.NewsApiClient(
+        api_key="news-key",
+        transport=httpx.MockTransport(handler),
+    ).recent_trigger(company="Example Homes")
+
+    assert str(captured[0].url.copy_with(query=None)) == news.NEWS_API_EVERYTHING_URL
+    assert captured[0].url.params["q"] == '"Example Homes"'
+    assert captured[0].url.params["sortBy"] == "publishedAt"
+    assert captured[0].url.params["apiKey"] == "news-key"
     assert result is not None
     assert result.trigger == "Regional expansion"
 
 
 @pytest.mark.asyncio
-async def test_wikipedia_client_parses_company_snapshot(monkeypatch) -> None:
-    async def fake_get_json(url, *, params=None, headers=None):
-        assert url == wikipedia.WIKIPEDIA_SEARCH_URL
-        assert params["limit"] == 1
-        assert headers["User-Agent"] == "Signal tests"
-        return {
-            "pages": [
-                {
-                    "title": "Example Homes",
-                    "excerpt": "Company background",
-                }
-            ]
-        }
+async def test_news_client_without_key_does_not_request() -> None:
+    called = False
 
-    monkeypatch.setattr(wikipedia, "get_json", fake_get_json)
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal called
+        called = True
+        return httpx.Response(200, json={})
+
+    result = await news.NewsApiClient(
+        transport=httpx.MockTransport(handler),
+    ).recent_trigger(company="Example Homes")
+
+    assert result is None
+    assert called is False
+
+
+@pytest.mark.asyncio
+async def test_wikipedia_client_sends_search_contract() -> None:
+    captured: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "pages": [
+                    {
+                        "title": "Example Homes",
+                        "excerpt": "Company background",
+                    }
+                ]
+            },
+        )
 
     result = await wikipedia.WikipediaClient(
-        user_agent="Signal tests"
+        user_agent="Signal tests",
+        transport=httpx.MockTransport(handler),
     ).company_snapshot(company="Example Homes")
 
+    assert str(captured[0].url.copy_with(query=None)) == wikipedia.WIKIPEDIA_SEARCH_URL
+    assert captured[0].url.params["q"] == "Example Homes"
+    assert captured[0].url.params["limit"] == "1"
+    assert captured[0].headers["user-agent"] == "Signal tests"
     assert result is not None
     assert result.summary == "Company background"
     assert result.url == "https://en.wikipedia.org/wiki/Example Homes"
 
 
 @pytest.mark.asyncio
-async def test_domain_mx_client_checks_domain(monkeypatch) -> None:
+async def test_domain_mx_client_checks_domain(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "app.infrastructure.public_data.domain._has_mx_record",
         lambda domain: domain == "operator.example",

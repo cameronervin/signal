@@ -1,5 +1,15 @@
-from app.schemas.lead import LeadResponse
+from app.infrastructure.public_data.fixtures import demo_enrichment
+from app.schemas.lead import LeadCreate, LeadResponse
 from app.schemas.run import AgentRunResponse
+
+
+class FakePublicDataClient:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def enrich(self, lead: LeadCreate):
+        self.calls += 1
+        return demo_enrichment(lead.company, lead.city, lead.state)
 
 
 class FakeSignalRepository:

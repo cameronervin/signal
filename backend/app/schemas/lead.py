@@ -41,6 +41,7 @@ class Enrichment(BaseModel):
     company_units: int | None = None
     recent_trigger: str | None = None
     sources: list[SourceFact] = Field(default_factory=list)
+    provider_warnings: list[str] = Field(default_factory=list)
 
 
 class ScoreBreakdown(BaseModel):

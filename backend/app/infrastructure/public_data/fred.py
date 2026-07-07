@@ -1,5 +1,7 @@
 from typing import Any
 
+import httpx
+
 from app.infrastructure.public_data.http import get_json
 from app.infrastructure.public_data.types import FredSnapshot
 
@@ -8,8 +10,14 @@ NATIONAL_RENT_SERIES_ID = "CUSR0000SEHA"
 
 
 class FredClient:
-    def __init__(self, *, api_key: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        api_key: str | None = None,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
         self.api_key = api_key
+        self.transport = transport
 
     async def snapshot(self, *, state: str) -> FredSnapshot | None:
         if not self.api_key:
@@ -58,6 +66,7 @@ class FredClient:
                 "sort_order": "desc",
                 "limit": limit,
             },
+            transport=self.transport,
         )
         if not isinstance(payload, dict):
             return []

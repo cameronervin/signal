@@ -1,14 +1,15 @@
 # Agentic Framework
 
 Signal uses a bounded LangGraph pipeline. The graph is meant to be inspectable,
-testable, and demo-safe.
+testable, and production-ready.
 
 ## Graph Topology
 
 ```text
 START
   -> deterministic_enrichment
-  -> agent_scoring_and_drafting
+  -> deterministic_scoring
+  -> agent_research_and_drafting
   -> knowledge_graph_builder
   -> END
 ```
@@ -36,14 +37,15 @@ Nodes return partial state updates.
 Signal follows the Playbook agent structure directionally:
 
 - `agents/builders/` composes chains, nodes, and compiled graphs.
-- `agents/chains/outreach_drafting.py` contains the deterministic draft chain.
+- `agents/chains/outreach_drafting.py` contains the LiteLLM-backed draft chain.
 - `agents/guardrails/qualification.py` contains deterministic hard-gate checks.
 - `agents/states/` contains typed graph state.
 - `agents/nodes/lead_intelligence.py` contains node factories and node keys.
 - `agents/graphs/lead_intelligence.py` wires uncompiled node topology.
 - `agents/executors/` runs the compiled graph inline or from a worker.
 - `agents/prompts/` holds prompt-facing instructions.
-- `agents/tools/` contains deterministic tool wrappers.
+- `agents/tools/` contains deterministic enrichment wrappers plus model-callable
+  public-data research tools.
 - `agents/utils/` contains pure scoring and text helpers.
 
 ## Node 1 - Deterministic Enrichment
@@ -55,8 +57,9 @@ Responsibilities:
 - Evaluate hard gates.
 - Emit flags and activity log entries.
 
-Current scaffold uses fixture-backed enrichment. Live adapters should be added
-behind `backend/app/infrastructure/public_data/`.
+Runtime enrichment uses live public-data adapters behind
+`backend/app/infrastructure/public_data/`. Tests and sample seeding inject
+mocked or fixed data explicitly.
 
 The compiled graph is provided by `SignalGraphProvider`, which caches compiled
 graphs by settings/checkpointer identity. `SignalPipelineExecutor` injects a
@@ -64,25 +67,31 @@ graphs by settings/checkpointer identity. `SignalPipelineExecutor` injects a
 each `ainvoke` call, so adapters are selected per run without recompiling the
 graph.
 
-## Node 2 - Agent Scoring And Drafting
+## Node 2 - Deterministic Scoring
 
 Responsibilities:
 
 - Score lead against the configured rubric.
 - Assign tier and why-line.
 - Generate talking points.
-- Generate cited outreach draft only if gates pass.
 - Use scoring defaults from the backend scoring config, or load an override
   from `SIGNAL_SCORING_CONFIG_PATH`.
 
-Future LLM integration belongs here, but the scaffold keeps a deterministic
-draft so tests and demos are reliable.
+## Node 3 - Agent Research And Drafting
+
+Responsibilities:
+
+- Skip hard-gate-failed leads without calling LiteLLM or tools.
+- Pass a deterministic, sanitized context pack to the model.
+- Allow bounded supplemental research through public-data tools.
+- Generate cited outreach draft through LiteLLM only if gates pass.
+- Append supplemental source facts to draft citations when used.
 
 The LiteLLM provider boundary lives under `backend/app/infrastructure/llm/`.
-Model-backed drafting should retain deterministic fallback behavior and the
-human review gate.
+Model-backed drafting preserves the human review gate. Empty or failed model
+responses produce an explicit no-draft failure state.
 
-## Node 3 - Knowledge Graph Builder
+## Node 4 - Knowledge Graph Builder
 
 Responsibilities:
 
@@ -94,10 +103,10 @@ V1 uses lightweight related records. A graph database is out of scope.
 
 ## Loop Guardrails
 
-- Bounded graph, no open-ended autonomous loop.
+- Bounded graph and bounded tool loop, no open-ended autonomous loop.
 - Typed state.
 - Hard gate short-circuit for drafts.
 - Human review required before outreach.
 - Approve/pause transitions update run status only and never send outreach.
-- Fixture fallback for public data.
-- Activity log for demo traceability.
+- Explicit warnings for unavailable public-data providers.
+- Activity log for operational traceability.

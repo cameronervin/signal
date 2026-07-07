@@ -1,5 +1,7 @@
 from typing import Any
 
+import httpx
+
 from app.infrastructure.public_data.http import get_json
 from app.infrastructure.public_data.state_fips import STATE_FIPS
 from app.infrastructure.public_data.types import CensusMarketSnapshot
@@ -9,8 +11,14 @@ CENSUS_VARIABLES = "NAME,DP04_0046PE,DP04_0134E,DP02_0001E"
 
 
 class CensusAcsClient:
-    def __init__(self, *, api_key: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        api_key: str | None = None,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
         self.api_key = api_key
+        self.transport = transport
 
     async def market_snapshot(
         self,
@@ -28,7 +36,11 @@ class CensusAcsClient:
         }
         if self.api_key:
             params["key"] = self.api_key
-        payload = await get_json(CENSUS_ACS_PROFILE_URL, params=params)
+        payload = await get_json(
+            CENSUS_ACS_PROFILE_URL,
+            params=params,
+            transport=self.transport,
+        )
         if not isinstance(payload, list) or len(payload) < 2:
             return None
         headers = [str(header) for header in payload[0]]

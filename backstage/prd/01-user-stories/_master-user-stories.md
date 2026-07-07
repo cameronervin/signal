@@ -12,13 +12,13 @@ Acceptance:
 - API returns an enriched lead record and an agent run id.
 - Invalid inputs return clear validation errors.
 
-**US-1.2** As a demo operator, I can seed leads so the queue shows A, B, and C
-tiers without live API dependencies.
+**US-1.2** As an implementation owner, I can seed leads so the queue shows A,
+B, and C tiers without live API dependencies.
 
 Acceptance:
 
 - Fixture data includes at least one gate-failed lead.
-- Demo leads include draftable and non-draftable states.
+- Sample leads include draftable and non-draftable states.
 
 ## Epic 2 - Enrichment And Scoring
 

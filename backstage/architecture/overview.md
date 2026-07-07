@@ -13,7 +13,8 @@ POST /api/v1/leads
   -> LeadService.create_and_enrich
   -> SignalPipelineExecutor
      -> deterministic_enrichment
-     -> agent_scoring_and_drafting
+     -> deterministic_scoring
+     -> agent_research_and_drafting
      -> knowledge_graph_builder
   -> PostgresSignalRepository
   -> LeadResponse + AgentRunResponse
@@ -45,14 +46,14 @@ backend/app/agents/
   graph_provider.py  cached compiled graph provider
   runtime_context.py per-run LangGraph context
   builders/    chains -> nodes -> graph compilation
-  chains/      outreach_drafting.py deterministic draft chain
+  chains/      outreach_drafting.py LiteLLM-backed draft chain
   guardrails/  qualification.py hard-gate checks before draft output
   states/      typed LangGraph state
   nodes/       lead_intelligence.py node factories for graph steps
   graphs/      lead_intelligence.py uncompiled graph topology assembly
   executors/   inline and worker-facing graph execution
   prompts/     prompt-facing instructions
-  tools/       deterministic public-data tool wrappers
+  tools/       deterministic wrapper + model-callable public-data tools
   utils/       pure scoring/text helpers
 ```
 
@@ -62,9 +63,10 @@ Celery worker entrypoint for moving agent execution behind a queued contract in
 the next slice.
 
 Graph compilation follows the Playbook pattern: `chains_builder` creates the
-workflow chain set, `nodes_builder` creates node closures from chains/tools,
-`graphs_builder` composes and compiles the topology, and `SignalGraphProvider`
-keeps a dependency-keyed process-local compiled graph cache.
+workflow chain set with active research tools, `nodes_builder` creates node
+closures from chains/tools, `graphs_builder` composes and compiles the topology,
+and `SignalGraphProvider` keeps a dependency-keyed process-local compiled graph
+cache.
 
 Signal intentionally keeps one workflow-level executor for v1, while the modules
 inside `chains/`, `nodes/`, `graphs/`, and `guardrails/` are named for their
@@ -76,12 +78,12 @@ files as the product adds review, approval, and worker-backed execution slices.
 `backend/app/infrastructure/public_data/` owns live public API clients for
 geocoding, ACS market data, DataUSA household context, FRED economic series,
 News API triggers, Wikipedia search, and DNS/MX validation. The provider caches
-responses by lead payload and falls back to deterministic fixtures when
-`SIGNAL_USE_FIXTURES=true` or a provider fails.
+responses by lead payload and surfaces provider failures as warnings or omitted
+facts.
 
 ## LLM Boundary
 
-`backend/app/infrastructure/llm/` exposes a LiteLLM provider boundary. The
-deterministic draft path remains the default runtime behavior for demo
-reliability, and LiteLLM can be wired into drafting once the human-review flow
-is ready for non-deterministic model output.
+`backend/app/infrastructure/llm/` exposes a LiteLLM provider boundary. Drafting
+uses the configured LiteLLM proxy alias and failed or empty model responses
+produce explicit no-draft failure states before human review. Gate-passed drafts
+may use a bounded LiteLLM tool-call loop over public-data research tools.

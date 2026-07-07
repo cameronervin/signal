@@ -31,6 +31,7 @@ Alembic owns schema creation and migrations.
 | `company_units` | integer nullable | Company lookup heuristic |
 | `recent_trigger` | string nullable | News/Wikipedia |
 | `sources` | `SourceFact[]` | Citable facts |
+| `provider_warnings` | string[] | Unavailable or failed upstream providers |
 
 ## Gates
 

@@ -23,7 +23,7 @@ Request:
 
 ```json
 {
-  "contact_name": "Demo Contact",
+  "contact_name": "Sample Contact",
   "email": "contact@operator.example",
   "company": "Multifamily Operator",
   "role": "VP Leasing",
@@ -103,9 +103,9 @@ Returns dashboard KPIs derived from current lead and run records:
 }
 ```
 
-## Demo Seed Script
+## Sample Seed Script
 
-Seed demo data through the backend script, not a public API endpoint:
+Seed sample data through the backend script, not a public API endpoint:
 
 ```bash
 cd backend

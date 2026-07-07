@@ -1,5 +1,7 @@
 from typing import Any
 
+import httpx
+
 from app.infrastructure.public_data.http import get_json
 from app.infrastructure.public_data.state_fips import STATE_FIPS
 from app.infrastructure.public_data.types import DataUsaSnapshot
@@ -8,6 +10,13 @@ DATAUSA_API_URL = "https://datausa.io/api/data"
 
 
 class DataUsaClient:
+    def __init__(
+        self,
+        *,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
+        self.transport = transport
+
     async def state_snapshot(self, *, state: str) -> DataUsaSnapshot | None:
         state_fips = STATE_FIPS.get(state.upper())
         if state_fips is None:
@@ -19,6 +28,7 @@ class DataUsaClient:
                 "measure": "Households",
                 "year": "latest",
             },
+            transport=self.transport,
         )
         if not isinstance(payload, dict):
             return None

@@ -57,10 +57,33 @@ class FakeDomain:
         return DomainSnapshot(has_mx=True)
 
 
+class FailingAdapter:
+    async def geocode(self, **kwargs):
+        raise RuntimeError("geocoding down")
+
+    async def market_snapshot(self, **kwargs):
+        raise RuntimeError("census down")
+
+    async def state_snapshot(self, **kwargs):
+        raise RuntimeError("datausa down")
+
+    async def snapshot(self, **kwargs):
+        raise RuntimeError("fred down")
+
+    async def recent_trigger(self, **kwargs):
+        raise RuntimeError("news down")
+
+    async def company_snapshot(self, **kwargs):
+        raise RuntimeError("wikipedia down")
+
+    async def domain_snapshot(self, **kwargs):
+        raise RuntimeError("dns down")
+
+
 @pytest.mark.asyncio
 async def test_public_data_client_merges_live_adapter_snapshots() -> None:
     client = PublicDataClient(
-        PublicDataClientConfig(use_fixtures=False),
+        PublicDataClientConfig(),
         geocoding=FakeGeocoding(),
         census=FakeCensus(),
         datausa=FakeDataUsa(),
@@ -87,6 +110,7 @@ async def test_public_data_client_merges_live_adapter_snapshots() -> None:
     assert enrichment.renter_share == 0.64
     assert enrichment.rent_growth_yoy == 5.4
     assert enrichment.recent_trigger == "Regional portfolio expansion"
+    assert enrichment.provider_warnings == []
     assert {source.source for source in enrichment.sources} >= {
         "Census ACS",
         "DataUSA",
@@ -94,4 +118,48 @@ async def test_public_data_client_merges_live_adapter_snapshots() -> None:
         "News API",
         "Wikipedia",
         "DNS MX",
+    }
+
+
+@pytest.mark.asyncio
+async def test_public_data_client_exposes_provider_failures_without_fixture_facts(
+) -> None:
+    failing = FailingAdapter()
+    client = PublicDataClient(
+        PublicDataClientConfig(),
+        geocoding=failing,
+        census=failing,
+        datausa=failing,
+        fred=failing,
+        news=failing,
+        wikipedia=failing,
+        domain=failing,
+    )
+    lead = LeadCreate(
+        contact_name="Sarah Chen",
+        email="sarah@meridianresidential.example",
+        company="Meridian Residential",
+        role="VP Leasing",
+        property_address="123 Market St",
+        city="Austin",
+        state="TX",
+        country="US",
+    )
+
+    enrichment = await client.enrich(lead)
+
+    assert enrichment.market == "Austin, TX"
+    assert enrichment.coordinates is None
+    assert enrichment.renter_share is None
+    assert enrichment.rent_growth_yoy is None
+    assert enrichment.recent_trigger is None
+    assert enrichment.sources == []
+    assert set(enrichment.provider_warnings) == {
+        "geocoding unavailable",
+        "market demographics unavailable",
+        "household growth data unavailable",
+        "economic data unavailable",
+        "company trigger data unavailable",
+        "company background unavailable",
+        "domain validation unavailable",
     }

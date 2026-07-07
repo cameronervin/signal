@@ -19,7 +19,7 @@ DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Seed deterministic demo leads into Postgres:
+Seed sample leads into Postgres for local evaluation:
 
 ```bash
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
@@ -55,32 +55,38 @@ app/agents/states      LangGraph state schemas
 app/agents/nodes       lead intelligence graph node factories
 app/agents/graphs      lead intelligence topology builders
 app/agents/executors   inline/worker-facing graph execution
-app/agents/tools       deterministic tool wrappers
+app/agents/tools       public-data tool wrappers
 app/agents/utils       pure scoring/talking-point/text helpers
 app/infrastructure/db  SQLAlchemy async engine/session setup
 app/infrastructure/llm LiteLLM provider boundary
-app/infrastructure/public_data live public API adapters and fixture fallback
+app/infrastructure/public_data live public API adapters and cache boundary
 app/workers            Celery app and agent task entrypoints
 app/schemas            Pydantic contracts
 ```
 
 ## Public Data
 
-Default development uses fixture enrichment:
+Public data adapters use live provider code paths. Tests mock the HTTP
+transport and seed tooling injects sample data explicitly.
 
 ```bash
-SIGNAL_USE_FIXTURES=true
-```
-
-Live adapters:
-
-```bash
-SIGNAL_USE_FIXTURES=false
-SIGNAL_PUBLIC_DATA_USER_AGENT="Signal API local demo"
+SIGNAL_PUBLIC_DATA_USER_AGENT="Signal"
 SIGNAL_CENSUS_API_KEY=optional
 SIGNAL_FRED_API_KEY=optional
 SIGNAL_NEWS_API_KEY=optional
 SIGNAL_NOMINATIM_EMAIL=optional-contact@example.com
+```
+
+## LiteLLM
+
+Backend drafting calls the LiteLLM proxy alias configured by
+`SIGNAL_LLM_MODEL`. The default alias is `signal-chat`, with the proxy
+configured from `deploy/envs/.env.litellm.local`.
+
+```bash
+SIGNAL_LLM_MODEL=signal-chat
+SIGNAL_LITELLM_API_BASE=http://localhost:4000
+SIGNAL_LITELLM_API_KEY=sk-local-litellm-master-key
 ```
 
 Scoring defaults are built in. To test a local scoring override, set:

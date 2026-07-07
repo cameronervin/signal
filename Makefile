@@ -2,7 +2,7 @@ COMPOSE_FILES = -f deploy/compose/base.yml -f deploy/compose/local.yml
 COMPOSE_ENV_FILES = $(if $(wildcard deploy/envs/.env.local),--env-file deploy/envs/.env.local,) $(if $(wildcard deploy/envs/.env.litellm.local),--env-file deploy/envs/.env.litellm.local,)
 COMPOSE = docker compose $(COMPOSE_ENV_FILES) $(COMPOSE_FILES)
 
-.PHONY: compose-up compose-down compose-logs compose-reset dev-backend dev-frontend test-backend lint-backend test-frontend lint-frontend verify
+.PHONY: compose-up compose-down compose-logs compose-reset dev-backend dev-frontend test-backend lint-backend test-frontend lint-frontend docs-check verify
 
 compose-up:
 	$(COMPOSE) up -d postgres valkey litellm
@@ -34,4 +34,7 @@ test-frontend:
 lint-frontend:
 	pnpm --dir frontend lint
 
-verify: test-backend lint-backend test-frontend lint-frontend
+docs-check:
+	! rg -n "demo-safe|take-home|deterministic fallback|fixture fallback" README.md AGENTS.md backend deploy backstage -S
+
+verify: test-backend lint-backend test-frontend lint-frontend docs-check

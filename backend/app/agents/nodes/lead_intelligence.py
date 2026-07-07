@@ -12,7 +12,9 @@ from app.agents.utils.talking_points import talking_points_for_enrichment
 from app.schemas.lead import RelatedLead
 
 DETERMINISTIC_ENRICHMENT_NODE = "deterministic_enrichment"
-SCORING_AND_DRAFTING_NODE = "agent_scoring_and_drafting"
+DETERMINISTIC_SCORING_NODE = "deterministic_scoring"
+AGENT_RESEARCH_AND_DRAFTING_NODE = "agent_research_and_drafting"
+SCORING_AND_DRAFTING_NODE = AGENT_RESEARCH_AND_DRAFTING_NODE
 KNOWLEDGE_GRAPH_NODE = "knowledge_graph_builder"
 
 
@@ -41,7 +43,7 @@ def create_lead_intelligence_nodes(
             "activity_log": ["deterministic_enrichment: completed"],
         }
 
-    async def agent_scoring_and_drafting(
+    async def deterministic_scoring(
         state: SignalState,
         runtime: Runtime[SignalRuntimeContext],
     ) -> dict[str, Any]:
@@ -55,24 +57,67 @@ def create_lead_intelligence_nodes(
             config=load_scoring_config(runtime.context.settings),
         )
         talking_points = talking_points_for_enrichment(enrichment)
-        draft = (
-            None
-            if gates.status == "failed"
-            else await chains[OUTREACH_DRAFT_CHAIN].ainvoke(
-                {
-                    "lead": lead,
-                    "enrichment": enrichment,
-                },
-                config=_draft_chain_config(state),
-            )
-        )
         return {
             "score": score,
             "talking_points": talking_points,
-            "draft": draft,
             "activity_log": [
                 *state.get("activity_log", []),
-                "agent_scoring_and_drafting: completed",
+                "deterministic_scoring: completed",
+            ],
+        }
+
+    async def agent_research_and_drafting(
+        state: SignalState,
+        runtime: Runtime[SignalRuntimeContext],
+    ) -> dict[str, Any]:
+        gates = state["gates"]
+        draft = None
+        flags = list(state.get("flags", []))
+        activity_log = list(state.get("activity_log", []))
+        if gates.status == "failed":
+            return {
+                "flags": flags,
+                "draft": None,
+                "activity_log": [
+                    *activity_log,
+                    "agent_research_and_drafting: skipped because gates failed",
+                ],
+            }
+        try:
+            draft_result = await chains[OUTREACH_DRAFT_CHAIN].ainvoke(
+                {
+                    "lead": state["lead"],
+                    "gates": gates,
+                    "enrichment": state["enrichment"],
+                    "score": state["score"],
+                    "talking_points": state["talking_points"],
+                    "public_data_client": runtime.context.public_data_client,
+                },
+                config=_draft_chain_config(state),
+            )
+        except Exception:  # noqa: BLE001
+            flags.append("model drafting failed")
+            activity_log.append("agent_research_and_drafting: model drafting failed")
+        else:
+            draft = draft_result.draft
+            for tool_name in dict.fromkeys(draft_result.tool_call_names):
+                activity_log.append(
+                    f"agent_research_and_drafting: called {tool_name}"
+                )
+            for warning in draft_result.warnings:
+                flags.append(warning)
+                activity_log.append(f"agent_research_and_drafting: {warning}")
+            if draft is None:
+                flags.append("model drafting returned no content")
+                activity_log.append(
+                    "agent_research_and_drafting: model returned no draft"
+                )
+        return {
+            "flags": flags,
+            "draft": draft,
+            "activity_log": [
+                *activity_log,
+                "agent_research_and_drafting: completed",
             ],
         }
 
@@ -90,13 +135,14 @@ def create_lead_intelligence_nodes(
             "activity_log": [
                 *state.get("activity_log", []),
                 "knowledge_graph_builder: completed",
-                "human_review: awaiting approval",
+                _human_review_activity(state),
             ],
         }
 
     return {
         DETERMINISTIC_ENRICHMENT_NODE: deterministic_enrichment,
-        SCORING_AND_DRAFTING_NODE: agent_scoring_and_drafting,
+        DETERMINISTIC_SCORING_NODE: deterministic_scoring,
+        AGENT_RESEARCH_AND_DRAFTING_NODE: agent_research_and_drafting,
         KNOWLEDGE_GRAPH_NODE: knowledge_graph_builder,
     }
 
@@ -108,3 +154,9 @@ def _draft_chain_config(state: SignalState) -> dict[str, object]:
             "run_id": state["run_id"],
         }
     }
+
+
+def _human_review_activity(state: SignalState) -> str:
+    if state["gates"].status == "passed" and state.get("draft") is not None:
+        return "human_review: awaiting approval"
+    return "human_review: skipped because no draft was produced"

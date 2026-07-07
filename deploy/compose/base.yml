@@ -1,4 +1,4 @@
-name: signal-demo
+name: signal
 
 services:
   postgres:

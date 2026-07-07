@@ -12,7 +12,6 @@ def _cached_public_data_client(settings_json: str) -> PublicDataClient:
     settings = Settings.model_validate_json(settings_json)
     return PublicDataClient(
         PublicDataClientConfig(
-            use_fixtures=settings.use_fixtures,
             news_api_key=settings.news_api_key,
             fred_api_key=settings.fred_api_key,
             census_api_key=settings.census_api_key,

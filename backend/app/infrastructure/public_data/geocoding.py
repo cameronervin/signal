@@ -1,5 +1,7 @@
 from typing import Any
 
+import httpx
+
 from app.infrastructure.public_data.http import get_json
 from app.infrastructure.public_data.types import GeocodingResult
 
@@ -7,9 +9,16 @@ NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search"
 
 
 class NominatimClient:
-    def __init__(self, *, user_agent: str, email: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        user_agent: str,
+        email: str | None = None,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
         self.user_agent = user_agent
         self.email = email
+        self.transport = transport
 
     async def geocode(
         self,
@@ -35,6 +44,7 @@ class NominatimClient:
             NOMINATIM_SEARCH_URL,
             params=params,
             headers={"User-Agent": self.user_agent},
+            transport=self.transport,
         )
         if not isinstance(payload, list) or not payload:
             return None

@@ -27,7 +27,7 @@ DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Seed deterministic demo data into the configured Postgres database:
+Seed deterministic sample data into the configured Postgres database:
 
 ```bash
 cd backend
@@ -56,26 +56,26 @@ pnpm dev
 ## Environment
 
 Copy `backend/.env.example` to `backend/.env` only when you need local backend
-overrides. Do not commit `.env` files. The env examples use grouped section
-headers for application, public data, database, workers, scoring, LLM, and
-frontend settings.
+overrides. Do not commit `.env` files. `backend/.env` is the backend source of
+truth for supported key names; `DATABASE_URL` intentionally has no `SIGNAL_`
+prefix.
 
-Default mode uses fixtures:
-
-```bash
-SIGNAL_USE_FIXTURES=true
-```
-
-Live public API adapters:
+Public API adapters:
 
 ```bash
-SIGNAL_USE_FIXTURES=false
-SIGNAL_PUBLIC_DATA_USER_AGENT="Signal API local demo"
+SIGNAL_PUBLIC_DATA_USER_AGENT="Signal"
 SIGNAL_PUBLIC_DATA_CACHE_TTL_SECONDS=3600
 SIGNAL_CENSUS_API_KEY=optional
 SIGNAL_FRED_API_KEY=optional
 SIGNAL_NEWS_API_KEY=optional
 SIGNAL_NOMINATIM_EMAIL=optional-contact@example.com
+```
+
+Agent research tools:
+
+```bash
+SIGNAL_AGENT_RESEARCH_TOOLS_ENABLED=true
+SIGNAL_AGENT_RESEARCH_MAX_TOOL_ROUNDS=3
 ```
 
 LiteLLM settings:
@@ -86,15 +86,19 @@ SIGNAL_LITELLM_API_KEY=optional-local-key
 SIGNAL_LLM_MODEL=signal-chat
 ```
 
+The LiteLLM proxy maps `signal-chat` to the upstream model configured in
+`deploy/envs/.env.litellm.local`; the tracked example uses
+`openai/gpt-5.4-mini`.
+
 Scoring override:
 
 ```bash
 SIGNAL_SCORING_CONFIG_PATH=/path/to/scoring.json
 ```
 
-## Demo Dependencies
+## Local Infrastructure
 
-Signal's demo dependency stack lives under `deploy/`, following the smaller
+Signal's local dependency stack lives under `deploy/`, following the smaller
 version of the playbook structure:
 
 ```text
