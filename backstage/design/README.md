@@ -201,31 +201,26 @@ Vertical. Each step = flex row: a `22px` rail column (status dot + `2px` connect
 **Note:** the email pane is the draft review area from the wireframe — implement as an editable rich-text/preview region, not a literal iframe unless you sandbox external HTML.
 
 ### 4. Digital Workforce — `/agents` (Grid active)
-**Purpose:** preview the SDR Digital Worker that can be assigned to eligible
-inbound leads in a future workflow.
+**Purpose:** assign and monitor the SDR Digital Worker for eligible draft-ready
+inbound leads.
 **Layout:** top bar title "Digital Workforce" with eligible lead count and
-search. Content starts with a worker profile for **SDR Digital Worker**, a
-preview-only status pill, and capability cards for Email, Text messaging, and
-Human review. A preview note explains that backend assignment, communication
-tools, and persistence are deferred.
+search.
 **Lead handoffs:** table of draft-ready, gate-passed inbound leads with score,
-channel readiness, assignment preview summary, disabled "Assign" controls, and
-non-mutating "Preview" links to `/agents/[previewId]`.
+channel readiness, assignment status, persisted worker state when assigned,
+Assign controls for unassigned eligible leads, and progress links to
+`/agents/[assignmentId]`.
 
-### 5. Digital Worker Progress — `/agents/[previewId]` (Grid active)
-**Purpose:** preview what the human SDR can check after assigning the SDR Digital
-Worker, without triggering backend assignment or live communication.
-**Layout:** header = back chevron + "Digital worker progress" + preview-only
-status + disabled "Assign worker" button. Metadata strip shows Worker, Lead,
-Channels, and Review. Body = 2-col grid `1fr 1fr`:
-- **Left — Worker assignment preview** card: `PipelineStepper` with
-  communication-oriented steps: Assignment intake, Outreach plan, Email draft
-  check, Text follow-up readiness, SDR check-in.
-- **Right (stack):**
-  - *Check-in log* card: preview activity that states no assignment is persisted
-    and no outreach is sent.
-  - *SDR review required* panel: score/tier summary, email/text/readiness notes,
-    disabled "Assign worker" control, and "View lead" link.
+### 5. Digital Worker Progress — `/agents/[assignmentId]` (Grid active)
+**Purpose:** show persisted worker progress after the SDR assigns the Digital
+Worker to an eligible lead.
+**Layout:** header = back chevron + "SDR Digital Worker" + assignment phase and
+status + Pause/Resume controls when valid. Body = 2-col grids `1fr 1fr`:
+- **Left — Lead Information** card: score/tier, contact, company, market,
+  market signals, helpful context, and View lead link.
+- **Right — Worker activity** card: `PipelineStepper` from persisted lifecycle
+  phase and goal state.
+- **Lower panels:** sandbox email messages, inbound sandbox email trigger form,
+  goals, follow-ups, runs, and sanitized activity log.
 
 ### 6. Gate-Failed Lead State — `/leads/[id]` variant (Inbox active)
 **Purpose:** tell the rep what **not** to work, and why; suppress the draft.
@@ -238,15 +233,14 @@ Channels, and Review. Body = 2-col grid `1fr 1fr`:
 ## Interactions & Behavior
 - **Navigation:** sidebar items route between the five sections; lead rows and agent rows open their detail routes; back chevrons return to the queue/list.
 - **Copy draft:** copies generated email text to clipboard → toast.
-- **Assign Digital Worker:** opens `/agents?leadId=<id>` from lead detail and
-  highlights the preview handoff. It does not mutate state in this frontend-only
-  slice.
+- **Assign Digital Worker:** posts to the Digital Workforce assignment API for
+  gate-passed leads with drafts, then opens `/agents/[assignmentId]`.
 - **Table pagination:** `/leads` and `/agents` paginate their already-loaded
   table rows client-side with `?page=<n>` URL state. Filters and search reset the
   table to page 1 while preserving unrelated query params such as `leadId`.
-- **Worker progress preview:** `/agents/[previewId]` shows communication-oriented
-  handoff steps and check-in logs. Assignment, email, text messaging, and send
-  actions remain disabled until backend support exists.
+- **Worker progress:** `/agents/[assignmentId]` shows backend assignment phase,
+  goals, sandbox messages, follow-ups, runs, and activity. Email remains
+  sandbox-only; text messaging remains a future capability.
 - **Hover states:** table rows get a light-purple hover tint; buttons darken ~6–8%; chevrons/links shift toward `#4A32C4`.
 - **Empty / gate-failed / awaiting states:** shown explicitly (screens 5–6) — reproduce as first-class states, not afterthoughts.
 - **Transitions:** keep subtle (150–200ms ease) for row hover, button press, route changes. No large motion.
@@ -254,9 +248,11 @@ Channels, and Review. Body = 2-col grid `1fr 1fr`:
 
 ## State Management
 - **Leads:** list with `{id, tier, name, role, company, market, units, score, whyLine, flags[], enrichment{}, draft{subject, body, sources[]}, related[]}`; sorted by score desc within tier. Filters: tier, corporate-email, unassigned, search query.
-- **Digital Workforce:** frontend-only profile and preview data:
-  `{workerId, displayName, capabilities[], reviewMode}` plus handoffs
-  `{previewId, leadId, channelReadiness, assignmentStatus, steps[], activityLog[]}`.
+- **Digital Workforce:** FastAPI assignment state joined with completed lead
+  snapshots:
+  `{assignmentId, leadId, status, currentPhase, lifecycleVersion, goals[],
+  messages[], followUps[], runs[], activityLog[]}` plus unassigned eligible
+  lead handoffs.
 - **Data fetching:** enrichment/scoring/draft come from the FastAPI + LangGraph backend (deterministic-enrichment → agent → graph nodes). The run-detail activity log and pipeline states should stream/poll from the run status endpoint. Charts + KPIs read from an analytics endpoint (hard-coded/static acceptable for v1 per plan).
 - **Gates:** a lead failing hard gates renders the gate-failed variant and must **not** expose a draft.
 

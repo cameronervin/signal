@@ -52,6 +52,7 @@ function buildAssignmentPreview(lead: FixtureLead, index: number): DigitalWorker
     activeStep === 0 ? "Ready for assignment" : activeStep === 1 ? "Handoff preview" : "SDR check-in preview";
 
   return {
+    rowId: digitalWorkerPreviewId(lead.id),
     previewId: digitalWorkerPreviewId(lead.id),
     leadId: lead.id,
     leadName: lead.name,
@@ -63,6 +64,7 @@ function buildAssignmentPreview(lead: FixtureLead, index: number): DigitalWorker
     score: lead.score.total,
     tier: lead.score.tier,
     summary: lead.score.whyLine,
+    status: "available",
     marketSignals: lead.marketSignals,
     talkingPoints: lead.talkingPoints,
     assignmentStatus,

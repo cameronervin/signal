@@ -59,6 +59,10 @@ cd backend
 uv run celery -A app.workers.app:celery_app worker --loglevel=INFO
 ```
 
+Restart the Celery worker after pulling code that adds or renames tasks. A
+worker started before the Digital Worker tasks were registered can reject queued
+`signal.digital_worker.*` messages as unregistered.
+
 Celery Beat for Digital Worker follow-up heartbeats:
 
 ```bash

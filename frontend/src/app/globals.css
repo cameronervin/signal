@@ -837,8 +837,8 @@ input:focus-visible {
     minmax(220px, 1.35fr)
     92px
     minmax(220px, 1.2fr)
-    minmax(250px, 1.45fr)
-    24px;
+    minmax(220px, 1fr)
+    minmax(104px, max-content);
 }
 
 .detail-grid {
@@ -973,6 +973,13 @@ a.digital-workforce-grid {
 
 .digital-workforce-grid .score-cell {
   justify-self: start;
+}
+
+.assignment-action-cell {
+  display: flex;
+  justify-content: flex-end;
+  justify-self: end;
+  min-width: max-content;
 }
 
 .assignment-preview-cell {
@@ -2255,6 +2262,11 @@ a.digital-workforce-grid {
   .action-cell {
     align-items: start;
     justify-content: stretch;
+  }
+
+  .assignment-action-cell {
+    justify-content: flex-start;
+    justify-self: start;
   }
 
   .action-cell .button,

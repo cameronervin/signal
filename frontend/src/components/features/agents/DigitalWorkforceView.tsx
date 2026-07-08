@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -12,18 +12,22 @@ import { TierBadge } from "@/components/ui/TierBadge";
 import { routes } from "@/lib/constants/routes";
 import { useTablePagination } from "@/lib/hooks/useTablePagination";
 import { cn } from "@/lib/utils/cn";
-import type { DigitalWorkerAssignmentPreview } from "@/types/digital-workforce";
+import type { DigitalWorkerAssignmentRow } from "@/types/digital-workforce";
+
+type FormAction = (formData: FormData) => void | Promise<void>;
 
 interface Props {
-  assignments: DigitalWorkerAssignmentPreview[];
-  leadsUnavailable?: boolean;
+  assignments: DigitalWorkerAssignmentRow[];
+  createAssignmentAction: FormAction;
+  dataUnavailable?: boolean;
 }
 
 interface AssignmentRowProps {
-  assignment: DigitalWorkerAssignmentPreview;
+  assignment: DigitalWorkerAssignmentRow;
+  createAssignmentAction: FormAction;
 }
 
-export function DigitalWorkforceView({ assignments, leadsUnavailable = false }: Props) {
+export function DigitalWorkforceView({ assignments, createAssignmentAction, dataUnavailable = false }: Props) {
   const [search, setSearch] = useState("");
   const filteredAssignments = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -51,7 +55,7 @@ export function DigitalWorkforceView({ assignments, leadsUnavailable = false }: 
     <>
       <PageHeader
         title="Digital Workforce"
-        subtitle={`${assignments.length} eligible inbound leads`}
+        subtitle={`${assignments.length} worker-ready leads`}
         actions={
           <div className="toolbar-row">
             <SearchInput label="Search digital workforce" placeholder="Search leads..." value={search} onChange={updateSearch} />
@@ -59,9 +63,9 @@ export function DigitalWorkforceView({ assignments, leadsUnavailable = false }: 
         }
       />
       <main className="content stack-lg screen-fit digital-workforce-screen">
-        {leadsUnavailable && (
+        {dataUnavailable && (
           <section className="surface-card p-4 text-sm font-semibold text-[var(--amber-text)]">
-            Signal could not load live leads, so Digital Workforce is showing an empty preview.
+            Signal could not load Digital Worker data from the API.
           </section>
         )}
         <section className="surface-card data-table">
@@ -70,12 +74,16 @@ export function DigitalWorkforceView({ assignments, leadsUnavailable = false }: 
             <span>Lead</span>
             <span>Score</span>
             <span>Channels</span>
-            <span>Assignment preview</span>
+            <span>Assignment status</span>
             <span />
           </div>
           <div className="table-body">
             {pageItems.map((assignment) => (
-              <AssignmentRow key={assignment.previewId} assignment={assignment} />
+              <AssignmentRow
+                key={assignment.rowId}
+                assignment={assignment}
+                createAssignmentAction={createAssignmentAction}
+              />
             ))}
             {filteredAssignments.length === 0 && (
               <div className="empty-table-row">
@@ -97,12 +105,9 @@ export function DigitalWorkforceView({ assignments, leadsUnavailable = false }: 
   );
 }
 
-function AssignmentRow({ assignment }: AssignmentRowProps) {
-  return (
-    <Link
-      className={cn("table-row digital-workforce-grid")}
-      href={routes.digitalWorkerProgress(assignment.previewId)}
-    >
+function AssignmentRow({ assignment, createAssignmentAction }: AssignmentRowProps) {
+  const content = (
+    <>
       <TierBadge tier={assignment.tier} />
       <span className="table-cell cell-stack" data-label="Lead">
         <strong>{assignment.leadName}</strong>
@@ -118,11 +123,34 @@ function AssignmentRow({ assignment }: AssignmentRowProps) {
         <span>Text: {assignment.channelReadiness.text}</span>
         <span>Review: {assignment.channelReadiness.humanReview}</span>
       </span>
-      <span className="table-cell assignment-preview-cell" data-label="Assignment preview">
+      <span className="table-cell assignment-preview-cell" data-label="Assignment status">
         <span className="mb-2 block text-sm font-semibold">{assignment.assignmentStatus}</span>
         <span className="text-xs leading-5 text-[var(--ink-600)]">{assignment.summary}</span>
       </span>
-      <ChevronRight size={18} color="var(--ink-400)" />
-    </Link>
+    </>
+  );
+
+  if (assignment.assignmentId) {
+    return (
+      <Link
+        className={cn("table-row digital-workforce-grid")}
+        href={routes.digitalWorkerProgress(assignment.assignmentId)}
+      >
+        {content}
+        <ChevronRight size={18} color="var(--ink-400)" />
+      </Link>
+    );
+  }
+
+  return (
+    <div className={cn("table-row digital-workforce-grid")}>
+      {content}
+      <form action={createAssignmentAction} className="assignment-action-cell">
+        <input name="leadId" type="hidden" value={assignment.leadId} />
+        <button className="button primary small" type="submit">
+          <Plus size={14} /> Assign
+        </button>
+      </form>
+    </div>
   );
 }

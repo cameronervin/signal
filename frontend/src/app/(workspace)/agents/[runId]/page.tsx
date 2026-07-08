@@ -3,8 +3,13 @@ import { notFound } from "next/navigation";
 import { DigitalWorkerProgressView } from "@/components/features/agents/DigitalWorkerProgressView";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatePanel } from "@/components/ui/StatePanel";
-import { digitalWorkerProfile, getDigitalWorkerAssignmentPreview } from "@/lib/fixtures/digital-workforce";
-import { listLeads } from "@/lib/api/endpoints/leads";
+import {
+  pauseDigitalWorkerAssignmentAction,
+  recordDigitalWorkerInboundEmailAction,
+  resumeDigitalWorkerAssignmentAction
+} from "@/app/(workspace)/agents/actions";
+import { getDigitalWorkerAssignmentDetail } from "@/lib/api/endpoints/digital-workforce";
+import { digitalWorkerProfile } from "@/lib/fixtures/digital-workforce";
 
 interface Props {
   params: Promise<{ runId: string }>;
@@ -13,11 +18,11 @@ interface Props {
 export const dynamic = "force-dynamic";
 
 export default async function DigitalWorkerProgressPage({ params }: Props) {
-  const { runId } = await params;
-  let assignment: ReturnType<typeof getDigitalWorkerAssignmentPreview> | null = null;
+  const { runId: assignmentId } = await params;
+  let assignment: Awaited<ReturnType<typeof getDigitalWorkerAssignmentDetail>> | null = null;
 
   try {
-    assignment = getDigitalWorkerAssignmentPreview(runId, await listLeads());
+    assignment = await getDigitalWorkerAssignmentDetail(assignmentId);
   } catch {
     assignment = null;
   }
@@ -31,8 +36,8 @@ export default async function DigitalWorkerProgressPage({ params }: Props) {
       <>
         <PageHeader title="SDR Digital Worker" subtitle="Lead data unavailable" />
         <StatePanel
-          title="Digital worker preview unavailable"
-          message="Signal could not load the lead data needed for this preview. Start the backend or set fixture mode explicitly for local evaluation."
+          title="Digital worker assignment unavailable"
+          message="Signal could not load this Digital Worker assignment. Start the backend or set fixture mode explicitly for local evaluation."
           actionLabel="Open Digital Workforce"
           actionHref="/agents"
         />
@@ -40,5 +45,13 @@ export default async function DigitalWorkerProgressPage({ params }: Props) {
     );
   }
 
-  return <DigitalWorkerProgressView assignment={assignment} worker={digitalWorkerProfile} />;
+  return (
+    <DigitalWorkerProgressView
+      assignment={assignment}
+      pauseAssignmentAction={pauseDigitalWorkerAssignmentAction}
+      recordInboundEmailAction={recordDigitalWorkerInboundEmailAction}
+      resumeAssignmentAction={resumeDigitalWorkerAssignmentAction}
+      worker={digitalWorkerProfile}
+    />
+  );
 }

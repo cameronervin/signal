@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 
 import { KnowledgeGraph } from "@/components/features/leads/KnowledgeGraph";
 import { LeadDetailView } from "@/components/features/leads/LeadDetailView";
-import { digitalWorkerPreviewId } from "@/lib/fixtures/digital-workforce";
 import { leads } from "@/lib/fixtures/leads";
+import type { DigitalWorkerAssignmentRow } from "@/types/digital-workforce";
 import type { FixtureLead } from "@/types/lead";
 
 type MockGraphNode = {
@@ -114,7 +114,10 @@ jest.mock("@xyflow/react", () => {
 });
 
 describe("LeadDetailView", () => {
+  const createAssignmentAction = jest.fn();
+
   beforeEach(() => {
+    createAssignmentAction.mockReset();
     Object.assign(navigator, {
       clipboard: {
         writeText: jest.fn().mockResolvedValue(undefined)
@@ -126,24 +129,39 @@ describe("LeadDetailView", () => {
     const lead = leads.find((item) => item.name === "Sarah Chen");
     expect(lead).toBeDefined();
 
-    render(<LeadDetailView lead={lead!} />);
+    render(<LeadDetailView createAssignmentAction={createAssignmentAction} lead={lead!} />);
 
     expect(screen.getByDisplayValue("Improving leasing response in Austin")).toBeInTheDocument();
     expect(screen.queryByText("Review gate")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /assign digital worker/i })).toHaveAttribute(
-      "href",
-      `/agents/${digitalWorkerPreviewId(lead!.id)}`
-    );
-    expect(screen.getByRole("link", { name: /open digital workforce/i })).toHaveAttribute(
-      "href",
-      `/agents/${digitalWorkerPreviewId(lead!.id)}`
-    );
+    expect(screen.getAllByRole("button", { name: /assign digital worker/i })).toHaveLength(2);
+    expect(screen.queryByRole("link", { name: /assign digital worker/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /open digital workforce/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /^send$/i })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByDisplayValue("Improving leasing response in Austin"), {
       target: { value: "Updated subject" }
     });
     expect(screen.getByDisplayValue("Updated subject")).toBeInTheDocument();
+  });
+
+  it("opens an existing persisted Digital Worker assignment from workable lead detail", () => {
+    const lead = leads.find((item) => item.name === "Sarah Chen");
+    expect(lead).toBeDefined();
+    const workerAssignment = digitalWorkerAssignmentForLead(lead!);
+
+    render(
+      <LeadDetailView
+        createAssignmentAction={createAssignmentAction}
+        lead={lead!}
+        workerAssignment={workerAssignment}
+      />
+    );
+
+    expect(screen.getAllByRole("link", { name: /open digital worker/i })[0]).toHaveAttribute(
+      "href",
+      `/agents/${workerAssignment.assignmentId}`
+    );
+    expect(screen.queryByRole("button", { name: /assign digital worker/i })).not.toBeInTheDocument();
   });
 
   it("places enrichment and graph in the left column and sales insights above the draft on the right", () => {
@@ -264,6 +282,18 @@ describe("LeadDetailView", () => {
     expect(screen.getByText(/Hard gates failed/)).toBeInTheDocument();
     expect(screen.getByText("No draft generated")).toBeInTheDocument();
     expect(screen.queryByText("Drafted email")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /assign digital worker/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /open digital worker/i })).not.toBeInTheDocument();
+  });
+
+  it("does not expose Digital Worker assignment for a gate-passed lead without a draft", () => {
+    const lead = leads.find((item) => item.name === "Sarah Chen");
+    expect(lead).toBeDefined();
+
+    render(<LeadDetailView lead={{ ...lead!, draft: null }} />);
+
+    expect(screen.queryByRole("button", { name: /assign digital worker/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /open digital worker/i })).not.toBeInTheDocument();
   });
 
   it("renders backend knowledge graph nodes and edges", () => {
@@ -361,5 +391,36 @@ function withKnowledgeGraph(
     name: "Backend Contact",
     company: "Backend Company",
     knowledgeGraph
+  };
+}
+
+function digitalWorkerAssignmentForLead(lead: FixtureLead): DigitalWorkerAssignmentRow {
+  return {
+    rowId: "31111111-1111-4111-8111-111111111111",
+    assignmentId: "31111111-1111-4111-8111-111111111111",
+    leadId: lead.id,
+    leadName: lead.name,
+    leadRole: lead.role,
+    company: lead.company,
+    email: lead.email,
+    market: lead.market,
+    units: lead.units,
+    score: lead.score.total,
+    tier: lead.score.tier,
+    summary: lead.score.whyLine,
+    status: "active",
+    currentPhase: "reply_qualification",
+    lifecycleVersion: "qualify_to_meeting.v1",
+    latestRunStatus: "completed",
+    marketSignals: lead.marketSignals,
+    talkingPoints: lead.talkingPoints,
+    assignmentStatus: "Active · Reply qualification · Run completed",
+    channelReadiness: {
+      email: "Sandbox email sent",
+      text: "Pending contact data",
+      humanReview: "SDR check-in available"
+    },
+    steps: [],
+    activityLog: []
   };
 }

@@ -1,5 +1,6 @@
 import asyncio
 import threading
+from importlib import import_module
 from typing import Any
 
 import httpx
@@ -53,6 +54,12 @@ celery_app.conf.update(
     task_serializer="json",
     timezone="UTC",
 )
+
+REQUIRED_SIGNAL_TASKS = {
+    "signal.agent_runs.execute",
+    "signal.digital_worker.execute",
+    "signal.digital_worker.scan_due_follow_ups",
+}
 
 _worker_loop: asyncio.AbstractEventLoop | None = None
 _worker_loop_owner_thread: int | None = None
@@ -193,3 +200,23 @@ def teardown_worker_resources(**_: object) -> None:
             "signal_graph_provider_cache",
         ],
     )
+
+
+def registered_signal_tasks() -> set[str]:
+    """Return Signal task names currently registered on the Celery app."""
+    return {
+        task_name for task_name in celery_app.tasks if task_name.startswith("signal.")
+    }
+
+
+def assert_required_signal_tasks_registered() -> None:
+    missing_tasks = REQUIRED_SIGNAL_TASKS - registered_signal_tasks()
+    if missing_tasks:
+        raise RuntimeError(
+            "Celery worker task registry is missing Signal tasks: "
+            + ", ".join(sorted(missing_tasks))
+        )
+
+
+import_module("app.workers.tasks")
+assert_required_signal_tasks_registered()

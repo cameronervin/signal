@@ -243,9 +243,14 @@ class DigitalWorkerPostgresRepository:
             record.message = message
         if status == "running" and record.started_at is None:
             record.started_at = now
+        if status == "running":
+            record.completed_at = None
+            record.failed_at = None
         if status in {"completed", "skipped"}:
             record.completed_at = now
+            record.failed_at = None
         if status == "failed":
+            record.completed_at = None
             record.failed_at = now
         assignment = await self.session.get(
             DigitalWorkerAssignmentRecord,
@@ -335,6 +340,7 @@ class DigitalWorkerPostgresRepository:
         if activity is not None:
             self._append_activity(record, activity)
         await self.session.flush()
+        await self.session.refresh(record)
         return await self._assignment_response(record)
 
     async def schedule_follow_up(

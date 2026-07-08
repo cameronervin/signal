@@ -11,11 +11,20 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { SourceChip } from "@/components/ui/SourceChip";
 import { TierBadge } from "@/components/ui/TierBadge";
 import { Toast } from "@/components/ui/Toast";
-import { digitalWorkerPreviewId } from "@/lib/fixtures/digital-workforce";
 import { routes } from "@/lib/constants/routes";
+import type { DigitalWorkerAssignmentRow } from "@/types/digital-workforce";
 import type { FixtureLead } from "@/types/lead";
 
+type FormAction = (formData: FormData) => void | Promise<void>;
+
 interface Props {
+  lead: FixtureLead;
+  createAssignmentAction?: FormAction;
+  workerAssignment?: DigitalWorkerAssignmentRow;
+  workerAssignmentUnavailable?: boolean;
+}
+
+interface LeadOnlyProps {
   lead: FixtureLead;
 }
 
@@ -25,8 +34,14 @@ interface FieldProps {
   detail: string;
 }
 
-export function LeadDetailView({ lead }: Props) {
+export function LeadDetailView({
+  createAssignmentAction = noopFormAction,
+  lead,
+  workerAssignment,
+  workerAssignmentUnavailable = false
+}: Props) {
   const failed = lead.gates.status === "failed";
+  const eligibleForWorker = lead.gates.status === "passed" && Boolean(lead.draft);
   const [toast, setToast] = useState<string | null>(null);
 
   function showToast(message: string) {
@@ -44,10 +59,13 @@ export function LeadDetailView({ lead }: Props) {
             <Link className="button secondary" href={routes.leads}>
               <ChevronLeft size={16} /> Back
             </Link>
-            {!failed && (
-              <Link className="button primary" href={routes.digitalWorkerProgress(digitalWorkerPreviewId(lead.id))}>
-                <Plus size={16} /> Assign Digital Worker
-              </Link>
+            {eligibleForWorker && (
+              <DigitalWorkerAction
+                createAssignmentAction={createAssignmentAction}
+                lead={lead}
+                workerAssignment={workerAssignment}
+                workerAssignmentUnavailable={workerAssignmentUnavailable}
+              />
             )}
           </div>
         }
@@ -59,13 +77,60 @@ export function LeadDetailView({ lead }: Props) {
           <span className="mono text-sm font-semibold">{lead.score.total}</span>
           <span className="text-sm text-[var(--ink-600)]">{lead.score.whyLine}</span>
         </div>
-        {failed ? <GateFailedLead lead={lead} /> : <WorkableLeadDetail lead={lead} showToast={showToast} />}
+        {failed ? (
+          <GateFailedLead lead={lead} />
+        ) : (
+          <WorkableLeadDetail
+            createAssignmentAction={createAssignmentAction}
+            lead={lead}
+            showToast={showToast}
+            workerAssignment={workerAssignment}
+            workerAssignmentUnavailable={workerAssignmentUnavailable}
+          />
+        )}
       </main>
     </>
   );
 }
 
-function GateFailedLead({ lead }: Props) {
+function DigitalWorkerAction({
+  createAssignmentAction,
+  lead,
+  workerAssignment,
+  workerAssignmentUnavailable = false
+}: {
+  createAssignmentAction: FormAction;
+  lead: FixtureLead;
+  workerAssignment?: DigitalWorkerAssignmentRow;
+  workerAssignmentUnavailable?: boolean;
+}) {
+  if (workerAssignment?.assignmentId) {
+    return (
+      <Link className="button primary" href={routes.digitalWorkerProgress(workerAssignment.assignmentId)}>
+        <ExternalLink size={16} /> Open Digital Worker
+      </Link>
+    );
+  }
+
+  if (workerAssignmentUnavailable) {
+    return (
+      <Link className="button secondary" href={routes.digitalWorkforce}>
+        <ExternalLink size={16} /> Open Digital Workforce
+      </Link>
+    );
+  }
+
+  return (
+    <form action={createAssignmentAction}>
+      <input name="leadId" type="hidden" value={lead.id} />
+      <Button type="submit" variant="primary">
+        <Plus size={16} /> Assign Digital Worker
+      </Button>
+    </form>
+  );
+}
+
+function GateFailedLead({ lead }: LeadOnlyProps) {
   return (
     <section className="detail-grid">
       <div className="stack">
@@ -111,7 +176,18 @@ function GateFailedLead({ lead }: Props) {
   );
 }
 
-function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: string) => void }) {
+function WorkableLeadDetail({
+  createAssignmentAction,
+  lead,
+  showToast,
+  workerAssignment,
+  workerAssignmentUnavailable = false
+}: LeadOnlyProps & {
+  createAssignmentAction: FormAction;
+  showToast: (message: string) => void;
+  workerAssignment?: DigitalWorkerAssignmentRow;
+  workerAssignmentUnavailable?: boolean;
+}) {
   const [subject, setSubject] = useState(lead.draft?.subject ?? "");
   const [body, setBody] = useState(lead.draft?.body ?? "");
   const relatedItems = lead.related.filter(isVisibleRelatedItem);
@@ -223,9 +299,14 @@ function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: 
               <Button onClick={() => void copyDraft()}>
                 <Copy size={15} /> Copy
               </Button>
-              <Link className="button primary" href={routes.digitalWorkerProgress(digitalWorkerPreviewId(lead.id))}>
-                <ExternalLink size={15} /> Open Digital Workforce
-              </Link>
+              {lead.draft && (
+                <DigitalWorkerAction
+                  createAssignmentAction={createAssignmentAction}
+                  lead={lead}
+                  workerAssignment={workerAssignment}
+                  workerAssignmentUnavailable={workerAssignmentUnavailable}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -247,4 +328,8 @@ function Field({ label, value, detail }: FieldProps) {
 function isVisibleRelatedItem(item: FixtureLead["related"][number]) {
   const combinedText = `${item.label} ${item.reason}`.toLowerCase();
   return !["seeded inbound history", "fixture history", "fixture"].some((hiddenText) => combinedText.includes(hiddenText));
+}
+
+async function noopFormAction() {
+  return undefined;
 }

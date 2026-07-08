@@ -13,7 +13,7 @@ export async function apiGet<T>(path: string): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    throw await apiError(response);
   }
 
   return response.json() as Promise<T>;
@@ -31,8 +31,22 @@ export async function apiPost<T, TBody = unknown>(path: string, body?: TBody): P
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    throw await apiError(response);
   }
 
   return response.json() as Promise<T>;
+}
+
+async function apiError(response: Response) {
+  let detail: string | undefined;
+  try {
+    const body = (await response.json()) as { detail?: unknown };
+    if (typeof body.detail === "string") {
+      detail = body.detail;
+    }
+  } catch {
+    detail = undefined;
+  }
+
+  return new Error(`API request failed: ${response.status}${detail ? `: ${detail}` : ""}`);
 }
