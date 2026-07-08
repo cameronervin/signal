@@ -125,8 +125,16 @@ class LeadIntakeService:
     async def get_lead(self, lead_id: UUID) -> LeadResponse | None:
         return await self.repository.get_lead(lead_id)
 
-    async def delete_lead(self, lead_id: UUID) -> LeadDeleteResponse:
-        result = await self.repository.delete_lead_intelligence(lead_id)
+    async def delete_lead(
+        self,
+        lead_id: UUID,
+        *,
+        include_digital_worker: bool = False,
+    ) -> LeadDeleteResponse:
+        result = await self.repository.delete_lead_intelligence(
+            lead_id,
+            include_digital_worker=include_digital_worker,
+        )
         if result.skipped_assigned_leads:
             raise LeadDeleteConflictError(
                 "Lead has an active or paused Digital Workforce assignment"

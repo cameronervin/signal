@@ -156,6 +156,11 @@ def test_delete_lead_removes_ready_lead_queue_row_and_agent_run() -> None:
         "deleted_agent_runs": 1,
         "deleted_status_events": 1,
         "skipped_assigned_leads": 0,
+        "deleted_worker_assignments": 0,
+        "deleted_worker_runs": 0,
+        "deleted_worker_goal_states": 0,
+        "deleted_worker_messages": 0,
+        "deleted_worker_follow_ups": 0,
     }
     assert queue.json() == []
     assert completed.json() == []
@@ -223,6 +228,63 @@ def test_delete_lead_returns_409_for_active_worker_assignment() -> None:
     assert "Digital Workforce assignment" in response.json()["detail"]
 
 
+def test_delete_lead_includes_worker_cleanup_when_requested() -> None:
+    repository = FakeSignalRepository()
+    execution_service = AgentExecutionService(repository)
+    app = _test_app()
+    _override_services(app, repository, execution_service)
+    repository.active_assignment_lead_ids.add(READY_LEAD_ID)
+    repository.worker_cleanup_counts_by_lead[READY_LEAD_ID] = {
+        "assignments": 1,
+        "runs": 2,
+        "goal_states": 7,
+        "messages": 1,
+        "follow_ups": 1,
+    }
+    ready_lead = _lead_response(
+        lead_id=READY_LEAD_ID,
+        run_id=READY_RUN_ID,
+        contact_name="Ready Contact",
+        company="Ready Operator",
+    )
+    ready_run = AgentRunResponse(
+        lead_id=READY_LEAD_ID,
+        run_id=READY_RUN_ID,
+        status="awaiting_review",
+        trigger="api_insert",
+        current_stage="human_review",
+    )
+
+    async def seed_repository() -> None:
+        await repository.save_lead(ready_lead)
+        await repository.save_agent_run(ready_run)
+
+    asyncio.run(seed_repository())
+
+    with TestClient(app) as client:
+        deleted = client.delete(
+            f"/api/v1/leads/{READY_LEAD_ID}?include_digital_worker=true"
+        )
+        queue = client.get("/api/v1/leads/queue")
+        runs = client.get("/api/v1/agent-runs")
+
+    assert deleted.status_code == 200
+    assert deleted.json() == {
+        "deleted_leads": 1,
+        "deleted_agent_runs": 1,
+        "deleted_status_events": 1,
+        "skipped_assigned_leads": 0,
+        "deleted_worker_assignments": 1,
+        "deleted_worker_runs": 2,
+        "deleted_worker_goal_states": 7,
+        "deleted_worker_messages": 1,
+        "deleted_worker_follow_ups": 1,
+    }
+    assert queue.json() == []
+    assert runs.json() == []
+    assert READY_LEAD_ID not in repository.active_assignment_lead_ids
+
+
 def test_delete_all_leads_skips_assigned_leads() -> None:
     repository = FakeSignalRepository()
     execution_service = AgentExecutionService(repository)
@@ -277,6 +339,11 @@ def test_delete_all_leads_skips_assigned_leads() -> None:
         "deleted_agent_runs": 1,
         "deleted_status_events": 1,
         "skipped_assigned_leads": 1,
+        "deleted_worker_assignments": 0,
+        "deleted_worker_runs": 0,
+        "deleted_worker_goal_states": 0,
+        "deleted_worker_messages": 0,
+        "deleted_worker_follow_ups": 0,
     }
     assert [lead["id"] for lead in completed.json()] == [str(READY_LEAD_ID)]
     assert [run["lead_id"] for run in runs.json()] == [str(READY_LEAD_ID)]

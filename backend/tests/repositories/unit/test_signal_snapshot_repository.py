@@ -193,6 +193,7 @@ async def test_delete_lead_intelligence_counts_deleted_records() -> None:
     assert result.deleted_agent_runs == 2
     assert result.deleted_status_events == 3
     assert result.skipped_assigned_leads == 0
+    assert result.deleted_worker_assignments == 0
     assert len(session.executed_statements) == 3
 
 
@@ -208,6 +209,28 @@ async def test_delete_lead_intelligence_skips_active_assignment() -> None:
     assert result.deleted_status_events == 0
     assert result.skipped_assigned_leads == 1
     assert session.executed_statements == []
+
+
+@pytest.mark.asyncio
+async def test_delete_lead_intelligence_can_include_worker_cleanup() -> None:
+    session = FakeSession(scalar_values=[1, 2, 3, 4, 5, 1, 1, 1])
+    repository = SignalSnapshotRepository(session)
+
+    result = await repository.delete_lead_intelligence(
+        LEAD_ID,
+        include_digital_worker=True,
+    )
+
+    assert result.deleted_leads == 1
+    assert result.deleted_agent_runs == 1
+    assert result.deleted_status_events == 1
+    assert result.skipped_assigned_leads == 0
+    assert result.deleted_worker_assignments == 1
+    assert result.deleted_worker_runs == 2
+    assert result.deleted_worker_goal_states == 3
+    assert result.deleted_worker_messages == 4
+    assert result.deleted_worker_follow_ups == 5
+    assert len(session.executed_statements) == 8
 
 
 @pytest.mark.asyncio

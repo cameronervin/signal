@@ -38,6 +38,7 @@ class FakeSignalRepository:
         self._run_inputs: dict[UUID, LeadCreate] = {}
         self._events: dict[UUID, list[AgentRunStatusEvent]] = {}
         self.active_assignment_lead_ids: set[UUID] = set()
+        self.worker_cleanup_counts_by_lead: dict[UUID, dict[str, int]] = {}
         self.commits = 0
 
     async def commit(self) -> None:
@@ -93,8 +94,10 @@ class FakeSignalRepository:
     async def delete_lead_intelligence(
         self,
         lead_id: UUID,
+        *,
+        include_digital_worker: bool = False,
     ) -> LeadDeleteResponse:
-        if lead_id in self.active_assignment_lead_ids:
+        if lead_id in self.active_assignment_lead_ids and not include_digital_worker:
             return LeadDeleteResponse(
                 deleted_leads=0,
                 deleted_agent_runs=0,
@@ -116,12 +119,21 @@ class FakeSignalRepository:
             self._runs.pop(run_id, None)
             self._run_inputs.pop(run_id, None)
             self._events.pop(run_id, None)
+        worker_counts = {}
+        if include_digital_worker:
+            worker_counts = self.worker_cleanup_counts_by_lead.pop(lead_id, {})
+            self.active_assignment_lead_ids.discard(lead_id)
 
         return LeadDeleteResponse(
             deleted_leads=deleted_leads,
             deleted_agent_runs=deleted_agent_runs,
             deleted_status_events=deleted_status_events,
             skipped_assigned_leads=0,
+            deleted_worker_assignments=worker_counts.get("assignments", 0),
+            deleted_worker_runs=worker_counts.get("runs", 0),
+            deleted_worker_goal_states=worker_counts.get("goal_states", 0),
+            deleted_worker_messages=worker_counts.get("messages", 0),
+            deleted_worker_follow_ups=worker_counts.get("follow_ups", 0),
         )
 
     async def delete_all_lead_intelligence(self) -> LeadDeleteResponse:

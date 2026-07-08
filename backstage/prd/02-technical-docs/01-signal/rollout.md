@@ -18,8 +18,8 @@ The MVP is not a system of record and must not send outreach automatically.
 | Stage | Scope | Entry Criteria | Exit Criteria |
 | --- | --- | --- | --- |
 | Local evaluation | Seeded sample-data walkthrough for product review | Seeded leads cover A, B, C, and gate-failed states | Queue, detail, run status, and gate-failed views can be reviewed repeatably |
-| Shadow | Reps compare Signal ranking against current manual triage | Public-data adapters and LiteLLM are configured | Manager confirms score explanations are clear enough for pilot use |
-| Pilot | A small team reviews drafts and manually sends from their existing tools | Human review gate is implemented and visible | Meeting conversion, response quality, and false positive notes are reviewed |
+| Shadow | Reps compare Signal ranking against current manual triage for two weeks | Public-data adapters and LiteLLM are configured | Manager confirms score explanations are clear enough for pilot use |
+| Pilot | A small team reviews drafts and manually sends from their existing tools for four weeks | Human review gate is implemented and visible | Meeting conversion, response quality, and false positive notes are reviewed |
 | Hardening | Production-readiness work outside v1 scope | Pilot shows enough value to continue | Auth, durable storage, audit logs, and retention policy are specified |
 
 ## Success Metrics
@@ -50,12 +50,13 @@ The MVP is not a system of record and must not send outreach automatically.
 - Log score components and gate reasons, not full emails, raw request bodies,
   raw drafts, prompts, provider payloads, tokens, or secrets.
 
-## Open Owner Notes
+## Production Hardening Decisions
 
-[OWNER NOTE: Product owner input needed on pilot duration. Recommended default:
-two weeks of shadow mode followed by a four-week pilot. Confirm before
-implementation.]
-
-[OWNER NOTE: Product owner input needed on production retention. Recommended
-default: retain local-evaluation and pilot lead records for 90 days, then delete or
-anonymize. Confirm before implementation.]
+- The v1 assignment build uses a two-week shadow period followed by a four-week
+  pilot as its default rollout sequence.
+- Production retention should be set before live deployment; the recommended
+  starting policy is 90 days for local-evaluation and pilot lead records, then
+  deletion or anonymization.
+- Production CRM integration, auth and permissions, paid provider usage, live
+  email delivery, and expanded monitoring remain hardening work outside the v1
+  assignment/demo scope.

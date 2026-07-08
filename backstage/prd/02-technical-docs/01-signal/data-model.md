@@ -145,11 +145,22 @@ APIs:
 - `deleted_status_events`: agent run status events deleted.
 - `skipped_assigned_leads`: active or paused Digital Workforce lead assignments
   skipped during bulk cleanup.
+- `deleted_worker_assignments`: Digital Workforce assignments deleted when
+  explicitly requested.
+- `deleted_worker_runs`: Digital Workforce wake-up runs deleted when explicitly
+  requested.
+- `deleted_worker_goal_states`: Digital Workforce goal rows deleted when
+  explicitly requested.
+- `deleted_worker_messages`: sandbox email message rows deleted when explicitly
+  requested.
+- `deleted_worker_follow_ups`: follow-up rows deleted when explicitly requested.
 
 Delete APIs remove Signal lead snapshots, matching agent runs, and status
-events only. They do not delete Digital Workforce assignment state, sandbox
-messages, follow-ups, worker runs, Neo4j graph context, or Celery tasks already
-dispatched.
+events by default. Per-lead delete can opt into Digital Workforce cleanup; this
+removes matching assignments, sandbox messages, follow-ups, worker runs, and
+goal states before deleting lead intelligence. Bulk delete does not delete
+Digital Workforce state. Delete APIs do not remove Neo4j graph context or revoke
+Celery tasks already dispatched.
 
 ## Agent Run Status Event
 

@@ -184,13 +184,22 @@ runs return 404 from this endpoint until a visible lead snapshot exists.
 
 `DELETE /leads/{lead_id}`
 
+Optional query parameter:
+
+- `include_digital_worker`: defaults to `false`. When `true`, deletes any
+  Digital Workforce assignments for the lead before removing lead intelligence.
+
 Deletes lead-intelligence records for one inbound lead. This removes the
 completed lead snapshot, matching agent runs, and status events. Queued or
 running persisted rows are deleted, but already-dispatched Celery tasks are not
 revoked; workers that wake after deletion return a missing-run result.
 
 Active or paused Digital Workforce assignments block deletion and return 409.
-Missing lead intelligence returns 404.
+When `include_digital_worker=true`, the API removes matching Digital Workforce
+assignments, worker runs, goal states, sandbox messages, and follow-ups in the
+same cleanup transaction instead of returning 409. Already-dispatched worker
+tasks whose run rows were deleted return a missing-run result. Missing lead
+intelligence returns 404.
 
 Response: `200 LeadDeleteResponse`
 
@@ -199,7 +208,12 @@ Response: `200 LeadDeleteResponse`
   "deleted_leads": 1,
   "deleted_agent_runs": 1,
   "deleted_status_events": 3,
-  "skipped_assigned_leads": 0
+  "skipped_assigned_leads": 0,
+  "deleted_worker_assignments": 1,
+  "deleted_worker_runs": 1,
+  "deleted_worker_goal_states": 7,
+  "deleted_worker_messages": 1,
+  "deleted_worker_follow_ups": 1
 }
 ```
 
@@ -209,7 +223,7 @@ Response: `200 LeadDeleteResponse`
 
 Deletes all lead-intelligence records except leads with active or paused Digital
 Workforce assignments. Digital Workforce assignment, message, follow-up, and run
-state is not deleted.
+state is not deleted by the bulk endpoint.
 
 Response: `200 LeadDeleteResponse`
 
@@ -218,7 +232,12 @@ Response: `200 LeadDeleteResponse`
   "deleted_leads": 5,
   "deleted_agent_runs": 5,
   "deleted_status_events": 15,
-  "skipped_assigned_leads": 1
+  "skipped_assigned_leads": 1,
+  "deleted_worker_assignments": 0,
+  "deleted_worker_runs": 0,
+  "deleted_worker_goal_states": 0,
+  "deleted_worker_messages": 0,
+  "deleted_worker_follow_ups": 0
 }
 ```
 

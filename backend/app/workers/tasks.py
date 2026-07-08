@@ -8,7 +8,10 @@ from app.infrastructure.db.session import get_sessionmaker
 from app.repositories.digital_worker import DigitalWorkerPostgresRepository
 from app.repositories.signal_snapshot import SignalSnapshotRepository
 from app.services.agent_execution_service import AgentExecutionService
-from app.services.digital_worker_service import DigitalWorkerService
+from app.services.digital_worker_service import (
+    DigitalWorkerNotFoundError,
+    DigitalWorkerService,
+)
 from app.workers.app import celery_app, get_worker_resources, run_async
 
 TERMINAL_OR_HELD_STATUSES = {"awaiting_review", "completed", "failed", "paused"}
@@ -48,7 +51,10 @@ async def _execute_digital_worker_run(run_id: str) -> dict[str, Any]:
             worker_repository=worker_repository,
             task_dispatcher=NoopDigitalWorkerTaskDispatcher(),
         )
-        run = await service.execute_run(parsed_run_id)
+        try:
+            run = await service.execute_run(parsed_run_id)
+        except DigitalWorkerNotFoundError:
+            return {"run_id": run_id, "status": "missing"}
         return run.model_dump(mode="json")
 
 

@@ -76,10 +76,14 @@ async def get_lead(
 @router.delete("/{lead_id}", response_model=LeadDeleteResponse)
 async def delete_lead(
     lead_id: UUID,
+    include_digital_worker: bool = False,
     service: LeadIntakeService = Depends(get_lead_intake_service),
 ) -> LeadDeleteResponse:
     try:
-        return await service.delete_lead(lead_id)
+        return await service.delete_lead(
+            lead_id,
+            include_digital_worker=include_digital_worker,
+        )
     except LeadDeleteConflictError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

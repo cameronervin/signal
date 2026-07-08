@@ -7,6 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.signal import (
     DigitalWorkerAssignmentRecord,
+    DigitalWorkerFollowUpRecord,
+    DigitalWorkerGoalStateRecord,
+    DigitalWorkerMessageRecord,
+    DigitalWorkerRunRecord,
     SignalAgentRunRecord,
     SignalAgentRunStatusEventRecord,
     SignalLeadRecord,
@@ -51,6 +55,8 @@ class SignalRepository(Protocol):
     async def delete_lead_intelligence(
         self,
         lead_id: UUID,
+        *,
+        include_digital_worker: bool = False,
     ) -> LeadDeleteResponse: ...
 
     async def delete_all_lead_intelligence(self) -> LeadDeleteResponse: ...
@@ -172,23 +178,92 @@ class SignalSnapshotRepository:
     async def delete_lead_intelligence(
         self,
         lead_id: UUID,
+        *,
+        include_digital_worker: bool = False,
     ) -> LeadDeleteResponse:
-        assigned_count = await self.session.scalar(
-            select(func.count())
-            .select_from(DigitalWorkerAssignmentRecord)
-            .where(DigitalWorkerAssignmentRecord.lead_id == lead_id)
-            .where(
-                DigitalWorkerAssignmentRecord.status.in_(
-                    ACTIVE_WORKER_ASSIGNMENT_STATUSES
+        if not include_digital_worker:
+            assigned_count = await self.session.scalar(
+                select(func.count())
+                .select_from(DigitalWorkerAssignmentRecord)
+                .where(DigitalWorkerAssignmentRecord.lead_id == lead_id)
+                .where(
+                    DigitalWorkerAssignmentRecord.status.in_(
+                        ACTIVE_WORKER_ASSIGNMENT_STATUSES
+                    )
                 )
             )
-        )
-        if assigned_count:
-            return LeadDeleteResponse(
-                deleted_leads=0,
-                deleted_agent_runs=0,
-                deleted_status_events=0,
-                skipped_assigned_leads=1,
+            if assigned_count:
+                return LeadDeleteResponse(
+                    deleted_leads=0,
+                    deleted_agent_runs=0,
+                    deleted_status_events=0,
+                    skipped_assigned_leads=1,
+                )
+
+        matching_assignment_ids = select(
+            DigitalWorkerAssignmentRecord.assignment_id
+        ).where(DigitalWorkerAssignmentRecord.lead_id == lead_id)
+        deleted_worker_assignments = 0
+        deleted_worker_runs = 0
+        deleted_worker_goal_states = 0
+        deleted_worker_messages = 0
+        deleted_worker_follow_ups = 0
+        if include_digital_worker:
+            deleted_worker_assignments = (
+                await self.session.scalar(
+                    select(func.count())
+                    .select_from(DigitalWorkerAssignmentRecord)
+                    .where(DigitalWorkerAssignmentRecord.lead_id == lead_id)
+                )
+                or 0
+            )
+            deleted_worker_runs = (
+                await self.session.scalar(
+                    select(func.count())
+                    .select_from(DigitalWorkerRunRecord)
+                    .where(
+                        DigitalWorkerRunRecord.assignment_id.in_(
+                            matching_assignment_ids
+                        )
+                    )
+                )
+                or 0
+            )
+            deleted_worker_goal_states = (
+                await self.session.scalar(
+                    select(func.count())
+                    .select_from(DigitalWorkerGoalStateRecord)
+                    .where(
+                        DigitalWorkerGoalStateRecord.assignment_id.in_(
+                            matching_assignment_ids
+                        )
+                    )
+                )
+                or 0
+            )
+            deleted_worker_messages = (
+                await self.session.scalar(
+                    select(func.count())
+                    .select_from(DigitalWorkerMessageRecord)
+                    .where(
+                        DigitalWorkerMessageRecord.assignment_id.in_(
+                            matching_assignment_ids
+                        )
+                    )
+                )
+                or 0
+            )
+            deleted_worker_follow_ups = (
+                await self.session.scalar(
+                    select(func.count())
+                    .select_from(DigitalWorkerFollowUpRecord)
+                    .where(
+                        DigitalWorkerFollowUpRecord.assignment_id.in_(
+                            matching_assignment_ids
+                        )
+                    )
+                )
+                or 0
             )
 
         matching_run_ids = select(SignalAgentRunRecord.run_id).where(
@@ -215,6 +290,38 @@ class SignalSnapshotRepository:
                 SignalAgentRunStatusEventRecord.run_id.in_(matching_run_ids)
             )
         )
+        if include_digital_worker:
+            await self.session.execute(
+                delete(DigitalWorkerFollowUpRecord).where(
+                    DigitalWorkerFollowUpRecord.assignment_id.in_(
+                        matching_assignment_ids
+                    )
+                )
+            )
+            await self.session.execute(
+                delete(DigitalWorkerMessageRecord).where(
+                    DigitalWorkerMessageRecord.assignment_id.in_(
+                        matching_assignment_ids
+                    )
+                )
+            )
+            await self.session.execute(
+                delete(DigitalWorkerGoalStateRecord).where(
+                    DigitalWorkerGoalStateRecord.assignment_id.in_(
+                        matching_assignment_ids
+                    )
+                )
+            )
+            await self.session.execute(
+                delete(DigitalWorkerRunRecord).where(
+                    DigitalWorkerRunRecord.assignment_id.in_(matching_assignment_ids)
+                )
+            )
+            await self.session.execute(
+                delete(DigitalWorkerAssignmentRecord).where(
+                    DigitalWorkerAssignmentRecord.lead_id == lead_id
+                )
+            )
         await self.session.execute(
             delete(SignalLeadRecord).where(SignalLeadRecord.id == lead_id)
         )
@@ -229,6 +336,11 @@ class SignalSnapshotRepository:
             deleted_agent_runs=deleted_agent_runs or 0,
             deleted_status_events=deleted_status_events or 0,
             skipped_assigned_leads=0,
+            deleted_worker_assignments=deleted_worker_assignments,
+            deleted_worker_runs=deleted_worker_runs,
+            deleted_worker_goal_states=deleted_worker_goal_states,
+            deleted_worker_messages=deleted_worker_messages,
+            deleted_worker_follow_ups=deleted_worker_follow_ups,
         )
 
     async def delete_all_lead_intelligence(self) -> LeadDeleteResponse:

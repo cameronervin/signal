@@ -232,3 +232,23 @@ class LeadDeleteResponse(BaseModel):
         default=0,
         description="Active or paused Digital Workforce lead assignments skipped.",
     )
+    deleted_worker_assignments: int = Field(
+        default=0,
+        description="Number of Digital Workforce assignments deleted.",
+    )
+    deleted_worker_runs: int = Field(
+        default=0,
+        description="Number of Digital Workforce runs deleted.",
+    )
+    deleted_worker_goal_states: int = Field(
+        default=0,
+        description="Number of Digital Workforce goal states deleted.",
+    )
+    deleted_worker_messages: int = Field(
+        default=0,
+        description="Number of Digital Workforce sandbox messages deleted.",
+    )
+    deleted_worker_follow_ups: int = Field(
+        default=0,
+        description="Number of Digital Workforce follow-ups deleted.",
+    )

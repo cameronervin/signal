@@ -4,8 +4,12 @@ from app.agents.utils.scoring import score_lead
 from app.infrastructure.public_data.fixtures import demo_enrichment
 from app.schemas.lead import GateResult, LeadCreate
 from app.services.agent_execution_service import AgentExecutionService
+from app.services.digital_worker_service import (
+    DigitalWorkerNotFoundError,
+    DigitalWorkerService,
+)
 from app.workers import app as worker_app
-from app.workers.tasks import _execute_signal_agent_run
+from app.workers.tasks import _execute_digital_worker_run, _execute_signal_agent_run
 from tests.fakes import FakePublicDataClient, FakeSignalRepository
 
 
@@ -113,6 +117,25 @@ async def test_worker_execution_returns_json_safe_state(
     assert leads[0].draft is not None
 
 
+@pytest.mark.asyncio
+async def test_digital_worker_execution_returns_missing_for_deleted_run(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_worker_repository(monkeypatch, FakeSignalRepository())
+
+    async def fake_execute_run(
+        self: DigitalWorkerService,
+        run_id: object,
+    ) -> object:
+        raise DigitalWorkerNotFoundError("Run not found")
+
+    monkeypatch.setattr(DigitalWorkerService, "execute_run", fake_execute_run)
+
+    result = await _execute_digital_worker_run(str(_run_id()))
+
+    assert result == {"run_id": str(_run_id()), "status": "missing"}
+
+
 def test_worker_execution_reuses_initialized_resources(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -189,6 +212,9 @@ def _run_id():
 
 
 class FakeSessionContext:
+    def __call__(self) -> "FakeSessionContext":
+        return self
+
     def begin(self) -> "FakeSessionContext":
         return self
 
