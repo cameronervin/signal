@@ -159,7 +159,7 @@ def _draft_messages(
             "content": (
                 "Draft a concise SDR-reviewed email using only the deterministic "
                 "baseline context and any returned tool source facts. Do not change "
-                "score, tier, gates, or talking points.\n\n"
+                "score, tier, gates, or sales insights in talking_points.\n\n"
                 f"Context: {json.dumps(context, sort_keys=True)}"
             ),
         },

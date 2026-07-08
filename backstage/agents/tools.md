@@ -23,7 +23,6 @@ registry -> active tools -> workflow/chain assignment -> prompt snippets -> draf
 | --- | --- | --- |
 | `geocode_property_address` | Nominatim/OpenStreetMap | Verify property place context. |
 | `fetch_census_market_demographics` | Census ACS | Fetch renter share, median rent, and household count. |
-| `fetch_datausa_household_growth` | DataUSA | Fetch state household-growth context. |
 | `fetch_fred_market_economics` | FRED | Fetch rent-growth and unemployment context; key-gated. |
 | `lookup_news_company_trigger` | News API | Find one recent company trigger; key-gated. |
 | `lookup_wikipedia_company_background` | Wikipedia | Fetch concise company background. |

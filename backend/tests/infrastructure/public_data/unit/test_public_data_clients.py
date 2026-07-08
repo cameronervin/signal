@@ -3,7 +3,6 @@ import pytest
 
 from app.infrastructure.public_data import (
     census,
-    datausa,
     fred,
     geocoding,
     news,
@@ -98,6 +97,21 @@ async def test_nominatim_client_sends_search_contract() -> None:
 
     def handler(request: httpx.Request) -> httpx.Response:
         captured.append(request)
+        if "/2023/" in str(request.url):
+            return httpx.Response(
+                200,
+                json=[
+                    [
+                        "NAME",
+                        "DP04_0046PE",
+                        "DP04_0134E",
+                        "DP02_0001E",
+                        "state",
+                        "place",
+                    ],
+                    ["Austin city, Texas", "61.0", "1800", "475000", "48", "05000"],
+                ],
+            )
         return httpx.Response(
             200,
             json=[
@@ -154,6 +168,21 @@ async def test_census_client_sends_acs_place_contract() -> None:
 
     def handler(request: httpx.Request) -> httpx.Response:
         captured.append(request)
+        if "/2023/" in str(request.url):
+            return httpx.Response(
+                200,
+                json=[
+                    [
+                        "NAME",
+                        "DP04_0046PE",
+                        "DP04_0134E",
+                        "DP02_0001E",
+                        "state",
+                        "place",
+                    ],
+                    ["Austin city, Texas", "61.0", "1800", "475000", "48", "05000"],
+                ],
+            )
         return httpx.Response(
             200,
             json=[
@@ -171,9 +200,42 @@ async def test_census_client_sends_acs_place_contract() -> None:
     assert captured[0].url.params["for"] == "place:*"
     assert captured[0].url.params["in"] == "state:48"
     assert captured[0].url.params["key"] == "census-key"
+    assert len(captured) == 2
+    assert "/2023/" in str(captured[1].url)
     assert result is not None
     assert result.renter_share == 0.625
     assert result.median_rent == 1901
+    assert result.household_count == 500000
+    assert round(result.household_growth or 0, 1) == 5.3
+
+
+@pytest.mark.asyncio
+async def test_census_client_keeps_current_snapshot_when_prior_year_fails() -> None:
+    captured: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        if "/2023/" in str(request.url):
+            return httpx.Response(503, json={"error": "unavailable"})
+        return httpx.Response(
+            200,
+            json=[
+                ["NAME", "DP04_0046PE", "DP04_0134E", "DP02_0001E", "state", "place"],
+                ["Austin city, Texas", "62.5", "1901", "500000", "48", "05000"],
+            ],
+        )
+
+    result = await census.CensusAcsClient(
+        api_key="census-key",
+        transport=httpx.MockTransport(handler),
+    ).market_snapshot(city="Austin", state="TX")
+
+    assert len(captured) == 2
+    assert result is not None
+    assert result.renter_share == 0.625
+    assert result.median_rent == 1901
+    assert result.household_count == 500000
+    assert result.household_growth is None
 
 
 @pytest.mark.asyncio
@@ -185,28 +247,6 @@ async def test_census_client_returns_none_for_empty_rows() -> None:
     ).market_snapshot(city="Austin", state="TX")
 
     assert result is None
-
-
-@pytest.mark.asyncio
-async def test_datausa_client_sends_household_growth_contract() -> None:
-    captured: list[httpx.Request] = []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        captured.append(request)
-        return httpx.Response(
-            200,
-            json={"data": [{"Households": "110"}, {"Households": "100"}]},
-        )
-
-    result = await datausa.DataUsaClient(
-        transport=httpx.MockTransport(handler),
-    ).state_snapshot(state="TX")
-
-    assert str(captured[0].url.copy_with(query=None)) == datausa.DATAUSA_API_URL
-    assert captured[0].url.params["Geography"] == "04000US48"
-    assert captured[0].url.params["measure"] == "Households"
-    assert result is not None
-    assert result.household_growth == 10
 
 
 @pytest.mark.asyncio

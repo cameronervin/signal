@@ -51,3 +51,19 @@ def test_settings_reads_knowledge_graph_configuration(monkeypatch) -> None:
     assert settings.neo4j_user == "neo4j"
     assert settings.neo4j_password == "local-password"
     assert settings.neo4j_database == "neo4j"
+
+
+def test_settings_reads_langfuse_tracing_configuration(monkeypatch) -> None:
+    monkeypatch.setenv("TRACING_ENABLED", "true")
+    monkeypatch.setenv("LANGFUSE_ENABLED", "true")
+    monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "pk-test")
+    monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-test")
+    monkeypatch.setenv("LANGFUSE_BASE_URL", "https://langfuse.test")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.tracing_enabled is True
+    assert settings.langfuse_enabled is True
+    assert settings.langfuse_public_key == "pk-test"
+    assert settings.langfuse_secret_key == "sk-test"
+    assert settings.langfuse_base_url == "https://langfuse.test"

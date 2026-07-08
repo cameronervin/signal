@@ -26,6 +26,8 @@ from app.infrastructure.public_data import (
     clear_public_data_client_cache,
     create_public_data_client,
 )
+from app.observability.agent_trace import verify_tracing_configuration
+from app.observability.langfuse_init import init_langfuse, shutdown_langfuse
 from app.services.knowledge_graph_service import KnowledgeGraphService
 
 settings = get_settings()
@@ -97,6 +99,11 @@ def init_worker_resources(**_: object) -> None:
         return
 
     logger.info("worker_infrastructure_starting", env=settings.env, warm_only=True)
+    init_langfuse(settings)
+    logger.info(
+        "worker_tracing_startup_check",
+        **verify_tracing_configuration(settings),
+    )
     _worker_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(_worker_loop)
     _worker_loop_owner_thread = threading.get_ident()
@@ -164,6 +171,7 @@ def teardown_worker_resources(**_: object) -> None:
     clear_public_data_client_cache()
     clear_llm_provider_cache()
     clear_signal_graph_provider_cache()
+    shutdown_langfuse()
     logger.info(
         "worker_infrastructure_shutdown_complete",
         env=settings.env,

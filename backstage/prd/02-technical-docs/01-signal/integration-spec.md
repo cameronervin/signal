@@ -9,8 +9,8 @@ surfaces unavailable providers as warnings instead of substituting fixture data.
 | Source | Purpose | V1 Role |
 | --- | --- | --- |
 | Nominatim/OpenStreetMap | Address to coordinates and place context | Live adapter |
-| U.S. Census ACS | Renter share, rent, and household count | Live adapter |
-| DataUSA | Household growth context | Live adapter |
+| U.S. Census ACS | Renter share, rent, household count, and household growth | Live adapter |
+| DataUSA | Household growth context | Deferred until a stable current API contract is verified |
 | FRED | Labor and rent trend context | Optional key-backed adapter |
 | News API | Company trigger events | Optional key-backed adapter |
 | Wikipedia API | Company background hints | Live adapter |
@@ -31,6 +31,9 @@ surfaces unavailable providers as warnings instead of substituting fixture data.
   contract isolation.
 - The same provider methods back deterministic enrichment and optional
   model-callable research tools.
+- Household growth is Census-backed for v1. DataUSA is not called at runtime
+  while its legacy endpoint remains unavailable and replacement household
+  queries are under review.
 
 ## Operational Reliability
 

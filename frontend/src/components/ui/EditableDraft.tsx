@@ -5,9 +5,10 @@ interface Props {
   body: string;
   onSubjectChange: (value: string) => void;
   onBodyChange: (value: string) => void;
+  bodyRows?: number;
 }
 
-export function EditableDraft({ subject, body, onSubjectChange, onBodyChange }: Props) {
+export function EditableDraft({ subject, body, onSubjectChange, onBodyChange, bodyRows = 12 }: Props) {
   return (
     <div className="editable-draft">
       <label>
@@ -16,7 +17,7 @@ export function EditableDraft({ subject, body, onSubjectChange, onBodyChange }: 
       </label>
       <label>
         <span className="eyebrow">Body</span>
-        <textarea value={body} onChange={(event) => onBodyChange(event.target.value)} rows={12} />
+        <textarea value={body} onChange={(event) => onBodyChange(event.target.value)} rows={bodyRows} />
       </label>
     </div>
   );

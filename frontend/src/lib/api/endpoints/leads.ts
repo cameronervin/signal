@@ -100,6 +100,12 @@ function normalizeTierDistribution(distribution: Record<string, number>): Record
 }
 
 function mapLeadResponse(lead: LeadResponseDto): FixtureLead {
+  const gateFailures = arrayOrEmpty(lead.gates.failures);
+  const gateWarnings = arrayOrEmpty(lead.gates.warnings);
+  const providerWarnings = arrayOrEmpty(lead.enrichment.provider_warnings);
+  const flags = arrayOrEmpty(lead.flags);
+  const relatedLeads = arrayOrEmpty(lead.related_leads);
+
   return {
     id: lead.id,
     name: lead.input.contact_name,
@@ -108,26 +114,37 @@ function mapLeadResponse(lead: LeadResponseDto): FixtureLead {
     company: lead.input.company,
     market: lead.enrichment.market || `${lead.input.city}, ${lead.input.state}`,
     units: lead.enrichment.company_units,
-    gates: lead.gates,
     score: {
       total: lead.score.total,
       tier: lead.score.tier,
       whyLine: lead.score.why_line
     },
-    flags: [...lead.flags, ...lead.gates.failures, ...lead.gates.warnings, ...lead.enrichment.provider_warnings],
-    talkingPoints: lead.talking_points,
+    gates: {
+      ...lead.gates,
+      failures: gateFailures
+    },
+    flags: [...flags, ...gateFailures, ...gateWarnings, ...providerWarnings],
+    talkingPoints: uniqueStrings(arrayOrEmpty(lead.talking_points)),
     marketSignals: buildMarketSignals(lead),
-    related: lead.related_leads.map((related) => ({ label: related.label, reason: related.reason })),
+    related: relatedLeads.map((related) => ({ label: related.label, reason: related.reason })),
     knowledgeGraph: lead.knowledge_graph,
     draft: lead.draft
       ? {
           subject: lead.draft.subject,
           body: lead.draft.body,
-          sources: lead.draft.sources
+          sources: arrayOrEmpty(lead.draft.sources)
         }
       : null,
     runId: lead.run_id
   };
+}
+
+function arrayOrEmpty<T>(value: T[] | null | undefined): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return Array.from(new Set(values.filter(Boolean)));
 }
 
 function buildMarketSignals(lead: LeadResponseDto) {

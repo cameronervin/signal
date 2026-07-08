@@ -19,18 +19,21 @@ Alembic owns schema creation and migrations.
 
 ## Enrichment
 
+Enrichment is normalized public API context used to score inbound multifamily
+leads, produce sales insights, and ground draft personalization.
+
 | Field | Type | Source |
 | --- | --- | --- |
-| `market` | string | Input plus geocoding |
-| `coordinates` | tuple nullable | Geocoding |
-| `renter_share` | float nullable | Census/DataUSA |
-| `median_rent` | integer nullable | Census/FRED |
-| `rent_growth_yoy` | float nullable | Census/FRED |
-| `household_growth` | float nullable | Census/DataUSA |
-| `unemployment_rate` | float nullable | FRED/DataUSA |
-| `company_units` | integer nullable | Company lookup heuristic |
-| `recent_trigger` | string nullable | News/Wikipedia |
-| `sources` | `SourceFact[]` | Citable facts |
+| `market` | string | Resolved property market for scoring and outreach context |
+| `coordinates` | tuple nullable | Geocoding context for property resolution |
+| `renter_share` | float nullable | Leasing demand and prospect-volume signal |
+| `median_rent` | integer nullable | Market context for rep review |
+| `rent_growth_yoy` | float nullable | Urgency and market-pressure signal |
+| `household_growth` | float nullable | Demand expansion context |
+| `unemployment_rate` | float nullable | Operational capacity pressure proxy |
+| `company_units` | integer nullable | Portfolio scale and follow-up complexity signal |
+| `recent_trigger` | string nullable | Cited personalization or urgency signal |
+| `sources` | `SourceFact[]` | Citable public facts for scoring, insights, and drafts |
 | `provider_warnings` | string[] | Unavailable or failed upstream providers |
 
 ## Gates
@@ -45,6 +48,9 @@ Hard gate failures suppress draft generation.
 
 ## Score
 
+Scores are deterministic lead-scoring outputs for SDR prioritization. They are
+not set by client input or changed by the drafting model.
+
 `ScoreBreakdown` contains:
 
 - `total`: 0-100
@@ -52,18 +58,28 @@ Hard gate failures suppress draft generation.
 - `company_fit`: 0-60
 - `market_opportunity`: 0-40
 - `bonuses`: bounded score additions
-- `why_line`: rep-readable explanation
+- `why_line`: rep-readable explanation of the top score drivers
 - `components`: named component points
+
+## Sales Insights
+
+`LeadResponse.talking_points` contains sales insights derived from enrichment
+and graph context. The API field name remains `talking_points` for compatibility,
+but the product surface may label the section as Sales insights.
+
+Insights translate public API facts into SDR-ready context, such as leasing
+demand, response urgency, portfolio follow-up complexity, and related inbound
+signals.
 
 ## Draft
 
 `DraftEmail` contains:
 
-- `subject`
-- `body`
-- `sources`
+- `subject`: review-ready draft subject line
+- `body`: review-ready inbound outreach body for SDR editing
+- `sources`: facts supporting cited personalization claims
 
-Drafts are absent for gate-failed leads.
+Drafts are absent for gate-failed leads and are never sent automatically.
 
 ## Knowledge Graph
 

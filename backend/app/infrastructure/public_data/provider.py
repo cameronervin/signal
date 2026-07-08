@@ -6,7 +6,6 @@ from typing import Any
 import httpx
 
 from app.infrastructure.public_data.census import CensusAcsClient
-from app.infrastructure.public_data.datausa import DataUsaClient
 from app.infrastructure.public_data.domain import DomainMxClient
 from app.infrastructure.public_data.fixtures import company_units_hint
 from app.infrastructure.public_data.fred import FredClient
@@ -15,7 +14,6 @@ from app.infrastructure.public_data.news import NewsApiClient
 from app.infrastructure.public_data.types import (
     CensusMarketSnapshot,
     CompanySnapshot,
-    DataUsaSnapshot,
     DomainSnapshot,
     FredSnapshot,
     GeocodingResult,
@@ -42,7 +40,6 @@ class PublicDataClient:
         *,
         geocoding: NominatimClient | None = None,
         census: CensusAcsClient | None = None,
-        datausa: DataUsaClient | None = None,
         fred: FredClient | None = None,
         news: NewsApiClient | None = None,
         wikipedia: WikipediaClient | None = None,
@@ -60,7 +57,6 @@ class PublicDataClient:
             api_key=config.census_api_key,
             http_client=http_client,
         )
-        self.datausa = datausa or DataUsaClient(http_client=http_client)
         self.fred = fred or FredClient(
             api_key=config.fred_api_key,
             http_client=http_client,
@@ -98,11 +94,6 @@ class PublicDataClient:
             "market demographics unavailable",
             self.census_market_snapshot(city=lead.city, state=lead.state)
         )
-        datausa = await _attempt(
-            provider_warnings,
-            "household growth data unavailable",
-            self.datausa_state_snapshot(state=lead.state),
-        )
         fred = await _attempt(
             provider_warnings,
             "economic data unavailable",
@@ -131,7 +122,6 @@ class PublicDataClient:
             provider_warnings=provider_warnings,
             geocoding=geocoding,
             census=census,
-            datausa=datausa,
             fred=fred,
             news=news,
             wikipedia=wikipedia,
@@ -167,12 +157,6 @@ class PublicDataClient:
         return await self._cached_lookup(
             f"census:{city}:{state}",
             lambda: self.census.market_snapshot(city=city, state=state),
-        )
-
-    async def datausa_state_snapshot(self, *, state: str) -> DataUsaSnapshot | None:
-        return await self._cached_lookup(
-            f"datausa:{state}",
-            lambda: self.datausa.state_snapshot(state=state),
         )
 
     async def fred_snapshot(self, *, state: str) -> FredSnapshot | None:
@@ -250,7 +234,6 @@ def _merge_snapshots(
     provider_warnings: list[str],
     geocoding: GeocodingResult | None,
     census: CensusMarketSnapshot | None,
-    datausa: DataUsaSnapshot | None,
     fred: FredSnapshot | None,
     news: NewsSnapshot | None,
     wikipedia: CompanySnapshot | None,
@@ -260,13 +243,12 @@ def _merge_snapshots(
     renter_share = census.renter_share if census else None
     median_rent = census.median_rent if census else None
     rent_growth = fred.rent_growth_yoy if fred else None
-    household_growth = datausa.household_growth if datausa else None
+    household_growth = census.household_growth if census else None
     unemployment = fred.unemployment_rate if fred else None
     recent_trigger = news.trigger if news else None
     sources = [
         *source_facts_for_census(census),
         *source_facts_for_fred(fred),
-        *source_facts_for_datausa(datausa),
         *source_facts_for_news(news),
         *source_facts_for_wikipedia(wikipedia),
         *source_facts_for_domain(domain),
@@ -344,6 +326,14 @@ def source_facts_for_census(
                 value=f"{census.household_count:,}",
             )
         )
+    if census.household_growth is not None:
+        facts.append(
+            SourceFact(
+                source=census.source_name,
+                label="Household growth",
+                value=f"{census.household_growth:.1f}% YoY",
+            )
+        )
     return facts
 
 
@@ -368,18 +358,6 @@ def source_facts_for_fred(fred: FredSnapshot | None) -> list[SourceFact]:
             )
         )
     return facts
-
-
-def source_facts_for_datausa(datausa: DataUsaSnapshot | None) -> list[SourceFact]:
-    if datausa is None or datausa.household_growth is None:
-        return []
-    return [
-        SourceFact(
-            source=datausa.source_name,
-            label="Household growth",
-            value=f"{datausa.household_growth:.1f}% YoY",
-        )
-    ]
 
 
 def source_facts_for_news(news: NewsSnapshot | None) -> list[SourceFact]:

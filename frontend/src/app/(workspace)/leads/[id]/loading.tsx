@@ -24,8 +24,8 @@ export default function LeadDetailLoading() {
           <SkeletonText className="w-10" />
           <SkeletonText className="w-80 max-w-full" />
         </div>
-        <section className="detail-grid">
-          <div className="stack">
+        <section className="detail-grid lead-detail-layout">
+          <div className="lead-detail-column">
             <section className="surface-card p-5 skeleton-card">
               <SkeletonText className="w-36" />
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -46,6 +46,15 @@ export default function LeadDetailLoading() {
                 ))}
               </div>
             </section>
+            <section className="surface-card lead-detail-fill-card lead-detail-knowledge-card p-5 skeleton-card">
+              <div className="flex items-center justify-between gap-4">
+                <SkeletonText className="w-32" />
+                <Skeleton className="h-7 w-20 rounded-lg" />
+              </div>
+              <Skeleton className="mt-4 h-[340px] w-full flex-1 rounded-lg" />
+            </section>
+          </div>
+          <div className="lead-detail-column">
             <section className="surface-card p-5 skeleton-card">
               <SkeletonText className="w-28" />
               <div className="mt-4 grid gap-3">
@@ -54,38 +63,31 @@ export default function LeadDetailLoading() {
                 <SkeletonText className="w-10/12" />
               </div>
             </section>
-            <section className="surface-card p-5 skeleton-card">
-              <div className="flex items-center justify-between gap-4">
+            <section className="surface-card lead-detail-fill-card lead-detail-draft-card p-5 skeleton-card">
+              <div className="flex items-center justify-between gap-3">
                 <SkeletonText className="w-32" />
-                <Skeleton className="h-7 w-20 rounded-lg" />
+                <Skeleton className="h-7 w-24 rounded-lg" />
               </div>
-              <Skeleton className="mt-4 h-[230px] w-full rounded-lg" />
+              <div className="mt-4 grid gap-2 border-b border-[var(--border)] pb-4">
+                <SkeletonText className="w-44" />
+                <SkeletonText className="w-52" />
+              </div>
+              <div className="mt-4 grid gap-4">
+                <SkeletonText className="w-16" />
+                <Skeleton className="h-11 w-full rounded-lg" />
+                <SkeletonText className="w-12" />
+                <Skeleton className="h-[190px] w-full rounded-lg" />
+              </div>
+              <Skeleton className="mt-4 h-11 w-full rounded-lg" />
+              <div className="mt-auto flex justify-between pt-5">
+                <Skeleton className="h-9 w-28 rounded-lg" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-9 w-20 rounded-lg" />
+                  <Skeleton className="h-9 w-32 rounded-lg" />
+                </div>
+              </div>
             </section>
           </div>
-          <section className="surface-card flex flex-col p-5 skeleton-card">
-            <div className="flex items-center justify-between gap-3">
-              <SkeletonText className="w-32" />
-              <Skeleton className="h-7 w-24 rounded-lg" />
-            </div>
-            <div className="mt-4 grid gap-2 border-b border-[var(--border)] pb-4">
-              <SkeletonText className="w-44" />
-              <SkeletonText className="w-52" />
-            </div>
-            <div className="mt-4 grid gap-4">
-              <SkeletonText className="w-16" />
-              <Skeleton className="h-11 w-full rounded-lg" />
-              <SkeletonText className="w-12" />
-              <Skeleton className="h-[260px] w-full rounded-lg" />
-            </div>
-            <Skeleton className="mt-4 h-11 w-full rounded-lg" />
-            <div className="mt-auto flex justify-between pt-5">
-              <Skeleton className="h-9 w-28 rounded-lg" />
-              <div className="flex gap-2">
-                <Skeleton className="h-9 w-20 rounded-lg" />
-                <Skeleton className="h-9 w-32 rounded-lg" />
-              </div>
-            </div>
-          </section>
         </section>
       </main>
     </>

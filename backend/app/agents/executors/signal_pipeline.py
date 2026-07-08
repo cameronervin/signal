@@ -6,6 +6,7 @@ from app.agents.states.signal_state import SignalState
 from app.core.config import Settings, get_settings
 from app.infrastructure.knowledge_graph import create_knowledge_graph_service
 from app.infrastructure.public_data import PublicDataClient, get_public_data_client
+from app.observability.agent_trace import build_signal_graph_invoke_config
 from app.services.knowledge_graph_service import KnowledgeGraphService
 
 
@@ -37,6 +38,7 @@ class SignalPipelineExecutor:
         graph = self.graph_provider.signal_graph()
         result = await graph.ainvoke(
             initial_state,
+            config=build_signal_graph_invoke_config(initial_state, self.settings),
             context=SignalRuntimeContext(
                 settings=self.settings,
                 public_data_client=self.public_data_client,

@@ -96,8 +96,9 @@ files as the product adds review, approval, and worker-backed execution slices.
 ## Public Data Boundary
 
 `backend/app/infrastructure/public_data/` owns live public API clients for
-geocoding, ACS market data, DataUSA household context, FRED economic series,
-News API triggers, Wikipedia search, and DNS/MX validation. The provider caches
+geocoding, ACS market and household-growth data, FRED economic series, News API
+triggers, Wikipedia search, and DNS/MX validation. DataUSA household context is
+deferred until a stable current API contract is verified. The provider caches
 responses by lead payload and surfaces provider failures as warnings or omitted
 facts.
 

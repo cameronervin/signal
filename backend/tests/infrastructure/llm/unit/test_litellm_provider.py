@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.agents.guardrails.qualification import evaluate_gates
+from app.agents.prompts.outreach import OUTREACH_DRAFT_INSTRUCTIONS
 from app.agents.tools.public_data import create_census_tool
 from app.agents.utils.scoring import load_scoring_config, score_lead
 from app.core.config import Settings
@@ -15,9 +16,9 @@ from app.schemas.lead import LeadCreate
 
 def _lead() -> LeadCreate:
     return LeadCreate(
-        contact_name="Sarah Chen",
-        email="sarah@meridianresidential.example",
-        company="Meridian Residential",
+        contact_name="Sample Contact",
+        email="sample@operator.example",
+        company="Multifamily Operator",
         role="VP Leasing",
         property_address="123 Market St",
         city="Austin",
@@ -42,7 +43,7 @@ def _draft_kwargs(settings: Settings):
         "enrichment": enrichment,
         "score": score,
         "talking_points": ["Use market context."],
-        "instructions": "Use only supplied facts.",
+        "instructions": OUTREACH_DRAFT_INSTRUCTIONS,
         "tools": [],
         "public_data_client": object(),
     }
@@ -79,13 +80,24 @@ async def test_litellm_provider_calls_configured_proxy(
     assert captured["api_base"] == "http://localhost:4000"
     assert captured["api_key"] == "sk-test"
     assert captured["temperature"] == 0.2
-    assert captured["messages"][0] == {
-        "role": "system",
-        "content": "Use only supplied facts.",
-    }
+    assert captured["messages"][0]["role"] == "system"
+    system_content = captured["messages"][0]["content"]
+    assert "<role>" in system_content
+    assert "inbound multifamily lead" in system_content
+    assert "Use only supplied context or returned tool source facts" in system_content
+    assert "Do not change, question, or recalculate score, tier, gates" in (
+        system_content
+    )
+    assert "Do not include raw email addresses" in system_content
     assert captured["messages"][1]["role"] == "user"
-    assert "Context:" in captured["messages"][1]["content"]
-    assert "sarah@" not in captured["messages"][1]["content"]
+    user_content = captured["messages"][1]["content"]
+    assert "Context:" in user_content
+    assert (
+        "Do not change score, tier, gates, or sales insights in talking_points."
+        in user_content
+    )
+    assert "sample@" not in user_content
+    assert "***@operator.example" in user_content
 
 
 @pytest.mark.asyncio

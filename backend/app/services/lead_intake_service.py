@@ -16,7 +16,7 @@ class CeleryAgentTaskDispatcher:
         from app.workers.tasks import execute_signal_agent_run
 
         execute_signal_agent_run.apply_async(
-            kwargs={"run_id": str(run_id)},
+            args=(str(run_id),),
             task_id=str(run_id),
         )
 

@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Literal
 
 from fastapi import Request
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -124,6 +124,32 @@ class Settings(BaseSettings):
     litellm_api_key: str | None = Field(
         default=None,
         validation_alias="SIGNAL_LITELLM_API_KEY",
+    )
+    tracing_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("TRACING_ENABLED", "SIGNAL_TRACING_ENABLED"),
+    )
+    langfuse_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("LANGFUSE_ENABLED", "SIGNAL_LANGFUSE_ENABLED"),
+    )
+    langfuse_public_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "LANGFUSE_PUBLIC_KEY",
+            "SIGNAL_LANGFUSE_PUBLIC_KEY",
+        ),
+    )
+    langfuse_secret_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "LANGFUSE_SECRET_KEY",
+            "SIGNAL_LANGFUSE_SECRET_KEY",
+        ),
+    )
+    langfuse_base_url: str = Field(
+        default="https://cloud.langfuse.com",
+        validation_alias=AliasChoices("LANGFUSE_BASE_URL", "SIGNAL_LANGFUSE_BASE_URL"),
     )
 
     @property

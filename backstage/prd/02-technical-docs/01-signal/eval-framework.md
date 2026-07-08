@@ -17,6 +17,8 @@ Backend tests cover:
 - Agent research tool registry and tool wrappers are tested for stable
   assignment, hidden injected dependencies, normalized source facts, and
   sanitized failures.
+- Outreach prompt composition is tested for structured instructions, active
+  tool snippets, inbound framing, grounded claims, and safe CTA guidance.
 - LiteLLM calls are mocked in tests and cover success, empty response, failure,
   bounded tool calls, and no-call gate-failed paths.
 - Agent run approve/pause transitions preserve the human review gate.

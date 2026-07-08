@@ -124,8 +124,8 @@ function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: 
   }
 
   return (
-    <section className="detail-grid">
-      <div className="stack">
+    <section className="detail-grid lead-detail-layout">
+      <div className="lead-detail-column" aria-label="Lead detail left column">
         <div className="surface-card p-5">
           <h2 className="section-title">Lead and enrichment</h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -143,75 +143,92 @@ function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: 
             ))}
           </div>
         </div>
-        <div className="surface-card p-5">
-          <h2 className="section-title">Talking points</h2>
-          <ul className="mt-4 grid gap-3 text-sm leading-6">
-            {lead.talkingPoints.map((point) => (
-              <li key={point}>› {point}</li>
-            ))}
-          </ul>
-        </div>
-        <div className="surface-card p-5">
+        <div className="surface-card lead-detail-fill-card lead-detail-knowledge-card p-5">
           <div className="flex items-center justify-between">
             <h2 className="section-title">Knowledge graph</h2>
             <span className="filter-chip active">{relatedItems.length} related</span>
           </div>
           <KnowledgeGraph lead={graphLead} />
           {hasGraphNotes && (
-            <div className="related-list">
-              {relatedItems.map((item) => (
-                <span key={`${item.label}-${item.reason}`} className="related-list-item">
-                  <strong>{item.label}</strong>
-                  <span>{item.reason}</span>
-                </span>
-              ))}
-              {graphWarnings.map((warning) => (
-                <span key={warning} className="related-list-item">
-                  {warning}
-                </span>
-              ))}
-            </div>
+            <details className="graph-related-accordion">
+              <summary>
+                <span className="eyebrow">Related information</span>
+                <ChevronDown aria-hidden="true" size={15} />
+              </summary>
+              <div className="related-list">
+                {relatedItems.map((item) => (
+                  <span key={`${item.label}-${item.reason}`} className="related-list-item">
+                    <strong>{item.label}</strong>
+                    <span>{item.reason}</span>
+                  </span>
+                ))}
+                {graphWarnings.map((warning) => (
+                  <span key={warning} className="related-list-item">
+                    {warning}
+                  </span>
+                ))}
+              </div>
+            </details>
           )}
         </div>
       </div>
-      <div className="surface-card flex flex-col p-5">
-        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-          <h2 className="section-title">Drafted email</h2>
-          <span className="status-pill">Review gate</span>
-        </div>
-        <div className="mt-4 grid gap-2 border-b border-[var(--border)] pb-4 text-sm">
-          <span className="min-w-0 overflow-wrap-anywhere">
-            <strong>From:</strong> You · Signal SDR
-          </span>
-          <span className="min-w-0 overflow-wrap-anywhere">
-            <strong>To:</strong> {lead.email}
-          </span>
-        </div>
-        <EditableDraft subject={subject} body={body} onSubjectChange={setSubject} onBodyChange={setBody} />
-        <details className="draft-sources-accordion">
-          <summary>
-            <span className="eyebrow">Sources</span>
-            <ChevronDown aria-hidden="true" size={15} />
-          </summary>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {lead.draft?.sources.map((source) => (
-              <SourceChip key={`${source.source}-${source.label}`} source={source} />
+      <div className="lead-detail-column" aria-label="Lead detail right column">
+        <div className="surface-card p-5">
+          <h2 className="section-title">Sales insights</h2>
+          <p className="mt-2 text-xs font-semibold leading-5 text-[var(--ink-600)]">
+            Public-data signals for prioritizing this inbound lead and tailoring outreach.
+          </p>
+          <ul className="mt-4 grid gap-3 text-sm leading-6">
+            {lead.talkingPoints.map((point, index) => (
+              <li key={`${point}-${index}`}>› {point}</li>
             ))}
+          </ul>
+        </div>
+        <div className="surface-card lead-detail-fill-card lead-detail-draft-card p-5">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+            <h2 className="section-title">Drafted email</h2>
+            <span className="status-pill">Review gate</span>
           </div>
-        </details>
-        <div className="mt-auto flex justify-between pt-5">
-          <Button disabled title="Draft regeneration requires a backend drafting endpoint">
-            <RefreshCw size={15} /> Regenerate
-          </Button>
-          <div className="flex gap-2">
-            <Button onClick={() => void copyDraft()}>
-              <Copy size={15} /> Copy
+          <div className="mt-4 grid gap-2 border-b border-[var(--border)] pb-4 text-sm">
+            <span className="min-w-0 overflow-wrap-anywhere">
+              <strong>From:</strong> You · Signal SDR
+            </span>
+            <span className="min-w-0 overflow-wrap-anywhere">
+              <strong>To:</strong> {lead.email}
+            </span>
+          </div>
+          <EditableDraft
+            subject={subject}
+            body={body}
+            onSubjectChange={setSubject}
+            onBodyChange={setBody}
+            bodyRows={8}
+          />
+          <details className="draft-sources-accordion">
+            <summary>
+              <span className="eyebrow">Sources</span>
+              <ChevronDown aria-hidden="true" size={15} />
+            </summary>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {lead.draft?.sources.map((source) => (
+                <SourceChip key={`${source.source}-${source.label}`} source={source} />
+              ))}
+            </div>
+          </details>
+          <div className="mt-auto flex justify-between pt-5">
+            <Button disabled title="Draft regeneration requires a backend drafting endpoint">
+              <RefreshCw size={15} /> Regenerate
             </Button>
-            {lead.runId && (
-              <Link className="button primary" href={routes.agentRunDetail(lead.runId)}>
-                Approve review
-              </Link>
-            )}
+            <div className="flex gap-2">
+              <Button onClick={() => void copyDraft()}>
+                <Copy size={15} /> Copy
+              </Button>
+              {lead.runId && (
+                <Link className="button primary" href={routes.agentRunDetail(lead.runId)}>
+                  Approve review
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>

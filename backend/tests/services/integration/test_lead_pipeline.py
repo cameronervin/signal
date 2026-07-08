@@ -1,6 +1,7 @@
 import pytest
 
 from app.agents.executors.signal_pipeline import SignalPipelineExecutor
+from app.core.config import Settings
 from app.schemas.lead import LeadCreate
 from app.services.agent_execution_service import AgentExecutionService
 from app.services.agent_run_service import AgentRunService
@@ -29,6 +30,7 @@ async def test_pipeline_scores_and_drafts_gate_passed_lead() -> None:
     service = _lead_service(
         repository,
         SignalPipelineExecutor(
+            settings=Settings(knowledge_graph_enabled=False),
             public_data_client=public_data_client,
         ),
     )
@@ -69,6 +71,7 @@ async def test_pipeline_suppresses_draft_for_gate_failed_lead() -> None:
     service = _lead_service(
         repository,
         SignalPipelineExecutor(
+            settings=Settings(knowledge_graph_enabled=False),
             public_data_client=FakePublicDataClient(),
         ),
     )
@@ -104,6 +107,7 @@ async def test_pipeline_marks_model_failure_without_fallback_draft(
     service = _lead_service(
         repository,
         SignalPipelineExecutor(
+            settings=Settings(knowledge_graph_enabled=False),
             public_data_client=FakePublicDataClient(),
         ),
     )
@@ -147,6 +151,7 @@ async def test_gate_failed_lead_never_calls_model(
     service = _lead_service(
         repository,
         SignalPipelineExecutor(
+            settings=Settings(knowledge_graph_enabled=False),
             public_data_client=FakePublicDataClient(),
         ),
     )
@@ -180,6 +185,7 @@ async def test_graph_failure_surfaces_warning_without_hiding_model_failure(
     service = _lead_service(
         repository,
         SignalPipelineExecutor(
+            settings=Settings(knowledge_graph_enabled=True),
             public_data_client=FakePublicDataClient(),
             knowledge_graph_service=KnowledgeGraphService(
                 FailingKnowledgeGraphRepository(),

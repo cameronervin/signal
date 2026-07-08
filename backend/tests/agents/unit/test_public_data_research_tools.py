@@ -4,7 +4,6 @@ import pytest
 
 from app.agents.tools.public_data import (
     create_census_tool,
-    create_datausa_tool,
     create_domain_tool,
     create_fred_tool,
     create_geocoding_tool,
@@ -14,7 +13,6 @@ from app.agents.tools.public_data import (
 from app.infrastructure.public_data.types import (
     CensusMarketSnapshot,
     CompanySnapshot,
-    DataUsaSnapshot,
     DomainSnapshot,
     FredSnapshot,
     GeocodingResult,
@@ -37,10 +35,8 @@ class FakeResearchPublicDataClient:
             renter_share=0.64,
             median_rent=1925,
             household_count=500000,
+            household_growth=3.2,
         )
-
-    async def datausa_state_snapshot(self, **kwargs):
-        return DataUsaSnapshot(household_growth=3.2)
 
     async def fred_snapshot(self, **kwargs):
         return FredSnapshot(rent_growth_yoy=5.4, unemployment_rate=3.1)
@@ -80,7 +76,6 @@ class FakeResearchPublicDataClient:
             {"city": "Austin", "state": "TX"},
             "Renter share",
         ),
-        (create_datausa_tool, {"state": "TX"}, "Household growth"),
         (create_fred_tool, {"state": "TX"}, "Rent growth"),
         (create_news_tool, {"company": "Example Homes"}, "Trigger event"),
         (

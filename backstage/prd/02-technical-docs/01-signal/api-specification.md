@@ -63,9 +63,14 @@ completes.
 
 ## Lead Response Shape
 
-Completed lead responses include `knowledge_graph`:
+Completed lead responses include the assignment outputs reps need for inbound
+lead work: deterministic scoring, public-data enrichment, sales insights,
+review-ready draft outreach, citable source facts, and `knowledge_graph`.
 
-`LeadResponse` includes `knowledge_graph`:
+`LeadResponse` keeps the stable `talking_points` API field name, but that array
+represents sales insights for prioritization and draft personalization.
+
+`LeadResponse.knowledge_graph` includes:
 
 ```json
 {
@@ -97,6 +102,9 @@ Completed lead responses include `knowledge_graph`:
 
 The legacy `related_leads` field remains in the response and is populated from
 graph related-lead context when available.
+
+Drafts are omitted for hard-gate-failed leads. Draft sources are `SourceFact`
+records that support personalization claims for human review.
 
 ## List Leads
 

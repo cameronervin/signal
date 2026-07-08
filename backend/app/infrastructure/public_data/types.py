@@ -15,13 +15,8 @@ class CensusMarketSnapshot:
     renter_share: float | None = None
     median_rent: int | None = None
     household_count: int | None = None
-    source_name: str = "Census ACS"
-
-
-@dataclass(frozen=True)
-class DataUsaSnapshot:
     household_growth: float | None = None
-    source_name: str = "DataUSA"
+    source_name: str = "Census ACS"
 
 
 @dataclass(frozen=True)

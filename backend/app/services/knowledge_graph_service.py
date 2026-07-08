@@ -338,8 +338,8 @@ def graph_talking_points(related: Iterable[KnowledgeGraphRelatedLead]) -> list[s
     points = []
     for item in related:
         if item.source_fact_ids:
-            points.append(f"Related lead context: {item.reason}")
-    return points
+            points.append(f"Related inbound signal for prioritization: {item.reason}")
+    return dedupe(points)
 
 
 def dedupe(values: Iterable[str]) -> list[str]:

@@ -11,7 +11,6 @@ from langchain_core.tools import BaseTool
 from app.agents.chains.outreach_drafting import OUTREACH_DRAFT_CHAIN
 from app.agents.tools.public_data import (
     create_census_tool,
-    create_datausa_tool,
     create_domain_tool,
     create_fred_tool,
     create_geocoding_tool,
@@ -77,10 +76,6 @@ def _create_census_tool(_context: ToolBuildContext) -> BaseTool:
     return create_census_tool()
 
 
-def _create_datausa_tool(_context: ToolBuildContext) -> BaseTool:
-    return create_datausa_tool()
-
-
 def _create_fred_tool(_context: ToolBuildContext) -> BaseTool:
     return create_fred_tool()
 
@@ -119,13 +114,6 @@ TOOL_REGISTRY: tuple[ToolSpec, ...] = (
         enabled_predicate=_research_tools_enabled,
         workflow_chain_targets=_outreach_target(),
         prompt_keys=_outreach_prompt("fetch_census_market_demographics"),
-    ),
-    ToolSpec(
-        tool_name="fetch_datausa_household_growth",
-        factory=_create_datausa_tool,
-        enabled_predicate=_research_tools_enabled,
-        workflow_chain_targets=_outreach_target(),
-        prompt_keys=_outreach_prompt("fetch_datausa_household_growth"),
     ),
     ToolSpec(
         tool_name="fetch_fred_market_economics",

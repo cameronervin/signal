@@ -30,6 +30,37 @@ def test_worker_resource_lifecycle_is_idempotent() -> None:
     assert worker_app._worker_loop is None
 
 
+def test_worker_lifecycle_initializes_and_shutdowns_langfuse(monkeypatch) -> None:
+    calls: list[str] = []
+    worker_app.teardown_worker_resources()
+
+    def fake_init_langfuse(app_settings) -> bool:
+        assert app_settings is worker_app.settings
+        calls.append("init")
+        return True
+
+    def fake_verify(app_settings) -> dict[str, object]:
+        assert app_settings is worker_app.settings
+        calls.append("verify")
+        return {"enabled": True, "provider": "langfuse", "ready": True}
+
+    monkeypatch.setattr(worker_app, "init_langfuse", fake_init_langfuse)
+    monkeypatch.setattr(worker_app, "verify_tracing_configuration", fake_verify)
+    monkeypatch.setattr(
+        worker_app,
+        "shutdown_langfuse",
+        lambda: calls.append("shutdown"),
+    )
+
+    worker_app.init_worker_resources()
+    worker_app.init_worker_resources()
+    worker_app.teardown_worker_resources()
+
+    assert calls.count("init") == 1
+    assert calls.count("verify") == 1
+    assert calls[-1] == "shutdown"
+
+
 def test_worker_shutdown_signal_tears_down_ready_resources() -> None:
     worker_app.teardown_worker_resources()
     worker_app.init_worker_resources()

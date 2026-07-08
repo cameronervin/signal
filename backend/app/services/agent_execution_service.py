@@ -129,7 +129,7 @@ class AgentExecutionService:
                 AgentStep(
                     name="Deterministic scoring",
                     status="done",
-                    summary="Score, tier, why-line, and talking points computed.",
+                    summary="Score, tier, why-line, and sales insights computed.",
                 ),
                 AgentStep(
                     name="Agent research and drafting",

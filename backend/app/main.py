@@ -20,6 +20,8 @@ from app.infrastructure.public_data import (
     clear_public_data_client_cache,
     create_public_data_client,
 )
+from app.observability.agent_trace import verify_tracing_configuration
+from app.observability.langfuse_init import init_langfuse, shutdown_langfuse
 
 logger = structlog.get_logger(__name__)
 
@@ -29,6 +31,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
     configure_logging(settings.log_level)
     logger.info("api_infrastructure_starting", env=settings.env, warm_only=True)
+    init_langfuse(settings)
+    logger.info(
+        "api_tracing_startup_check",
+        **verify_tracing_configuration(settings),
+    )
     http_client = httpx.AsyncClient(follow_redirects=True)
     try:
         sessionmaker = get_sessionmaker(settings)
@@ -69,6 +76,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         clear_public_data_client_cache()
         clear_llm_provider_cache()
         clear_signal_graph_provider_cache()
+        shutdown_langfuse()
         logger.info(
             "api_infrastructure_shutdown_complete",
             env=settings.env,

@@ -86,6 +86,10 @@ SIGNAL_NEWS_API_KEY=optional
 SIGNAL_NOMINATIM_EMAIL=optional-contact@example.com
 ```
 
+`SIGNAL_CENSUS_API_KEY` is required for live Census ACS market demographics and
+household-growth enrichment. DataUSA household-growth enrichment is deferred
+until a stable current household API contract is verified.
+
 Agent research tools:
 
 ```bash
@@ -127,7 +131,7 @@ Use `bolt://localhost:7687` when the backend runs on the host. Use
 ## Local Infrastructure
 
 Signal's local dependency stack lives under `deploy/`, following the smaller
-version of the playbook structure:
+service structure:
 
 ```text
 deploy/compose/   Docker Compose files
@@ -195,6 +199,12 @@ Postgres container port. The local developer-facing port is `localhost:5433`.
 
 LiteLLM uses its database-backed image for the local proxy. On a fresh Postgres
 volume, the first boot can take several minutes while proxy migrations run.
+
+Langfuse tracing is optional and disabled by default. To trace backend agent
+runs, set `TRACING_ENABLED=true`, `LANGFUSE_ENABLED=true`,
+`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and `LANGFUSE_BASE_URL` in the
+backend environment for both the API process and Celery worker. Keep Langfuse
+credentials out of frontend env files and committed docs.
 
 Run the application processes directly while Compose provides dependencies.
 The worker is required for submitted leads to move from queued to completed

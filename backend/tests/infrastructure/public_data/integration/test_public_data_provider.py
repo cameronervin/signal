@@ -7,7 +7,6 @@ from app.infrastructure.public_data.provider import (
 from app.infrastructure.public_data.types import (
     CensusMarketSnapshot,
     CompanySnapshot,
-    DataUsaSnapshot,
     DomainSnapshot,
     FredSnapshot,
     GeocodingResult,
@@ -29,12 +28,11 @@ class FakeGeocoding:
 
 class FakeCensus:
     async def market_snapshot(self, **kwargs):
-        return CensusMarketSnapshot(renter_share=0.64, median_rent=1925)
-
-
-class FakeDataUsa:
-    async def state_snapshot(self, **kwargs):
-        return DataUsaSnapshot(household_growth=3.2)
+        return CensusMarketSnapshot(
+            renter_share=0.64,
+            median_rent=1925,
+            household_growth=3.2,
+        )
 
 
 class FakeFred:
@@ -64,9 +62,6 @@ class FailingAdapter:
     async def market_snapshot(self, **kwargs):
         raise RuntimeError("census down")
 
-    async def state_snapshot(self, **kwargs):
-        raise RuntimeError("datausa down")
-
     async def snapshot(self, **kwargs):
         raise RuntimeError("fred down")
 
@@ -86,7 +81,6 @@ async def test_public_data_client_merges_live_adapter_snapshots() -> None:
         PublicDataClientConfig(),
         geocoding=FakeGeocoding(),
         census=FakeCensus(),
-        datausa=FakeDataUsa(),
         fred=FakeFred(),
         news=FakeNews(),
         wikipedia=FakeWikipedia(),
@@ -108,12 +102,12 @@ async def test_public_data_client_merges_live_adapter_snapshots() -> None:
     assert enrichment.market == "Austin, Texas"
     assert enrichment.coordinates == (30.0, -97.0)
     assert enrichment.renter_share == 0.64
+    assert enrichment.household_growth == 3.2
     assert enrichment.rent_growth_yoy == 5.4
     assert enrichment.recent_trigger == "Regional portfolio expansion"
     assert enrichment.provider_warnings == []
     assert {source.source for source in enrichment.sources} >= {
         "Census ACS",
-        "DataUSA",
         "FRED",
         "News API",
         "Wikipedia",
@@ -129,7 +123,6 @@ async def test_public_data_client_exposes_provider_failures_without_fixture_fact
         PublicDataClientConfig(),
         geocoding=failing,
         census=failing,
-        datausa=failing,
         fred=failing,
         news=failing,
         wikipedia=failing,
@@ -157,7 +150,6 @@ async def test_public_data_client_exposes_provider_failures_without_fixture_fact
     assert set(enrichment.provider_warnings) == {
         "geocoding unavailable",
         "market demographics unavailable",
-        "household growth data unavailable",
         "economic data unavailable",
         "company trigger data unavailable",
         "company background unavailable",

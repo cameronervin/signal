@@ -27,14 +27,6 @@ lead's market when the baseline context is thin. Cite returned source facts only
 </tools>
 """
 
-DATAUSA_PROMPT = """
-<tools>
-- **fetch_datausa_household_growth**:
-Use this for household-growth context at the lead's state level when it would
-improve personalization. Cite returned source facts only.
-</tools>
-"""
-
 FRED_PROMPT = """
 <tools>
 - **fetch_fred_market_economics**:
@@ -73,10 +65,6 @@ TOOL_PROMPT_REGISTRY: dict[ToolPromptKey, str] = {
         "outreach_draft",
         "fetch_census_market_demographics",
     ): CENSUS_PROMPT,
-    ToolPromptKey(
-        "outreach_draft",
-        "fetch_datausa_household_growth",
-    ): DATAUSA_PROMPT,
     ToolPromptKey("outreach_draft", "fetch_fred_market_economics"): FRED_PROMPT,
     ToolPromptKey("outreach_draft", "lookup_news_company_trigger"): NEWS_PROMPT,
     ToolPromptKey(

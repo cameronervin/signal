@@ -34,7 +34,7 @@ Graph state lives in `backend/app/agents/states/signal_state.py` and includes:
 - `gates`
 - `enrichment`
 - `score`
-- `talking_points`
+- `talking_points` sales insights for rep prioritization and draft grounding
 - `flags`
 - `draft`
 - `related_leads`
@@ -102,7 +102,7 @@ Responsibilities:
 
 - Score lead against the configured rubric.
 - Assign tier and why-line.
-- Generate talking points.
+- Generate sales insights in the stable `talking_points` state field.
 - Use scoring defaults from the backend scoring config, or load an override
   from `SIGNAL_SCORING_CONFIG_PATH`.
 

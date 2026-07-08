@@ -776,6 +776,28 @@ input:focus-visible {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
+.lead-detail-layout {
+  align-items: stretch;
+}
+
+.lead-detail-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+.lead-detail-fill-card {
+  flex: 1 0 auto;
+  min-height: auto;
+}
+
+.lead-detail-knowledge-card,
+.lead-detail-draft-card {
+  display: flex;
+  flex-direction: column;
+}
+
 .stack {
   display: grid;
   gap: 16px;
@@ -1297,7 +1319,8 @@ input:focus-visible {
   width: 100%;
 }
 
-.draft-sources-accordion {
+.draft-sources-accordion,
+.graph-related-accordion {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1305,7 +1328,8 @@ input:focus-visible {
   padding: 12px;
 }
 
-.draft-sources-accordion summary {
+.draft-sources-accordion summary,
+.graph-related-accordion summary {
   align-items: center;
   cursor: pointer;
   display: flex;
@@ -1314,17 +1338,20 @@ input:focus-visible {
   min-width: 0;
 }
 
-.draft-sources-accordion summary::-webkit-details-marker {
+.draft-sources-accordion summary::-webkit-details-marker,
+.graph-related-accordion summary::-webkit-details-marker {
   display: none;
 }
 
-.draft-sources-accordion summary svg {
+.draft-sources-accordion summary svg,
+.graph-related-accordion summary svg {
   color: var(--ink-400);
   flex-shrink: 0;
   transition: transform 160ms ease;
 }
 
-.draft-sources-accordion[open] summary svg {
+.draft-sources-accordion[open] summary svg,
+.graph-related-accordion[open] summary svg {
   transform: rotate(180deg);
 }
 
@@ -1364,11 +1391,18 @@ input:focus-visible {
   overflow: hidden;
 }
 
+.lead-detail-knowledge-card .knowledge-graph {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 340px;
+}
+
 .knowledge-graph .react-flow__node {
   border: 1px solid var(--graph-edge);
   border-radius: 999px;
   box-shadow: var(--graph-shadow);
   color: var(--ink-600);
+  cursor: grab;
   font-size: 11px;
   font-weight: 800;
   max-width: 150px;
@@ -1376,6 +1410,17 @@ input:focus-visible {
   padding: 8px 12px;
   text-align: center;
   white-space: normal;
+}
+
+.knowledge-graph .react-flow__node.dragging {
+  cursor: grabbing;
+}
+
+.knowledge-graph .react-flow__node.selected {
+  border-color: var(--brand-primary);
+  box-shadow:
+    0 0 0 3px var(--brand-tint),
+    var(--graph-shadow);
 }
 
 .knowledge-graph .graph-node-contact {
@@ -1386,6 +1431,26 @@ input:focus-visible {
 
 .knowledge-graph .graph-node-context {
   background: var(--surface-0);
+}
+
+.knowledge-graph .react-flow__controls {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--graph-shadow);
+  overflow: hidden;
+}
+
+.knowledge-graph .react-flow__controls-button {
+  background: var(--surface-0);
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-600);
+  height: 24px;
+  width: 24px;
+}
+
+.knowledge-graph .react-flow__controls-button:hover {
+  background: var(--brand-tint-2);
+  color: var(--brand-deep);
 }
 
 .related-list {
@@ -1472,6 +1537,10 @@ input:focus-visible {
 
   .detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .lead-detail-knowledge-card .knowledge-graph {
+    min-height: 260px;
   }
 
   .content.screen-fit {

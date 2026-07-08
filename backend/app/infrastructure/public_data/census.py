@@ -6,7 +6,10 @@ from app.infrastructure.public_data.http import get_json
 from app.infrastructure.public_data.state_fips import STATE_FIPS
 from app.infrastructure.public_data.types import CensusMarketSnapshot
 
-CENSUS_ACS_PROFILE_URL = "https://api.census.gov/data/2024/acs/acs5/profile"
+CENSUS_ACS_PROFILE_YEAR = 2024
+CENSUS_ACS_PROFILE_URL = (
+    f"https://api.census.gov/data/{CENSUS_ACS_PROFILE_YEAR}/acs/acs5/profile"
+)
 CENSUS_VARIABLES = "NAME,DP04_0046PE,DP04_0134E,DP02_0001E"
 
 
@@ -31,16 +34,45 @@ class CensusAcsClient:
         state_fips = STATE_FIPS.get(state.upper())
         if state_fips is None:
             return None
-        params: dict[str, Any] = {
-            "get": CENSUS_VARIABLES,
-            "for": "place:*",
-            "in": f"state:{state_fips}",
-        }
-        if self.api_key:
-            params["key"] = self.api_key
+        current = await self._market_row(
+            year=CENSUS_ACS_PROFILE_YEAR,
+            city=city,
+            state_fips=state_fips,
+        )
+        if current is None:
+            return None
+        current_households = _optional_int(current.get("DP02_0001E"))
+        household_growth = None
+        try:
+            previous = await self._market_row(
+                year=CENSUS_ACS_PROFILE_YEAR - 1,
+                city=city,
+                state_fips=state_fips,
+            )
+        except Exception:  # noqa: BLE001
+            previous = None
+        if previous is not None:
+            household_growth = _growth_percent(
+                current=current_households,
+                previous=_optional_int(previous.get("DP02_0001E")),
+            )
+        return CensusMarketSnapshot(
+            renter_share=_optional_percent(current.get("DP04_0046PE")),
+            median_rent=_optional_int(current.get("DP04_0134E")),
+            household_count=current_households,
+            household_growth=household_growth,
+        )
+
+    async def _market_row(
+        self,
+        *,
+        year: int,
+        city: str,
+        state_fips: str,
+    ) -> dict[str, object] | None:
         payload = await get_json(
-            CENSUS_ACS_PROFILE_URL,
-            params=params,
+            _acs_profile_url(year),
+            params=self._params(state_fips),
             client=self.http_client,
             transport=self.transport,
         )
@@ -53,19 +85,23 @@ class CensusAcsClient:
             (
                 row
                 for row in rows
-                if row
-                and city_normalized in str(row[0]).lower()
+                if row and city_normalized in str(row[0]).lower()
             ),
             None,
         )
         if selected is None:
             return None
-        row_data = dict(zip(headers, selected, strict=False))
-        return CensusMarketSnapshot(
-            renter_share=_optional_percent(row_data.get("DP04_0046PE")),
-            median_rent=_optional_int(row_data.get("DP04_0134E")),
-            household_count=_optional_int(row_data.get("DP02_0001E")),
-        )
+        return dict(zip(headers, selected, strict=False))
+
+    def _params(self, state_fips: str) -> dict[str, Any]:
+        params: dict[str, Any] = {
+            "get": CENSUS_VARIABLES,
+            "for": "place:*",
+            "in": f"state:{state_fips}",
+        }
+        if self.api_key:
+            params["key"] = self.api_key
+        return params
 
 
 def _optional_percent(value: object) -> float | None:
@@ -88,3 +124,13 @@ def _optional_int(value: object) -> int | None:
     if parsed is None:
         return None
     return int(parsed)
+
+
+def _growth_percent(*, current: int | None, previous: int | None) -> float | None:
+    if current is None or previous in (None, 0):
+        return None
+    return ((current - previous) / previous) * 100
+
+
+def _acs_profile_url(year: int) -> str:
+    return f"https://api.census.gov/data/{year}/acs/acs5/profile"

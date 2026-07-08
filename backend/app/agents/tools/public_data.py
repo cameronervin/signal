@@ -10,7 +10,6 @@ from pydantic import BaseModel, Field
 from app.infrastructure.public_data import PublicDataClient
 from app.infrastructure.public_data.provider import (
     source_facts_for_census,
-    source_facts_for_datausa,
     source_facts_for_domain,
     source_facts_for_fred,
     source_facts_for_geocoding,
@@ -99,28 +98,6 @@ def create_census_tool() -> StructuredTool:
             "Fetch Census ACS renter share, median rent, and household count for "
             "the lead market."
         ),
-    )
-
-
-def create_datausa_tool() -> StructuredTool:
-    async def _fetch_datausa_household_growth(
-        state: Annotated[str, Field(description="State or state abbreviation.")],
-        public_data_client: Annotated[object, InjectedToolArg],
-    ) -> str:
-        """Fetch state-level household-growth context from DataUSA."""
-        try:
-            result = await public_data_client.datausa_state_snapshot(state=state)
-        except Exception:  # noqa: BLE001
-            return _unavailable("DataUSA household-growth data is unavailable.")
-        facts = source_facts_for_datausa(result)
-        if not facts:
-            return _not_found("No DataUSA household-growth context found.")
-        return _ok("Found DataUSA household-growth context.", facts)
-
-    return StructuredTool.from_function(
-        coroutine=_fetch_datausa_household_growth,
-        name="fetch_datausa_household_growth",
-        description="Fetch DataUSA household-growth context for the lead state.",
     )
 
 

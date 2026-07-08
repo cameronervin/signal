@@ -20,7 +20,6 @@ def test_research_tool_registry_declares_stable_tool_order() -> None:
     assert [spec.tool_name for spec in TOOL_REGISTRY] == [
         "geocode_property_address",
         "fetch_census_market_demographics",
-        "fetch_datausa_household_growth",
         "fetch_fred_market_economics",
         "lookup_news_company_trigger",
         "lookup_wikipedia_company_background",
@@ -35,7 +34,6 @@ def test_research_tool_assignment_respects_keys_and_settings() -> None:
     assert [tool.name for tool in no_key_tools] == [
         "geocode_property_address",
         "fetch_census_market_demographics",
-        "fetch_datausa_household_growth",
         "lookup_wikipedia_company_background",
         "validate_email_domain_mx",
     ]
@@ -52,7 +50,6 @@ def test_research_tool_assignment_respects_keys_and_settings() -> None:
     assert assigned_names == [
         "geocode_property_address",
         "fetch_census_market_demographics",
-        "fetch_datausa_household_growth",
         "fetch_fred_market_economics",
         "lookup_news_company_trigger",
         "lookup_wikipedia_company_background",

@@ -10,6 +10,33 @@ from app.schemas.lead import (
     SourceFact,
 )
 
+OUTREACH_FIELD_DESCRIPTIONS = {
+    "lead": (
+        "Inbound lead input supplied by a sales rep workflow: contact, company, "
+        "role, masked email domain, and the multifamily property location."
+    ),
+    "gates": (
+        "Hard qualification checks that decide whether outreach should be "
+        "suppressed before a rep spends time on the lead."
+    ),
+    "score": (
+        "Server-generated lead scoring output for prioritization, including "
+        "tier, total score, component points, and the why-line."
+    ),
+    "talking_points": (
+        "Sales insights that convert public API enrichment into rep-ready "
+        "angles for leasing operations, follow-up urgency, and draft outreach."
+    ),
+    "enrichment": (
+        "Normalized public API context about the property market, company, "
+        "economic signals, and trigger evidence."
+    ),
+    "source_facts": (
+        "Citable public-data facts that can support personalization claims in "
+        "a review-ready draft email."
+    ),
+}
+
 
 def build_outreach_context(
     *,
@@ -22,6 +49,7 @@ def build_outreach_context(
     """Build the deterministic context pack for outreach drafting."""
     domain = lead.email.split("@")[-1].lower()
     return {
+        "field_descriptions": OUTREACH_FIELD_DESCRIPTIONS,
         "lead": {
             "contact_name": lead.contact_name,
             "company": lead.company,

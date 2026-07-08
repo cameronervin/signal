@@ -98,7 +98,7 @@ export function AgentRunDetailView({ run }: Props) {
               </div>
               <p className="mt-3 text-sm leading-6 text-[var(--ink-600)]">
                 {currentRun.output?.summary ??
-                  "Score, why-line, talking points, related context, and draft are ready for SDR review."}
+                  "Score, why-line, sales insights, related context, and draft are ready for SDR review."}
               </p>
               <div className="review-actions">
                 <Button variant="primary" disabled={!canApprove || pendingAction !== null} onClick={() => void runAction("approve")}>
