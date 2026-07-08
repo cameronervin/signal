@@ -61,13 +61,17 @@ Acceptance:
 
 ## Epic 4 - Agent Operations
 
-**US-4.1** As an SDR manager, I can see current enrichment and outreach agent
-runs so I know what is ready, running, or blocked.
+**US-4.1** As an SDR, I can assign the SDR Digital Worker to an eligible
+draft-ready inbound lead so sandbox follow-up starts from the reviewed draft.
 
 Acceptance:
 
-- Agent list shows run id, lead, stage, and status.
-- Run detail shows pipeline steps and activity log.
+- Only gate-passed leads with existing drafts can be assigned.
+- Assignment creates durable worker state and queues the worker.
+- The worker sends the existing draft through the sandbox email tool.
+- Follow-ups and inbound email triggers wake the worker without live delivery.
+- Worker progress shows phase, goals, sandbox messages, follow-ups, and run
+  status for SDR check-ins.
 
 ## Epic 5 - Rollout Narrative
 

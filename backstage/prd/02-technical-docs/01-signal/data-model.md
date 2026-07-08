@@ -120,6 +120,37 @@ The v1 status surface is enough for polling. Streaming can be added later.
 Postgres is the source of truth for queued, running, paused, failed,
 awaiting-review, and completed statuses.
 
+## Lead Queue Item
+
+`LeadQueueItemResponse` powers the inbound leads page:
+
+- `id`: lead id for row identity.
+- `run_id`: agent run id for the row.
+- `state`: `ready` or `loading`.
+- `input`: submitted `LeadCreate` contact and property fields.
+- `lead`: completed `LeadResponse` when `state` is `ready`, otherwise null.
+- `run`: current `AgentRunResponse` when `state` is `loading`, otherwise null.
+
+Ready rows are ranked by tier and score. Loading rows represent queued or
+running agent runs that do not yet have a lead snapshot, appear after ready rows
+newest first, and are not clickable until analysis completes.
+
+## Lead Delete Result
+
+`LeadDeleteResponse` reports backend cleanup counts for lead-intelligence delete
+APIs:
+
+- `deleted_leads`: completed lead snapshots deleted.
+- `deleted_agent_runs`: lead-intelligence agent runs deleted.
+- `deleted_status_events`: agent run status events deleted.
+- `skipped_assigned_leads`: active or paused Digital Workforce lead assignments
+  skipped during bulk cleanup.
+
+Delete APIs remove Signal lead snapshots, matching agent runs, and status
+events only. They do not delete Digital Workforce assignment state, sandbox
+messages, follow-ups, worker runs, Neo4j graph context, or Celery tasks already
+dispatched.
+
 ## Agent Run Status Event
 
 `AgentRunStatusEvent` records lifecycle changes:
@@ -131,6 +162,38 @@ awaiting-review, and completed statuses.
 - `message`
 - `payload`
 - timestamp
+
+## Digital Worker Assignment
+
+`DigitalWorkerAssignmentResponse` tracks the long-lived SDR digital worker case:
+
+- `assignment_id`: UUID4 worker case id.
+- `lead_id`: completed lead snapshot assigned to the worker.
+- `status`: `active`, `paused`, `completed`, or `failed`.
+- `current_phase`: lifecycle phase from the repo-versioned spec.
+- `lifecycle_version`: versioned JSON spec name.
+- `latest_run_id`: most recent worker wake-up.
+- `activity_log`: sanitized operational events.
+- `goals`, `messages`, `follow_ups`, and `runs`: durable worker state for SDR
+  progress monitoring.
+
+Only gate-passed leads with an existing draft can be assigned. Assignment does
+not alter score, tier, gates, or lead-intelligence run state.
+
+## Digital Worker State Records
+
+Digital Workforce writes:
+
+- `digital_worker_assignments`: canonical case status, phase, lifecycle
+  version, latest run id, lead id, and sanitized activity payload.
+- `digital_worker_runs`: one bounded worker wake-up per assignment trigger.
+- `digital_worker_goal_states`: phase/goal completion from the lifecycle spec.
+- `digital_worker_messages`: full sandbox inbound/outbound email copies for
+  local worker context.
+- `digital_worker_follow_ups`: scheduled wake-ups scanned by Celery Beat.
+
+Sandbox messages are stored for demo continuity but must not be logged. There
+is no live email, SMS, CRM, or paid communication provider in this slice.
 
 ## Persistence Records
 
@@ -144,6 +207,8 @@ Signal writes:
   serialized `AgentRunResponse` payload.
 - `signal_agent_run_status_events`: UUID event id, UUID run id, status, stage,
   optional message/payload, and timestamp.
+- Digital Workforce tables listed above for worker assignments, runs, goals,
+  messages, and follow-ups.
 - Neo4j, when enabled, stores graph relationships for lead context. It does not
   replace Postgres snapshots as the source of truth.
 

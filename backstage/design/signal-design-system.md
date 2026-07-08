@@ -16,8 +16,8 @@ Detailed implementation guidance lives in
 1. Dashboard - KPIs and queue health.
 2. Inbound Leads - ranked table.
 3. Lead Detail - enrichment, graph context, draft review.
-4. Agent Assignment - active runs.
-5. Agent Progress - pipeline and activity log.
+4. Digital Workforce - SDR digital worker preview and eligible lead handoffs.
+5. Digital Worker Progress - communication handoff preview and SDR check-in log.
 6. Gate-Failed Lead - flags and no-draft state.
 
 ## Tokens

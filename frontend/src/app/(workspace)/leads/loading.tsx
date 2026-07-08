@@ -29,7 +29,7 @@ export default function LeadsLoading() {
             <span>Units</span>
             <span>Score</span>
             <span>Why this lead</span>
-            <span>Draft</span>
+            <span>Status</span>
             <span />
           </div>
           <div className="table-body">

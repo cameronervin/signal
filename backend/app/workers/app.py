@@ -42,6 +42,12 @@ celery_app = Celery(
 )
 celery_app.conf.update(
     accept_content=["json"],
+    beat_schedule={
+        "digital-worker-scan-due-follow-ups": {
+            "task": "signal.digital_worker.scan_due_follow_ups",
+            "schedule": settings.digital_worker_follow_up_scan_seconds,
+        },
+    },
     result_expires=3600,
     result_serializer="json",
     task_serializer="json",
@@ -116,6 +122,7 @@ def init_worker_resources(**_: object) -> None:
     _worker_llm_provider = get_llm_provider(settings)
     _worker_graph_provider = get_signal_graph_provider(settings=settings)
     _worker_graph_provider.signal_graph()
+    _worker_graph_provider.digital_worker_graph()
     _worker_resources_initialized = True
     logger.info(
         "worker_infrastructure_initialized",
@@ -129,6 +136,7 @@ def init_worker_resources(**_: object) -> None:
             "knowledge_graph_service",
             "llm_provider",
             "signal_graph_provider",
+            "digital_worker_graph",
         ],
     )
 

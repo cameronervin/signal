@@ -9,6 +9,17 @@ from app.workers.tasks import _execute_signal_agent_run
 from tests.fakes import FakePublicDataClient, FakeSignalRepository
 
 
+@pytest.fixture(autouse=True)
+def disable_live_worker_tracing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(worker_app, "init_langfuse", lambda app_settings: False)
+    monkeypatch.setattr(
+        worker_app,
+        "verify_tracing_configuration",
+        lambda app_settings: {"enabled": False, "provider": "langfuse"},
+    )
+    monkeypatch.setattr(worker_app, "shutdown_langfuse", lambda: None)
+
+
 def test_worker_resource_lifecycle_is_idempotent() -> None:
     worker_app.teardown_worker_resources()
 

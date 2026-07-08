@@ -1,5 +1,5 @@
 import { apiGet, apiPost, isFixtureMode } from "@/lib/api/client";
-import { createLead, getLead } from "@/lib/api/endpoints/leads";
+import { createLead, getLead, listLeadQueue } from "@/lib/api/endpoints/leads";
 import type { AgentRunResponseDto, LeadCreateDto, LeadResponseDto } from "@/types/lead";
 
 jest.mock("@/lib/api/client", () => ({
@@ -106,6 +106,57 @@ describe("lead API endpoint mapping", () => {
     await expect(createLead(payload)).resolves.toEqual(response);
 
     expect(apiPostMock).toHaveBeenCalledWith("/api/v1/leads", payload);
+  });
+
+  it("maps ready and loading lead queue rows from the backend", async () => {
+    apiGetMock.mockResolvedValueOnce([
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        run_id: "21111111-1111-4111-8111-111111111111",
+        state: "ready",
+        input: backendLeadWithoutArrayFields().input,
+        lead: backendLeadWithoutArrayFields(),
+        run: null
+      },
+      {
+        id: "11111111-2222-4222-8222-111111111111",
+        run_id: "21111111-2222-4222-8222-111111111111",
+        state: "loading",
+        input: {
+          contact_name: "Loading Contact",
+          email: "loading@operator.example",
+          company: "Loading Operator",
+          role: "VP Leasing",
+          property_address: "100 Main St",
+          city: "Austin",
+          state: "TX",
+          country: "US"
+        },
+        lead: null,
+        run: {
+          run_id: "21111111-2222-4222-8222-111111111111",
+          lead_id: "11111111-2222-4222-8222-111111111111",
+          status: "running",
+          trigger: "api_insert",
+          current_stage: "agent_execution",
+          steps: [],
+          activity_log: []
+        }
+      }
+    ]);
+
+    const rows = await listLeadQueue();
+
+    expect(apiGetMock).toHaveBeenCalledWith("/api/v1/leads/queue");
+    expect(rows[0]).toMatchObject({
+      state: "ready",
+      lead: { name: "Sample Contact" }
+    });
+    expect(rows[1]).toMatchObject({
+      state: "loading",
+      input: { contact_name: "Loading Contact" },
+      run: { status: "running" }
+    });
   });
 });
 

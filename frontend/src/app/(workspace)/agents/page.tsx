@@ -1,32 +1,23 @@
-import { AgentAssignmentView } from "@/components/features/agents/AgentAssignmentView";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { StatePanel } from "@/components/ui/StatePanel";
-import { listAgentRuns } from "@/lib/api/endpoints/agent-runs";
+import { DigitalWorkforceView } from "@/components/features/agents/DigitalWorkforceView";
+import { buildDigitalWorkerAssignmentPreviews } from "@/lib/fixtures/digital-workforce";
+import { listLeads } from "@/lib/api/endpoints/leads";
 
 export const dynamic = "force-dynamic";
 
-export default async function AgentsPage() {
-  let agentRuns: Awaited<ReturnType<typeof listAgentRuns>> | null = null;
+export default async function DigitalWorkforcePage() {
+  let leads: Awaited<ReturnType<typeof listLeads>> = [];
+  let leadsUnavailable = false;
 
   try {
-    agentRuns = await listAgentRuns();
+    leads = await listLeads();
   } catch {
-    agentRuns = null;
+    leadsUnavailable = true;
   }
 
-  if (!agentRuns) {
-    return (
-      <>
-        <PageHeader title="Agent Assignment" subtitle="API unavailable" />
-        <StatePanel
-          title="Agent runs unavailable"
-          message="Signal could not load agent runs from the API. Start the backend or set fixture mode explicitly for local evaluation."
-          actionLabel="Open leads"
-          actionHref="/leads"
-        />
-      </>
-    );
-  }
-
-  return <AgentAssignmentView agentRuns={agentRuns} />;
+  return (
+    <DigitalWorkforceView
+      assignments={buildDigitalWorkerAssignmentPreviews(leads)}
+      leadsUnavailable={leadsUnavailable}
+    />
+  );
 }

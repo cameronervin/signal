@@ -8,10 +8,15 @@ from app.core.config import Settings, get_request_settings
 from app.infrastructure.db.session import get_sessionmaker
 from app.infrastructure.knowledge_graph import create_knowledge_graph_service
 from app.infrastructure.public_data import PublicDataClient, get_public_data_client
+from app.repositories.digital_worker import (
+    DigitalWorkerPostgresRepository,
+    DigitalWorkerRepository,
+)
 from app.repositories.signal_snapshot import SignalRepository, SignalSnapshotRepository
 from app.services.agent_execution_service import AgentExecutionService
 from app.services.agent_run_service import AgentRunService
 from app.services.analytics_service import AnalyticsService
+from app.services.digital_worker_service import DigitalWorkerService
 from app.services.knowledge_graph_service import KnowledgeGraphService
 from app.services.lead_intake_service import LeadIntakeService
 
@@ -27,6 +32,23 @@ async def get_signal_repository(
     async with session_factory() as session:
         try:
             yield SignalSnapshotRepository(session)
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+
+
+async def get_digital_worker_repository(
+    request: Request,
+    settings: Settings = Depends(get_request_settings),
+) -> AsyncIterator[DigitalWorkerRepository]:
+    session_factory = getattr(request.app.state, "sessionmaker", None)
+    if session_factory is None:
+        session_factory = get_sessionmaker(settings)
+
+    async with session_factory() as session:
+        try:
+            yield DigitalWorkerPostgresRepository(session)
             await session.commit()
         except Exception:
             await session.rollback()
@@ -117,3 +139,15 @@ def get_analytics_service(
     repository: SignalRepository = Depends(get_signal_repository),
 ) -> AnalyticsService:
     return AnalyticsService(repository)
+
+
+def get_digital_worker_service(
+    signal_repository: SignalRepository = Depends(get_signal_repository),
+    worker_repository: DigitalWorkerRepository = Depends(
+        get_digital_worker_repository
+    ),
+) -> DigitalWorkerService:
+    return DigitalWorkerService(
+        signal_repository=signal_repository,
+        worker_repository=worker_repository,
+    )

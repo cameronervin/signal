@@ -59,6 +59,16 @@ cd backend
 uv run celery -A app.workers.app:celery_app worker --loglevel=INFO
 ```
 
+Celery Beat for Digital Worker follow-up heartbeats:
+
+```bash
+cd backend
+uv run celery -A app.workers.app:celery_app beat --loglevel=INFO
+```
+
+Run only one Beat scheduler for a local or deployed environment. The heartbeat
+scans due `digital_worker_follow_ups` rows and queues bounded worker runs.
+
 ## Frontend
 
 ```bash
@@ -95,6 +105,12 @@ Agent research tools:
 ```bash
 SIGNAL_AGENT_RESEARCH_TOOLS_ENABLED=true
 SIGNAL_AGENT_RESEARCH_MAX_TOOL_ROUNDS=3
+```
+
+Digital Worker heartbeat:
+
+```bash
+SIGNAL_DIGITAL_WORKER_FOLLOW_UP_SCAN_SECONDS=300
 ```
 
 LiteLLM settings:
@@ -215,6 +231,7 @@ cd backend
 uv run alembic upgrade head
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 uv run celery -A app.workers.app:celery_app worker --loglevel=INFO
+uv run celery -A app.workers.app:celery_app beat --loglevel=INFO
 
 cd ../frontend
 pnpm dev

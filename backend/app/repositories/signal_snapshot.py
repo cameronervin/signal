@@ -2,19 +2,39 @@ from datetime import UTC, datetime
 from typing import Protocol
 from uuid import UUID
 
-from sqlalchemy import case, func, select
+from sqlalchemy import case, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.signal import (
+    DigitalWorkerAssignmentRecord,
     SignalAgentRunRecord,
     SignalAgentRunStatusEventRecord,
     SignalLeadRecord,
 )
 from app.schemas.analytics import AnalyticsSummaryResponse, MarketSummary
-from app.schemas.lead import LeadCreate, LeadResponse
+from app.schemas.lead import (
+    LeadCreate,
+    LeadDeleteResponse,
+    LeadQueueItemResponse,
+    LeadResponse,
+)
 from app.schemas.run import AgentRunResponse, AgentRunStatusEvent
 
 TIER_SORT = {"A": 0, "B": 1, "C": 2}
+ACTIVE_WORKER_ASSIGNMENT_STATUSES = ("active", "paused")
+
+
+def _lead_queue_order_by() -> tuple[object, object, object]:
+    tier_order = case(
+        (SignalLeadRecord.tier == "A", TIER_SORT["A"]),
+        (SignalLeadRecord.tier == "B", TIER_SORT["B"]),
+        else_=TIER_SORT["C"],
+    )
+    return (
+        tier_order.asc(),
+        SignalLeadRecord.score_total.desc(),
+        SignalLeadRecord.created_at.asc(),
+    )
 
 
 class SignalRepository(Protocol):
@@ -24,7 +44,16 @@ class SignalRepository(Protocol):
 
     async def list_leads(self) -> list[LeadResponse]: ...
 
+    async def list_lead_queue_items(self) -> list[LeadQueueItemResponse]: ...
+
     async def get_lead(self, lead_id: UUID) -> LeadResponse | None: ...
+
+    async def delete_lead_intelligence(
+        self,
+        lead_id: UUID,
+    ) -> LeadDeleteResponse: ...
+
+    async def delete_all_lead_intelligence(self) -> LeadDeleteResponse: ...
 
     async def create_queued_agent_run(
         self,
@@ -87,25 +116,181 @@ class SignalSnapshotRepository:
         await self.session.merge(record)
 
     async def list_leads(self) -> list[LeadResponse]:
-        tier_order = case(
-            (SignalLeadRecord.tier == "A", TIER_SORT["A"]),
-            (SignalLeadRecord.tier == "B", TIER_SORT["B"]),
-            else_=TIER_SORT["C"],
-        )
         result = await self.session.scalars(
-            select(SignalLeadRecord).order_by(
-                tier_order.asc(),
-                SignalLeadRecord.score_total.desc(),
-                SignalLeadRecord.created_at.asc(),
-            )
+            select(SignalLeadRecord).order_by(*_lead_queue_order_by())
         )
         return [LeadResponse.model_validate(record.payload) for record in result]
+
+    async def list_lead_queue_items(self) -> list[LeadQueueItemResponse]:
+        lead_records = list(
+            await self.session.scalars(
+                select(SignalLeadRecord).order_by(*_lead_queue_order_by())
+            )
+        )
+        ready_lead_ids = {record.id for record in lead_records}
+        items = [
+            LeadQueueItemResponse(
+                id=lead.id,
+                run_id=lead.run_id,
+                state="ready",
+                input=lead.input,
+                lead=lead,
+                run=None,
+            )
+            for lead in (
+                LeadResponse.model_validate(record.payload) for record in lead_records
+            )
+        ]
+
+        loading_records = await self.session.scalars(
+            select(SignalAgentRunRecord)
+            .where(SignalAgentRunRecord.status.in_(("queued", "running")))
+            .order_by(SignalAgentRunRecord.created_at.desc())
+        )
+        for record in loading_records:
+            if record.lead_id in ready_lead_ids or record.input_payload is None:
+                continue
+            items.append(
+                LeadQueueItemResponse(
+                    id=record.lead_id,
+                    run_id=record.run_id,
+                    state="loading",
+                    input=LeadCreate.model_validate(record.input_payload),
+                    lead=None,
+                    run=AgentRunResponse.model_validate(record.payload),
+                )
+            )
+
+        return items
 
     async def get_lead(self, lead_id: UUID) -> LeadResponse | None:
         record = await self.session.get(SignalLeadRecord, lead_id)
         if record is None:
             return None
         return LeadResponse.model_validate(record.payload)
+
+    async def delete_lead_intelligence(
+        self,
+        lead_id: UUID,
+    ) -> LeadDeleteResponse:
+        assigned_count = await self.session.scalar(
+            select(func.count())
+            .select_from(DigitalWorkerAssignmentRecord)
+            .where(DigitalWorkerAssignmentRecord.lead_id == lead_id)
+            .where(
+                DigitalWorkerAssignmentRecord.status.in_(
+                    ACTIVE_WORKER_ASSIGNMENT_STATUSES
+                )
+            )
+        )
+        if assigned_count:
+            return LeadDeleteResponse(
+                deleted_leads=0,
+                deleted_agent_runs=0,
+                deleted_status_events=0,
+                skipped_assigned_leads=1,
+            )
+
+        matching_run_ids = select(SignalAgentRunRecord.run_id).where(
+            SignalAgentRunRecord.lead_id == lead_id
+        )
+        deleted_leads = await self.session.scalar(
+            select(func.count())
+            .select_from(SignalLeadRecord)
+            .where(SignalLeadRecord.id == lead_id)
+        )
+        deleted_agent_runs = await self.session.scalar(
+            select(func.count())
+            .select_from(SignalAgentRunRecord)
+            .where(SignalAgentRunRecord.lead_id == lead_id)
+        )
+        deleted_status_events = await self.session.scalar(
+            select(func.count())
+            .select_from(SignalAgentRunStatusEventRecord)
+            .where(SignalAgentRunStatusEventRecord.run_id.in_(matching_run_ids))
+        )
+
+        await self.session.execute(
+            delete(SignalAgentRunStatusEventRecord).where(
+                SignalAgentRunStatusEventRecord.run_id.in_(matching_run_ids)
+            )
+        )
+        await self.session.execute(
+            delete(SignalLeadRecord).where(SignalLeadRecord.id == lead_id)
+        )
+        await self.session.execute(
+            delete(SignalAgentRunRecord).where(
+                SignalAgentRunRecord.lead_id == lead_id
+            )
+        )
+
+        return LeadDeleteResponse(
+            deleted_leads=deleted_leads or 0,
+            deleted_agent_runs=deleted_agent_runs or 0,
+            deleted_status_events=deleted_status_events or 0,
+            skipped_assigned_leads=0,
+        )
+
+    async def delete_all_lead_intelligence(self) -> LeadDeleteResponse:
+        blocked_lead_ids = (
+            select(DigitalWorkerAssignmentRecord.lead_id)
+            .where(
+                DigitalWorkerAssignmentRecord.status.in_(
+                    ACTIVE_WORKER_ASSIGNMENT_STATUSES
+                )
+            )
+            .distinct()
+        )
+        deletable_run_ids = select(SignalAgentRunRecord.run_id).where(
+            SignalAgentRunRecord.lead_id.not_in(blocked_lead_ids)
+        )
+        lead_intelligence_ids = (
+            select(SignalLeadRecord.id.label("lead_id"))
+            .union(select(SignalAgentRunRecord.lead_id.label("lead_id")))
+            .subquery()
+        )
+
+        deleted_leads = await self.session.scalar(
+            select(func.count())
+            .select_from(SignalLeadRecord)
+            .where(SignalLeadRecord.id.not_in(blocked_lead_ids))
+        )
+        deleted_agent_runs = await self.session.scalar(
+            select(func.count())
+            .select_from(SignalAgentRunRecord)
+            .where(SignalAgentRunRecord.lead_id.not_in(blocked_lead_ids))
+        )
+        deleted_status_events = await self.session.scalar(
+            select(func.count())
+            .select_from(SignalAgentRunStatusEventRecord)
+            .where(SignalAgentRunStatusEventRecord.run_id.in_(deletable_run_ids))
+        )
+        skipped_assigned_leads = await self.session.scalar(
+            select(func.count())
+            .select_from(lead_intelligence_ids)
+            .where(lead_intelligence_ids.c.lead_id.in_(blocked_lead_ids))
+        )
+
+        await self.session.execute(
+            delete(SignalAgentRunStatusEventRecord).where(
+                SignalAgentRunStatusEventRecord.run_id.in_(deletable_run_ids)
+            )
+        )
+        await self.session.execute(
+            delete(SignalLeadRecord).where(SignalLeadRecord.id.not_in(blocked_lead_ids))
+        )
+        await self.session.execute(
+            delete(SignalAgentRunRecord).where(
+                SignalAgentRunRecord.lead_id.not_in(blocked_lead_ids)
+            )
+        )
+
+        return LeadDeleteResponse(
+            deleted_leads=deleted_leads or 0,
+            deleted_agent_runs=deleted_agent_runs or 0,
+            deleted_status_events=deleted_status_events or 0,
+            skipped_assigned_leads=skipped_assigned_leads or 0,
+        )
 
     async def create_queued_agent_run(
         self,

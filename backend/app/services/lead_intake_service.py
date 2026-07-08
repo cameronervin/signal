@@ -2,7 +2,12 @@ from typing import Protocol
 from uuid import UUID, uuid4
 
 from app.repositories.signal_snapshot import SignalRepository
-from app.schemas.lead import LeadCreate, LeadResponse
+from app.schemas.lead import (
+    LeadCreate,
+    LeadDeleteResponse,
+    LeadQueueItemResponse,
+    LeadResponse,
+)
 from app.schemas.run import AgentRunResponse
 from app.services.agent_execution_service import AgentExecutionService
 
@@ -23,6 +28,14 @@ class CeleryAgentTaskDispatcher:
 
 class QueueDispatchError(RuntimeError):
     """Raised when an agent run cannot be queued with the worker broker."""
+
+
+class LeadDeleteNotFoundError(ValueError):
+    """Raised when no lead intelligence records exist for deletion."""
+
+
+class LeadDeleteConflictError(ValueError):
+    """Raised when a lead cannot be deleted because worker state depends on it."""
 
 
 class LeadIntakeService:
@@ -106,5 +119,28 @@ class LeadIntakeService:
     async def list_leads(self) -> list[LeadResponse]:
         return await self.repository.list_leads()
 
+    async def list_lead_queue_items(self) -> list[LeadQueueItemResponse]:
+        return await self.repository.list_lead_queue_items()
+
     async def get_lead(self, lead_id: UUID) -> LeadResponse | None:
         return await self.repository.get_lead(lead_id)
+
+    async def delete_lead(self, lead_id: UUID) -> LeadDeleteResponse:
+        result = await self.repository.delete_lead_intelligence(lead_id)
+        if result.skipped_assigned_leads:
+            raise LeadDeleteConflictError(
+                "Lead has an active or paused Digital Workforce assignment"
+            )
+        if (
+            result.deleted_leads == 0
+            and result.deleted_agent_runs == 0
+            and result.deleted_status_events == 0
+        ):
+            raise LeadDeleteNotFoundError("Lead not found")
+        await self.repository.commit()
+        return result
+
+    async def delete_all_leads(self) -> LeadDeleteResponse:
+        result = await self.repository.delete_all_lead_intelligence()
+        await self.repository.commit()
+        return result

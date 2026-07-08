@@ -22,7 +22,8 @@ Anything that does not support those questions is out of scope for v1.
 - Config-driven gates and score components.
 - SDR queue sorted by tier and score.
 - Lead detail with enrichment, flags, related context, and draft.
-- Agent run status surface with human review gate.
+- Digital Workforce backend for assigning the SDR digital worker to eligible inbound leads with sandbox email follow-up.
+- Agent run status APIs with human review gate.
 - Cache-backed public-data adapters with explicit provider warning states.
 
 ## Out of Scope For V1
@@ -33,6 +34,17 @@ Anything that does not support those questions is out of scope for v1.
 - Full graph database.
 - Production auth and permissions.
 - Large analytics dashboard beyond operational MVP KPIs.
+
+## Product Surface
+
+| Surface | Purpose |
+| --- | --- |
+| Dashboard | Queue health, tier distribution, top markets, operational KPIs |
+| Inbound leads | Ranked SDR queue sorted by tier and score |
+| Lead detail | Enrichment, why-line, graph context, flags, cited draft |
+| Digital Workforce | Assign the SDR digital worker to eligible draft-ready leads |
+| Digital worker progress | Monitor worker phase, goal, sandbox email, and follow-up state |
+| Gate-failed lead | Clear no-draft state for leads reps should not work |
 
 ## Docs
 

@@ -115,9 +115,63 @@ records that support personalization claims for human review.
 `GET /leads`
 
 Returns completed-analysis leads sorted by tier then score. Queued, running,
-paused, and failed runs do not appear in the lead queue. Draftable leads become
-visible while awaiting review; gate-failed analysis results become visible with
-completed run status and no draft.
+paused, and failed runs without completed lead snapshots do not appear in this
+endpoint. Draftable leads become visible while awaiting review; gate-failed
+analysis results become visible with completed run status and no draft.
+
+## List Lead Queue
+
+`GET /leads/queue`
+
+Returns SDR queue rows for the inbound leads page. Completed-analysis rows are
+returned first, sorted by tier and score. Queued and running submissions without
+a completed lead snapshot are appended newest first as loading rows.
+
+Response: `200 LeadQueueItemResponse[]`
+
+```json
+[
+  {
+    "id": "11111111-1111-4111-8111-111111111111",
+    "run_id": "21111111-1111-4111-8111-111111111111",
+    "state": "ready",
+    "input": {
+      "contact_name": "Sample Contact",
+      "email": "contact@operator.example",
+      "company": "Multifamily Operator",
+      "role": "VP Leasing",
+      "property_address": "100 Main St",
+      "city": "Austin",
+      "state": "TX",
+      "country": "US"
+    },
+    "lead": "{LeadResponse}",
+    "run": null
+  },
+  {
+    "id": "11111111-2222-4222-8222-111111111111",
+    "run_id": "21111111-2222-4222-8222-111111111111",
+    "state": "loading",
+    "input": {
+      "contact_name": "Queued Contact",
+      "email": "queued@operator.example",
+      "company": "Multifamily Operator",
+      "role": "Director Leasing",
+      "property_address": "200 Main St",
+      "city": "Austin",
+      "state": "TX",
+      "country": "US"
+    },
+    "lead": null,
+    "run": "{AgentRunResponse}"
+  }
+]
+```
+
+Clients must treat `state: "loading"` rows as non-clickable because
+`GET /leads/{lead_id}` still returns 404 until a completed lead snapshot exists.
+Paused and failed runs without lead snapshots remain visible from
+`GET /agent-runs`, not from the lead queue.
 
 ## Get Lead
 
@@ -125,6 +179,48 @@ completed run status and no draft.
 
 Returns one completed-analysis lead or 404. Queued, running, paused, and failed
 runs return 404 from this endpoint until a visible lead snapshot exists.
+
+## Delete Lead
+
+`DELETE /leads/{lead_id}`
+
+Deletes lead-intelligence records for one inbound lead. This removes the
+completed lead snapshot, matching agent runs, and status events. Queued or
+running persisted rows are deleted, but already-dispatched Celery tasks are not
+revoked; workers that wake after deletion return a missing-run result.
+
+Active or paused Digital Workforce assignments block deletion and return 409.
+Missing lead intelligence returns 404.
+
+Response: `200 LeadDeleteResponse`
+
+```json
+{
+  "deleted_leads": 1,
+  "deleted_agent_runs": 1,
+  "deleted_status_events": 3,
+  "skipped_assigned_leads": 0
+}
+```
+
+## Delete All Leads
+
+`DELETE /leads`
+
+Deletes all lead-intelligence records except leads with active or paused Digital
+Workforce assignments. Digital Workforce assignment, message, follow-up, and run
+state is not deleted.
+
+Response: `200 LeadDeleteResponse`
+
+```json
+{
+  "deleted_leads": 5,
+  "deleted_agent_runs": 5,
+  "deleted_status_events": 15,
+  "skipped_assigned_leads": 1
+}
+```
 
 ## List Agent Runs
 
@@ -156,6 +252,84 @@ Marks a `queued`, `running`, or `awaiting_review` run as paused. Invalid
 transitions return 409.
 
 Response: `200 AgentRunResponse`
+
+## Digital Workforce Assignments
+
+Digital Workforce is separate from `/agent-runs`. Agent runs remain the
+lead-intelligence history; Digital Workforce assignments are long-lived SDR
+digital worker cases for sandbox communication follow-up.
+
+### Create Digital Worker Assignment
+
+`POST /digital-workforce/assignments`
+
+Request:
+
+```json
+{
+  "lead_id": "11111111-1111-4111-8111-111111111111"
+}
+```
+
+Behavior:
+
+- Requires an existing completed lead snapshot.
+- Rejects gate-failed leads and leads without drafts.
+- Rejects duplicate active or paused assignments for the same lead.
+- Creates assignment, goal, run, and activity state.
+- Queues `signal.digital_worker.execute` with the queued run id.
+- The worker sends only to the sandbox email outbox.
+
+Response: `202 DigitalWorkerAssignmentResponse`
+
+### List Digital Worker Assignments
+
+`GET /digital-workforce/assignments`
+
+Returns persisted worker assignments with current phase, goal state, sandbox
+messages, follow-ups, runs, and activity log.
+
+### Get Digital Worker Assignment
+
+`GET /digital-workforce/assignments/{assignment_id}`
+
+Returns one assignment or 404.
+
+### Inbound Email Trigger
+
+`POST /digital-workforce/assignments/{assignment_id}/inbound-email`
+
+Request:
+
+```json
+{
+  "external_message_id": "optional-sandbox-id",
+  "received_at": "2026-07-08T16:00:00Z",
+  "subject": "Re: leasing follow-up",
+  "body": "Can we schedule a call next week?"
+}
+```
+
+Behavior:
+
+- Stores the inbound sandbox email body in Postgres for worker context.
+- Queues the worker with trigger `inbound_email`.
+- Paused, completed, and failed assignments return 409.
+
+Response: `202 DigitalWorkerAssignmentResponse`
+
+### Pause Digital Worker Assignment
+
+`POST /digital-workforce/assignments/{assignment_id}/pause`
+
+Marks an active assignment paused. Paused assignments do not take communication
+actions from inbound triggers or heartbeat scans.
+
+### Resume Digital Worker Assignment
+
+`POST /digital-workforce/assignments/{assignment_id}/resume`
+
+Marks a paused assignment active and queues a `manual_resume` worker run.
 
 ## Analytics Summary
 

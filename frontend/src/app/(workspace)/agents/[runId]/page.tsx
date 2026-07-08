@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 
-import { AgentRunDetailView } from "@/components/features/agents/AgentRunDetailView";
+import { DigitalWorkerProgressView } from "@/components/features/agents/DigitalWorkerProgressView";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatePanel } from "@/components/ui/StatePanel";
-import { getAgentRun } from "@/lib/api/endpoints/agent-runs";
+import { digitalWorkerProfile, getDigitalWorkerAssignmentPreview } from "@/lib/fixtures/digital-workforce";
+import { listLeads } from "@/lib/api/endpoints/leads";
 
 interface Props {
   params: Promise<{ runId: string }>;
@@ -11,33 +12,33 @@ interface Props {
 
 export const dynamic = "force-dynamic";
 
-export default async function AgentRunPage({ params }: Props) {
+export default async function DigitalWorkerProgressPage({ params }: Props) {
   const { runId } = await params;
-  let run: Awaited<ReturnType<typeof getAgentRun>> | null = null;
+  let assignment: ReturnType<typeof getDigitalWorkerAssignmentPreview> | null = null;
 
   try {
-    run = await getAgentRun(runId);
+    assignment = getDigitalWorkerAssignmentPreview(runId, await listLeads());
   } catch {
-    run = null;
+    assignment = null;
   }
 
-  if (run === undefined) {
+  if (assignment === undefined) {
     notFound();
   }
 
-  if (!run) {
+  if (!assignment) {
     return (
       <>
-        <PageHeader title="Agent run" subtitle="API unavailable" />
+        <PageHeader title="SDR Digital Worker" subtitle="Lead data unavailable" />
         <StatePanel
-          title="Agent run unavailable"
-          message="Signal could not load this run from the API. Start the backend or set fixture mode explicitly for local evaluation."
-          actionLabel="Open agents"
+          title="Digital worker preview unavailable"
+          message="Signal could not load the lead data needed for this preview. Start the backend or set fixture mode explicitly for local evaluation."
+          actionLabel="Open Digital Workforce"
           actionHref="/agents"
         />
       </>
     );
   }
 
-  return <AgentRunDetailView run={run} />;
+  return <DigitalWorkerProgressView assignment={assignment} worker={digitalWorkerProfile} />;
 }

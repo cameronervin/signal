@@ -15,6 +15,10 @@ environment.
   fields.
 - Do not generate drafts for hard-gate-failed leads.
 - Keep outbound actions behind human review.
+- Digital Worker email is sandbox-only until live-send safety, audit, auth, and
+  compliance controls are explicitly added.
+- Do not log Digital Worker message bodies, draft bodies, prompts, or full
+  email addresses.
 
 ## Data Minimization
 
@@ -27,6 +31,8 @@ V1 stores only:
 - Bounded graph relationships and source-backed graph warnings.
 - Draft if gates pass.
 - Run status and activity log.
+- Digital Worker assignment state, lifecycle goals, sandbox email messages, and
+  scheduled follow-ups for assigned draft-ready leads.
 
 Do not add new contact enrichment fields without updating the data model and
 explaining the sales workflow value.
@@ -41,3 +47,5 @@ Before production use:
 - Expand provider retry policies beyond current bounded request timeouts and
   explicit provider warning states.
 - Add retention policy for lead and draft data.
+- Add live email/SMS provider controls, consent/unsubscribe handling, and
+  production audit policy before enabling real communication delivery.

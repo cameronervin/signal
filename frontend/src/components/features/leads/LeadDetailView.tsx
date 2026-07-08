@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Ban, ChevronDown, ChevronLeft, Copy, Inbox, Plus, RefreshCw, SendHorizontal } from "lucide-react";
+import { AlertTriangle, Ban, ChevronDown, ChevronLeft, Copy, ExternalLink, Inbox, Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { SourceChip } from "@/components/ui/SourceChip";
 import { TierBadge } from "@/components/ui/TierBadge";
 import { Toast } from "@/components/ui/Toast";
+import { digitalWorkerPreviewId } from "@/lib/fixtures/digital-workforce";
 import { routes } from "@/lib/constants/routes";
 import type { FixtureLead } from "@/types/lead";
 
@@ -43,9 +44,9 @@ export function LeadDetailView({ lead }: Props) {
             <Link className="button secondary" href={routes.leads}>
               <ChevronLeft size={16} /> Back
             </Link>
-            {!failed && lead.runId && (
-              <Link className="button primary" href={routes.agentRunDetail(lead.runId)}>
-                <Plus size={16} /> Assign Agent
+            {!failed && (
+              <Link className="button primary" href={routes.digitalWorkerProgress(digitalWorkerPreviewId(lead.id))}>
+                <Plus size={16} /> Assign Digital Worker
               </Link>
             )}
           </div>
@@ -222,11 +223,9 @@ function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: 
               <Button onClick={() => void copyDraft()}>
                 <Copy size={15} /> Copy
               </Button>
-              {lead.runId && (
-                <Link className="button primary" href={routes.agentRunDetail(lead.runId)}>
-                  <SendHorizontal size={15} /> Send
-                </Link>
-              )}
+              <Link className="button primary" href={routes.digitalWorkerProgress(digitalWorkerPreviewId(lead.id))}>
+                <ExternalLink size={15} /> Open Digital Workforce
+              </Link>
             </div>
           </div>
         </div>

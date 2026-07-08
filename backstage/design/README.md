@@ -7,8 +7,8 @@ This package covers the design system foundations plus six product screens:
 1. Dashboard (KPIs + charts)
 2. Inbound Leads (ranked queue table)
 3. Lead Detail / Row View (enrichment + knowledge graph + drafted email)
-4. Agent Assignment (in-progress agents table)
-5. Agent Progress / Run Detail (single-agent pipeline drill-in)
+4. Digital Workforce (SDR digital worker profile and eligible lead handoffs)
+5. Digital Worker Progress (assignment progress preview and SDR check-ins)
 6. Gate-Failed Lead State
 
 ## About the Design Files
@@ -149,7 +149,7 @@ Secondary button with a "sliders" glyph (`M3 5h18 / M6 12h12 / M10 19h4`).
 ### StatCard / KPICard
 White, `1px border`, radius 12–13px, `13–16px 16–18px` padding. Label 11.5–12px/600 `#7A847F`; value mono 26px/600; delta 11.5px/600 (`#4A32C4` up-good, `#9A6207` caution).
 
-### PipelineStepper (agent progress)
+### PipelineStepper (worker progress)
 Vertical. Each step = flex row: a `22px` rail column (status dot + `2px` connector that flex-fills to next dot) + content (title 13.5/600, mono duration right, sub-detail/chips).
 - Done dot: `20px` circle `#6D4DF6`, white `✓`. Connector below = `#6D4DF6`.
 - Active dot: `20px` white circle, `2px #6D4DF6` border, `7px` inner purple dot. Connector = `#E1E5E3`.
@@ -188,40 +188,44 @@ Vertical. Each step = flex row: a `22px` rail column (status dot + `2px` connect
 
 ### 3. Lead Detail / Row View — `/leads/[id]` (Inbox active)
 **Purpose:** everything needed to work one lead + review its draft.
-**Layout:** header bar = back chevron + name "Sarah Chen" + A-tier badge "A-TIER · 92" + subline "VP, Leasing · Greystar · Austin, TX"; right = "Dismiss" (secondary) + "Assign agent" (primary, `+` glyph). Body = 2-col grid `1fr 1fr`, `16px` gap.
+**Layout:** header bar = back chevron + name "Sarah Chen" + A-tier badge "A-TIER · 92" + subline "VP, Leasing · Greystar · Austin, TX"; right = "Dismiss" (secondary) + "Assign Digital Worker" (primary, `+` glyph). Body = 2-col grid `1fr 1fr`, `16px` gap.
 **Left column (stack):**
 - *Lead & enrichment* card: 2×2 field grid (Contact `sarah.chen@greystar.com` "✓ Corporate domain · valid MX"; Seniority "VP · executive tier" "Fit 15/15"; Company "Greystar Real Estate" "NMHC #1 · 794k units · conventional MF"; Property "The Domain · Austin, TX" "Walk Score 78 · tract 48453"). Divider → **Market signals** 4-stat mono row (Renter 61% / Rent YoY +8.1% / Unemployment 3.2% / HH growth +4.4%, all `#0B6B45`). Divider → **Talking points** — 3 bullets with green `›` markers.
 - *Knowledge graph* card: header + "2 related leads" chip. Left = mini node-link (center node "Sarah Chen" purple circle; satellites Greystar / The Domain / Austin metro / RealPage, connected by `#D3E7DC` edges). Right = **Related leads** list (Alan Reyes — Greystar, 2nd inbound this quarter; Nadia Owens — same Austin submarket, 3 leads/30d) + "Expand graph →". **→ React Flow for the node-link.**
 **Right column:** *Drafted email* card, full height, sectioned:
-- Header: "Drafted email" + "Review & send" tag + "✎ Editable".
+- Header: "Drafted email" + "Review & handoff" tag + "✎ Editable".
 - Meta rows: From "You · Signal SDR" / To `sarah.chen@greystar.com` / Subj "Scaling leasing after the Austin expansion".
 - Body: editable email; **personalization spans highlighted** with `#EEEBFE` bg + `2px solid #6D4DF6` bottom-border (the Austin expansion; 61% renters; rents up 8%).
 - Sources strip (`surface/2`): eyebrow + `SourceChip`s — NewsAPI "Greystar Austin expansion · 3d ago", Census "61% renters", FRED "rent +8% YoY".
-- Actions: "Regenerate" (secondary, refresh glyph) left; "Copy" + "Send" (primary, paper-plane) right.
-**Note:** the email pane is the "iframe to review and send" from the wireframe — implement as an editable rich-text/preview region, not a literal iframe unless you sandbox external HTML.
+- Actions: "Regenerate" (secondary, refresh glyph) left; "Copy" + "Open Digital Workforce" (primary) right.
+**Note:** the email pane is the draft review area from the wireframe — implement as an editable rich-text/preview region, not a literal iframe unless you sandbox external HTML.
 
-### 4. Agent Assignment — `/agents` (Grid active)
-**Purpose:** monitor all agents currently working leads.
-**Layout:** top bar (title + "6 agents working" + Filter + Search). `DataTable`, columns grid `1.3fr 1.5fr 0.9fr 2fr 1.1fr 34px`: Agent · Working lead · Started · Stage · Status · chevron.
-- **Agent** cell = `28px` rounded icon tile + name (Outreach Agent = paper-plane on `#EEEBFE`; Enrichment Agent = check-badge on `#F5F7F6`).
-- **Stage** cell = 4-segment progress (segments fill purple as done, current = amber, remaining `#EEF1F0`) + stage label.
-- **Status** pill: "In progress" (amber), "Awaiting you" (purple), "Sent ✓" (purple).
-**Rows:** Outreach·Sarah Chen·Greystar A·2m·Drafting(2/4)·In progress · Outreach·Marcus Webb·Cortland A·9m·Review(3/4)·Awaiting you · Enrichment·Priya Nair·Bozzuto A·just now·Enriching(1/4)·In progress · Outreach·David Okafor·MAA B·1h·Sent(4/4)·Sent ✓.
-- **Disabled "Next Release" row:** Follow-up Agent · "Auto-cadence outreach" · — · "Human-in-the-loop approval · pending compliance review" · "Next release" grey pill. Whole row `opacity .6`, no chevron.
-**Interaction:** row click → `/agents/[runId]`.
+### 4. Digital Workforce — `/agents` (Grid active)
+**Purpose:** preview the SDR Digital Worker that can be assigned to eligible
+inbound leads in a future workflow.
+**Layout:** top bar title "Digital Workforce" with eligible lead count and
+search. Content starts with a worker profile for **SDR Digital Worker**, a
+preview-only status pill, and capability cards for Email, Text messaging, and
+Human review. A preview note explains that backend assignment, communication
+tools, and persistence are deferred.
+**Lead handoffs:** table of draft-ready, gate-passed inbound leads with score,
+channel readiness, assignment preview summary, disabled "Assign" controls, and
+non-mutating "Preview" links to `/agents/[previewId]`.
 
-### 5. Agent Progress / Run Detail — `/agents/[runId]` (Grid active)
-**Purpose:** drill into one agent run; review the pipeline and approve/send.
-**Layout:** header = back chevron + `34px` agent icon tile + "Outreach Agent" + mono "run_8842" + subline "Working **Sarah Chen** · Greystar · A-tier 92"; right = "Awaiting your review" amber status pill + "Pause" (secondary) + "Approve & send" (primary). Then a 4-up **metadata strip** (Trigger "API insert" / Started `11:42:01` / Runtime `10.3s` / APIs called `6 / 6 ✓`). Body = 2-col grid `1fr 1fr`:
-- **Left — Pipeline** card: `PipelineStepper` with 5 steps:
-  1. Deterministic enrichment — done, 3.1s — chips: Nominatim ✓, Census ACS ✓, FRED ✓, NewsAPI ✓, Wikipedia ✓, MX/DNS ✓.
-  2. Agent scoring & drafting — done, 6.4s — "3 hard gates passed · score 92 (fit 57/60 · market 35/40) · why-line + 3 talking points · draft written with 3 cited sources."
-  3. Knowledge graph — done, 0.8s — "Linked Contact → Company → Property → Market · surfaced 2 related leads."
-  4. Human review — **active**, "now" — "Awaiting SDR approval before send — human-in-the-loop gate."
-  5. Send — pending — "Delivers on approval, then logs the touch to the lead timeline."
+### 5. Digital Worker Progress — `/agents/[previewId]` (Grid active)
+**Purpose:** preview what the human SDR can check after assigning the SDR Digital
+Worker, without triggering backend assignment or live communication.
+**Layout:** header = back chevron + "Digital worker progress" + preview-only
+status + disabled "Assign worker" button. Metadata strip shows Worker, Lead,
+Channels, and Review. Body = 2-col grid `1fr 1fr`:
+- **Left — Worker assignment preview** card: `PipelineStepper` with
+  communication-oriented steps: Assignment intake, Outreach plan, Email draft
+  check, Text follow-up readiness, SDR check-in.
 - **Right (stack):**
-  - *Activity log* card: mono 11px/1.85 timestamped lines (grey timestamps; purple for gate-pass/score lines; amber for the trailing "Awaiting human review ▍"). 12 entries from insert → awaiting review.
-  - *Output ready for review* panel (purple: bg `#FAF9FE`, border `#DDD5FB`): "92 · A" tag, one-line summary, actions "Approve & send" (primary) / "Edit draft" / "View lead" (purple-ghost).
+  - *Check-in log* card: preview activity that states no assignment is persisted
+    and no outreach is sent.
+  - *SDR review required* panel: score/tier summary, email/text/readiness notes,
+    disabled "Assign worker" control, and "View lead" link.
 
 ### 6. Gate-Failed Lead State — `/leads/[id]` variant (Inbox active)
 **Purpose:** tell the rep what **not** to work, and why; suppress the draft.
@@ -234,8 +238,15 @@ Vertical. Each step = flex row: a `22px` rail column (status dot + `2px` connect
 ## Interactions & Behavior
 - **Navigation:** sidebar items route between the five sections; lead rows and agent rows open their detail routes; back chevrons return to the queue/list.
 - **Copy draft:** copies generated email text to clipboard → toast.
-- **Assign agent:** opens assignment (from lead detail / lead row) — spawns an Outreach/Enrichment agent run visible in `/agents`.
-- **Approve & send / Pause:** on the run-detail screen, advance or halt the pipeline (step 4 → 5). Human-in-the-loop is mandatory before send.
+- **Assign Digital Worker:** opens `/agents?leadId=<id>` from lead detail and
+  highlights the preview handoff. It does not mutate state in this frontend-only
+  slice.
+- **Table pagination:** `/leads` and `/agents` paginate their already-loaded
+  table rows client-side with `?page=<n>` URL state. Filters and search reset the
+  table to page 1 while preserving unrelated query params such as `leadId`.
+- **Worker progress preview:** `/agents/[previewId]` shows communication-oriented
+  handoff steps and check-in logs. Assignment, email, text messaging, and send
+  actions remain disabled until backend support exists.
 - **Hover states:** table rows get a light-purple hover tint; buttons darken ~6–8%; chevrons/links shift toward `#4A32C4`.
 - **Empty / gate-failed / awaiting states:** shown explicitly (screens 5–6) — reproduce as first-class states, not afterthoughts.
 - **Transitions:** keep subtle (150–200ms ease) for row hover, button press, route changes. No large motion.
@@ -243,7 +254,9 @@ Vertical. Each step = flex row: a `22px` rail column (status dot + `2px` connect
 
 ## State Management
 - **Leads:** list with `{id, tier, name, role, company, market, units, score, whyLine, flags[], enrichment{}, draft{subject, body, sources[]}, related[]}`; sorted by score desc within tier. Filters: tier, corporate-email, unassigned, search query.
-- **Agents/runs:** `{runId, type, leadId, startedAt, stage, stageIndex/total, status}`; run detail adds `{trigger, runtime, apis[], pipeline[stepStatus], activityLog[], output}`.
+- **Digital Workforce:** frontend-only profile and preview data:
+  `{workerId, displayName, capabilities[], reviewMode}` plus handoffs
+  `{previewId, leadId, channelReadiness, assignmentStatus, steps[], activityLog[]}`.
 - **Data fetching:** enrichment/scoring/draft come from the FastAPI + LangGraph backend (deterministic-enrichment → agent → graph nodes). The run-detail activity log and pipeline states should stream/poll from the run status endpoint. Charts + KPIs read from an analytics endpoint (hard-coded/static acceptable for v1 per plan).
 - **Gates:** a lead failing hard gates renders the gate-failed variant and must **not** expose a draft.
 

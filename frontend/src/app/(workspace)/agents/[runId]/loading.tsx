@@ -7,20 +7,19 @@ export default function AgentRunLoading() {
   return (
     <>
       <PageHeader
-        title="Agent run"
-        subtitle="Loading progress"
+        title="SDR Digital Worker"
+        subtitle="Loading preview"
         actions={
           <div className="toolbar-row">
             <span className="button secondary">
               <ChevronLeft size={16} /> Back
             </span>
             <Skeleton className="h-8 w-28 rounded-lg" />
-            <Skeleton className="h-9 w-20 rounded-lg" />
             <Skeleton className="h-9 w-32 rounded-lg" />
           </div>
         }
       />
-      <main className="content stack screen-fit agent-progress-screen" aria-label="Loading agent run">
+      <main className="content stack screen-fit digital-worker-progress-screen" aria-label="Loading digital worker progress">
         <section className="grid gap-3 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
             <div key={index} className="surface-card p-4 skeleton-card">

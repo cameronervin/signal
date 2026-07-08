@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field
 
 from app.schemas.knowledge_graph import LeadKnowledgeGraph
+from app.schemas.run import AgentRunResponse
 
 Tier = Literal["A", "B", "C"]
 GateStatus = Literal["passed", "failed"]
@@ -198,3 +199,36 @@ class LeadResponse(BaseModel):
         ),
     )
     run_id: UUID = Field(description="Agent run id that produced this lead output.")
+
+
+class LeadQueueItemResponse(BaseModel):
+    id: UUID = Field(description="Lead id used for row identity.")
+    run_id: UUID = Field(description="Agent run id associated with the row.")
+    state: Literal["ready", "loading"] = Field(
+        description="Whether the row has completed lead analysis or is still running."
+    )
+    input: LeadCreate = Field(description="Submitted inbound lead input.")
+    lead: LeadResponse | None = Field(
+        default=None,
+        description="Completed lead analysis when the row is ready.",
+    )
+    run: AgentRunResponse | None = Field(
+        default=None,
+        description="Current agent run status while the row is loading.",
+    )
+
+
+class LeadDeleteResponse(BaseModel):
+    deleted_leads: int = Field(
+        description="Number of completed lead snapshots deleted."
+    )
+    deleted_agent_runs: int = Field(
+        description="Number of lead-intelligence agent runs deleted."
+    )
+    deleted_status_events: int = Field(
+        description="Number of agent run status events deleted."
+    )
+    skipped_assigned_leads: int = Field(
+        default=0,
+        description="Active or paused Digital Workforce lead assignments skipped.",
+    )

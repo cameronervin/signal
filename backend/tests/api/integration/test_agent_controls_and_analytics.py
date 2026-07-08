@@ -1,11 +1,11 @@
 import asyncio
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.agents.executors.signal_pipeline import SignalPipelineExecutor
 from app.api.v1.dependencies import get_agent_run_service, get_analytics_service
-from app.core.config import Settings
-from app.main import create_app
+from app.api.v1.router import api_router
 from app.services.agent_execution_service import AgentExecutionService
 from app.services.agent_run_service import AgentRunService
 from app.services.analytics_service import AnalyticsService
@@ -27,7 +27,7 @@ def test_agent_pause_approve_and_analytics_endpoints() -> None:
         ),
     )
     asyncio.run(_seed_records(service, records))
-    app = create_app(Settings(database_url="postgresql+asyncpg://invalid/unused"))
+    app = _test_app()
 
     async def override_agent_runs() -> AgentRunService:
         return AgentRunService(repository)
@@ -89,3 +89,9 @@ async def _seed_records(
             run_id=record.run_id,
             trigger="seed_script",
         )
+
+
+def _test_app() -> FastAPI:
+    app = FastAPI()
+    app.include_router(api_router, prefix="/api/v1")
+    return app

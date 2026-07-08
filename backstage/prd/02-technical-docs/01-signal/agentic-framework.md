@@ -50,15 +50,33 @@ Signal follows the Playbook agent structure directionally:
 
 - `agents/builders/` composes chains, nodes, and compiled graphs.
 - `agents/chains/outreach_drafting.py` contains the LiteLLM-backed draft chain.
+- `agents/chains/digital_worker.py` contains the SDR Digital Worker lifecycle
+  decision chain and prompt/tool instruction composition.
 - `agents/guardrails/qualification.py` contains deterministic hard-gate checks.
-- `agents/states/` contains typed graph state.
-- `agents/nodes/lead_intelligence.py` contains node factories and node keys.
-- `agents/graphs/lead_intelligence.py` wires uncompiled node topology.
+- `agents/states/` contains typed graph state for lead intelligence and the
+  Digital Worker.
+- `agents/nodes/lead_intelligence.py` and `agents/nodes/digital_worker.py`
+  contain node factories and node keys.
+- `agents/graphs/lead_intelligence.py` and `agents/graphs/digital_worker.py`
+  wire uncompiled node topology.
 - `agents/executors/` runs the compiled graph inline or from a worker.
 - `agents/prompts/` holds prompt-facing instructions.
-- `agents/tools/` contains deterministic enrichment wrappers plus model-callable
-  public-data research tools.
+- `agents/tools/` contains deterministic enrichment wrappers, model-callable
+  public-data research tools, and sandbox Digital Worker tools.
 - `agents/utils/` contains pure scoring and text helpers.
+
+The builder layer uses the same flow for both agent workflows:
+
+- Signal intake: `create_signal_pipeline_chain_set` ->
+  `create_signal_pipeline_node_set` -> `compose_signal_pipeline_dependencies`
+  -> `compile_signal_pipeline_graph`.
+- Digital Worker: `create_digital_worker_chain_set` ->
+  `create_digital_worker_node_set` -> `compose_digital_worker_dependencies` ->
+  `compile_digital_worker_graph`.
+
+Each builder returns only its workflow's objects; lead-intelligence builders do
+not construct Digital Worker chains or nodes, and Digital Worker builders do not
+construct lead-intelligence chains or nodes.
 
 ## Node 1 - Deterministic Enrichment
 
@@ -140,7 +158,82 @@ truth for lead and run snapshots.
 - Human review required before outreach.
 - Approve/pause transitions update run status only and never send outreach.
 - Postgres run state is authoritative; Celery results are operational metadata.
-- Lead queue APIs hide queued, running, paused, and failed runs until analysis
-  produces an awaiting-review or completed lead result.
+- The completed lead API hides queued, running, paused, and failed runs until
+  analysis produces an awaiting-review or completed lead result.
+- The inbound lead queue API surfaces queued and running submissions as loading
+  rows after ready leads, using only submitted input and run status until a lead
+  snapshot is available.
 - Explicit warnings for unavailable public-data providers.
 - Activity log for operational traceability.
+
+## SDR Digital Worker Runtime
+
+Digital Workforce is a separate long-lived worker runtime from the bounded lead
+intelligence graph above. It starts only after an SDR assigns the worker to an
+eligible completed lead snapshot.
+
+```text
+POST /api/v1/digital-workforce/assignments
+  -> validate completed lead snapshot, gates passed, draft present
+  -> create digital_worker_assignments + goal rows
+  -> queue signal.digital_worker.execute
+
+signal.digital_worker.execute
+  -> load assignment, lead snapshot, goals, messages, follow-ups
+  -> read qualify_to_meeting.v1 lifecycle JSON
+  -> invoke digital_worker_decision chain
+  -> execute planned bounded sandbox tools
+  -> persist messages, goals, follow-ups, phase, run status
+  -> END
+```
+
+The worker uses Postgres as authoritative memory across runs. The repo-versioned
+lifecycle spec defines phases, goals, and example actions. Each worker wake-up
+handles one trigger: assignment created, inbound email, due follow-up, or manual
+resume.
+
+The worker uses the same graph-provider pattern as the lead-intelligence
+pipeline. `SignalGraphProvider.digital_worker_graph()` compiles and caches the
+graph, `DigitalWorkerExecutor` invokes it with `context=DigitalWorkerRuntimeContext(...)`,
+and node functions read repositories/settings/lifecycle from
+`Runtime[DigitalWorkerRuntimeContext]`.
+
+The Digital Worker graph state lives in
+`backend/app/agents/states/digital_worker_state.py` and includes:
+
+- `run_id`
+- `assignment_id`
+- `trigger`
+- `run`
+- `assignment`
+- `lead`
+- `activity_log`
+
+The topology lives in `backend/app/agents/graphs/digital_worker.py`:
+
+```text
+START
+  -> digital_worker_context
+  -> digital_worker_action
+  -> END
+```
+
+`digital_worker_context` loads the run, assignment, and lead snapshot from
+runtime-injected repositories. `digital_worker_action` invokes the
+`digital_worker_decision` chain, then dispatches planned calls through
+`agents/tools/digital_worker.py`.
+
+### Digital Worker Tools
+
+- `send_sandbox_email`: persists an outbound sandbox email message only.
+- `record_inbound_email`: persists inbound sandbox email for worker context.
+- `schedule_follow_up`: writes a due follow-up row.
+- `mark_goal_complete`: updates phase/goal progress.
+- `mark_phase_outcome`: updates current phase or terminal assignment status.
+
+### Heartbeat
+
+Celery Beat runs `signal.digital_worker.scan_due_follow_ups` on the configured
+interval. The scanner claims pending due follow-ups and enqueues
+`signal.digital_worker.execute` for each claimed assignment. Run and assignment
+state remain in Postgres; Celery result backend state is operational metadata.

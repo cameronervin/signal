@@ -109,6 +109,11 @@ class Settings(BaseSettings):
         default="redis://localhost:6379/1",
         validation_alias="SIGNAL_CELERY_RESULT_BACKEND",
     )
+    digital_worker_follow_up_scan_seconds: int = Field(
+        default=300,
+        ge=60,
+        validation_alias="SIGNAL_DIGITAL_WORKER_FOLLOW_UP_SCAN_SECONDS",
+    )
     llm_provider: Literal["litellm"] = Field(
         default="litellm",
         validation_alias="SIGNAL_LLM_PROVIDER",

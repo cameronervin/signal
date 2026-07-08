@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils/cn";
 const navItems = [
   { href: routes.dashboard, label: "Dashboard", icon: Home },
   { href: routes.leads, label: "Inbound leads", icon: Inbox },
-  { href: routes.agents, label: "Agents", icon: LayoutGrid }
+  { href: routes.digitalWorkforce, label: "Digital Workforce", icon: LayoutGrid }
 ];
 
 export function SidebarNavigation() {

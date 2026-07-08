@@ -33,6 +33,13 @@ Terminal 1:
 uv run celery -A app.workers.app:celery_app worker --loglevel=INFO
 ```
 
+Celery Beat entrypoint for Digital Worker follow-up heartbeats. Run only one
+Beat scheduler per environment:
+
+```bash
+uv run celery -A app.workers.app:celery_app beat --loglevel=INFO
+```
+
 Terminal 2:
 
 ```bash
@@ -63,13 +70,14 @@ app/services/knowledge_graph deterministic graph projection and relation rules
 app/repositories       Postgres persistence boundary
 app/models             SQLAlchemy records for Postgres-backed DTO snapshots
 app/agents/builders    chain/node/graph composition and compilation
-app/agents/chains      outreach drafting workflow units
+app/agents/chains      outreach drafting and digital worker decision units
 app/agents/guardrails  lead qualification gates for draft and scoring safety
 app/agents/states      LangGraph state schemas
-app/agents/nodes       lead intelligence graph node factories
-app/agents/graphs      lead intelligence topology builders
+app/agents/nodes       lead intelligence and digital worker node factories
+app/agents/graphs      lead intelligence and digital worker topology builders
 app/agents/executors   inline/worker-facing graph execution
-app/agents/tools       public-data tool wrappers
+app/agents/tools       public-data and sandbox digital worker tool wrappers
+app/agents/context     prompt/runtime context serialization and lifecycle specs
 app/agents/utils       pure scoring/talking-point/text helpers
 app/infrastructure/db  SQLAlchemy async engine/session setup
 app/infrastructure/knowledge_graph Neo4j and disabled graph repositories

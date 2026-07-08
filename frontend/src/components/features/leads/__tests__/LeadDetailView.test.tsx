@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { KnowledgeGraph } from "@/components/features/leads/KnowledgeGraph";
 import { LeadDetailView } from "@/components/features/leads/LeadDetailView";
+import { digitalWorkerPreviewId } from "@/lib/fixtures/digital-workforce";
 import { leads } from "@/lib/fixtures/leads";
 import type { FixtureLead } from "@/types/lead";
 
@@ -121,7 +122,7 @@ describe("LeadDetailView", () => {
     });
   });
 
-  it("renders an editable draft with updated send and assignment actions for workable leads", () => {
+  it("renders an editable draft with digital workforce handoff actions for workable leads", () => {
     const lead = leads.find((item) => item.name === "Sarah Chen");
     expect(lead).toBeDefined();
 
@@ -129,8 +130,15 @@ describe("LeadDetailView", () => {
 
     expect(screen.getByDisplayValue("Improving leasing response in Austin")).toBeInTheDocument();
     expect(screen.queryByText("Review gate")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /assign agent/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /^send$/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /assign digital worker/i })).toHaveAttribute(
+      "href",
+      `/agents/${digitalWorkerPreviewId(lead!.id)}`
+    );
+    expect(screen.getByRole("link", { name: /open digital workforce/i })).toHaveAttribute(
+      "href",
+      `/agents/${digitalWorkerPreviewId(lead!.id)}`
+    );
+    expect(screen.queryByRole("link", { name: /^send$/i })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByDisplayValue("Improving leasing response in Austin"), {
       target: { value: "Updated subject" }

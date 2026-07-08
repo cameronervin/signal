@@ -644,6 +644,31 @@ input:focus-visible {
   overscroll-behavior: contain;
 }
 
+.table-pagination {
+  align-items: center;
+  background: var(--surface-2);
+  border-top: 1px solid var(--row-border);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-width: 100%;
+  padding: 12px 18px;
+}
+
+.table-pagination-summary,
+.table-pagination-page {
+  color: var(--ink-500);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.table-pagination-controls {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
 .table-row {
   align-items: center;
   border-bottom: 1px solid var(--row-border);
@@ -757,6 +782,35 @@ input:focus-visible {
   opacity: 0.76;
 }
 
+.table-row.lead-loading-row {
+  background: var(--surface-1);
+}
+
+.table-row.lead-loading-row:hover {
+  background: var(--surface-1);
+}
+
+.queue-placeholder {
+  color: var(--ink-400);
+  font-weight: 700;
+}
+
+.queue-loading-pill {
+  gap: 7px;
+}
+
+.queue-status-spin {
+  animation: request-spin 900ms linear infinite;
+  display: inline-block;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.table-row.selected {
+  background: var(--soft-purple-row);
+  box-shadow: inset 3px 0 0 var(--brand-primary);
+}
+
 .lead-grid {
   min-width: 1110px;
   grid-template-columns:
@@ -774,6 +828,17 @@ input:focus-visible {
 .agent-grid {
   min-width: 900px;
   grid-template-columns: minmax(168px, 1.1fr) minmax(210px, 1.35fr) 82px minmax(230px, 1.55fr) 126px 24px;
+}
+
+.digital-workforce-grid {
+  min-width: 1010px;
+  grid-template-columns:
+    58px
+    minmax(220px, 1.35fr)
+    92px
+    minmax(220px, 1.2fr)
+    minmax(250px, 1.45fr)
+    24px;
 }
 
 .detail-grid {
@@ -848,6 +913,118 @@ input:focus-visible {
 .agent-progress-screen .stack,
 .agent-progress-screen .surface-card {
   min-height: 0;
+}
+
+.digital-workforce-screen,
+.digital-worker-progress-screen {
+  gap: 14px;
+}
+
+.digital-workforce-screen {
+  grid-template-rows: none;
+}
+
+.digital-worker-progress-screen {
+  grid-template-rows: none;
+}
+
+.digital-worker-progress-screen .detail-grid,
+.digital-worker-progress-screen .stack,
+.digital-worker-progress-screen .surface-card {
+  min-height: 0;
+}
+
+.digital-workforce-selected {
+  align-items: baseline;
+  border-color: var(--border-purple);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.digital-workforce-selected strong {
+  color: var(--brand-deep);
+}
+
+.digital-workforce-selected span:last-child {
+  color: var(--ink-600);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.digital-worker-avatar {
+  background: var(--brand-tint);
+  border-color: var(--border-purple);
+  color: var(--brand-deep);
+}
+
+.channel-readiness {
+  display: grid;
+  gap: 3px;
+}
+
+a.digital-workforce-grid {
+  cursor: pointer;
+}
+
+.digital-workforce-grid > .tier-badge {
+  justify-self: start;
+}
+
+.digital-workforce-grid .score-cell {
+  justify-self: start;
+}
+
+.assignment-preview-cell {
+  display: grid;
+  gap: 2px;
+}
+
+.assignment-preview-cell > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.assignment-preview-cell > span:first-child {
+  white-space: nowrap;
+}
+
+.assignment-preview-cell > span:last-child {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.channel-readiness span,
+.worker-tool-list span {
+  color: var(--ink-600);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.digital-worker-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.worker-tool-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.worker-tool-list span {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.worker-tool-list svg {
+  color: var(--brand-deep);
 }
 
 .activity-log {
@@ -1905,7 +2082,9 @@ input:focus-visible {
   .dashboard-screen,
   .leads-screen,
   .agent-assignment-screen,
-  .agent-progress-screen {
+  .agent-progress-screen,
+  .digital-workforce-screen,
+  .digital-worker-progress-screen {
     grid-template-rows: none;
   }
 
@@ -1936,8 +2115,25 @@ input:focus-visible {
     padding: 12px;
   }
 
+  .table-pagination {
+    align-items: stretch;
+    border-top: 1px solid var(--row-border);
+    flex-direction: column;
+    min-width: 0;
+    padding: 12px;
+  }
+
+  .table-pagination-controls {
+    justify-content: space-between;
+  }
+
+  .table-pagination-controls .button {
+    min-width: 0;
+  }
+
   .lead-grid,
-  .agent-grid {
+  .agent-grid,
+  .digital-workforce-grid {
     grid-template-columns: minmax(0, 1fr);
     min-width: 0;
   }

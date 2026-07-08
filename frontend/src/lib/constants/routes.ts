@@ -3,6 +3,6 @@ export const routes = {
   dashboard: "/dashboard",
   leads: "/leads",
   leadDetail: (leadId: string) => `/leads/${leadId}`,
-  agents: "/agents",
-  agentRunDetail: (runId: string) => `/agents/${runId}`
+  digitalWorkforce: "/agents",
+  digitalWorkerProgress: (previewId: string) => `/agents/${previewId}`
 } as const;

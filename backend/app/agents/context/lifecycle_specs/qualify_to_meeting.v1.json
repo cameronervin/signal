@@ -1,0 +1,77 @@
+{
+  "version": "qualify_to_meeting.v1",
+  "initial_phase": "initial_outreach",
+  "default_follow_up_delay_minutes": 1440,
+  "phases": [
+    {
+      "key": "initial_outreach",
+      "label": "Initial outreach",
+      "done_when": "The reviewed inbound-lead draft has been sent through the sandbox email tool and a first follow-up has been scheduled.",
+      "goals": [
+        {
+          "key": "send_existing_draft",
+          "description": "Send the draft produced by the lead-intelligence pipeline through the sandbox email tool.",
+          "example_actions": ["send_sandbox_email"]
+        },
+        {
+          "key": "schedule_first_follow_up",
+          "description": "Create the first follow-up wake-up after the initial email.",
+          "example_actions": ["schedule_follow_up"]
+        }
+      ]
+    },
+    {
+      "key": "reply_qualification",
+      "label": "Reply qualification",
+      "done_when": "An inbound reply has been captured and categorized for next best action.",
+      "goals": [
+        {
+          "key": "capture_reply",
+          "description": "Record the inbound email and preserve enough context for the next worker step.",
+          "example_actions": ["record_inbound_email", "mark_goal_complete"]
+        },
+        {
+          "key": "classify_intent",
+          "description": "Classify whether the reply is meeting-ready, a question, an objection, or not interested.",
+          "example_actions": ["mark_phase_outcome"]
+        }
+      ]
+    },
+    {
+      "key": "objection_or_follow_up",
+      "label": "Objection or follow-up",
+      "done_when": "The worker has responded to a non-terminal reply or scheduled the next cadence touch.",
+      "goals": [
+        {
+          "key": "respond_or_wait",
+          "description": "Use sandbox email for a short response when there is an inbound reply, otherwise wait for the scheduled follow-up.",
+          "example_actions": ["send_sandbox_email", "schedule_follow_up"]
+        }
+      ]
+    },
+    {
+      "key": "meeting_handoff",
+      "label": "Meeting handoff",
+      "done_when": "The lead is marked ready for SDR handoff after meeting-ready intent appears.",
+      "goals": [
+        {
+          "key": "mark_meeting_ready",
+          "description": "Mark the case ready for human SDR handoff.",
+          "example_actions": ["mark_goal_complete", "mark_phase_outcome"]
+        }
+      ]
+    },
+    {
+      "key": "closed_outcome",
+      "label": "Closed outcome",
+      "done_when": "The worker case has reached a terminal state such as meeting-ready, no-response, disqualified, paused, or failed.",
+      "goals": [
+        {
+          "key": "record_terminal_outcome",
+          "description": "Persist the final worker outcome for SDR review.",
+          "example_actions": ["mark_phase_outcome"]
+        }
+      ]
+    }
+  ]
+}

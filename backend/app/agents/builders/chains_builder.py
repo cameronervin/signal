@@ -7,6 +7,10 @@ from typing import Any
 
 from langchain_core.tools import BaseTool
 
+from app.agents.chains.digital_worker import (
+    DIGITAL_WORKER_DECISION_CHAIN,
+    create_digital_worker_decision_chain,
+)
 from app.agents.chains.outreach_drafting import (
     OUTREACH_DRAFT_CHAIN,
     create_outreach_draft_chain,
@@ -24,5 +28,17 @@ def create_signal_pipeline_chain_set(
         OUTREACH_DRAFT_CHAIN: create_outreach_draft_chain(
             settings=settings,
             tools=tools,
-        )
+        ),
+    }
+
+
+def create_digital_worker_chain_set(
+    *,
+    settings: Settings,
+) -> dict[str, Any]:
+    """Create the chains required by the SDR Digital Worker workflow."""
+    return {
+        DIGITAL_WORKER_DECISION_CHAIN: create_digital_worker_decision_chain(
+            settings=settings,
+        ),
     }

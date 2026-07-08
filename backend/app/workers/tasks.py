@@ -5,8 +5,10 @@ from pydantic import BaseModel
 
 from app.agents.executors.signal_pipeline import SignalPipelineExecutor
 from app.infrastructure.db.session import get_sessionmaker
+from app.repositories.digital_worker import DigitalWorkerPostgresRepository
 from app.repositories.signal_snapshot import SignalSnapshotRepository
 from app.services.agent_execution_service import AgentExecutionService
+from app.services.digital_worker_service import DigitalWorkerService
 from app.workers.app import celery_app, get_worker_resources, run_async
 
 TERMINAL_OR_HELD_STATUSES = {"awaiting_review", "completed", "failed", "paused"}
@@ -20,6 +22,58 @@ def execute_signal_agent_run(run_id: str) -> dict[str, Any]:
     Celery's result backend is only operational metadata.
     """
     return run_async(_execute_signal_agent_run(run_id))
+
+
+@celery_app.task(name="signal.digital_worker.execute")
+def execute_digital_worker_run(run_id: str) -> dict[str, Any]:
+    """Execute one bounded SDR digital worker wake-up."""
+    return run_async(_execute_digital_worker_run(run_id))
+
+
+@celery_app.task(name="signal.digital_worker.scan_due_follow_ups")
+def scan_due_digital_worker_follow_ups() -> dict[str, Any]:
+    """Claim due worker follow-ups and enqueue bounded worker runs."""
+    return run_async(_scan_due_digital_worker_follow_ups())
+
+
+async def _execute_digital_worker_run(run_id: str) -> dict[str, Any]:
+    parsed_run_id = UUID(run_id)
+    session_factory = get_sessionmaker()
+
+    async with session_factory() as session:
+        signal_repository = SignalSnapshotRepository(session)
+        worker_repository = DigitalWorkerPostgresRepository(session)
+        service = DigitalWorkerService(
+            signal_repository=signal_repository,
+            worker_repository=worker_repository,
+            task_dispatcher=NoopDigitalWorkerTaskDispatcher(),
+        )
+        run = await service.execute_run(parsed_run_id)
+        return run.model_dump(mode="json")
+
+
+async def _scan_due_digital_worker_follow_ups() -> dict[str, Any]:
+    session_factory = get_sessionmaker()
+    async with session_factory() as session:
+        signal_repository = SignalSnapshotRepository(session)
+        worker_repository = DigitalWorkerPostgresRepository(session)
+        service = DigitalWorkerService(
+            signal_repository=signal_repository,
+            worker_repository=worker_repository,
+            task_dispatcher=NoopDigitalWorkerTaskDispatcher(),
+        )
+        runs = await service.claim_due_follow_ups()
+
+    for run in runs:
+        execute_digital_worker_run.apply_async(
+            args=(str(run.run_id),),
+            task_id=str(run.run_id),
+        )
+
+    return {
+        "claimed": len(runs),
+        "run_ids": [str(run.run_id) for run in runs],
+    }
 
 
 async def _execute_signal_agent_run(run_id: str) -> dict[str, Any]:
@@ -101,3 +155,8 @@ def _json_safe(value: Any) -> Any:
 
 class SignalSnapshotRepositoryPlaceholder:
     """Placeholder for response-builder methods that do not use persistence."""
+
+
+class NoopDigitalWorkerTaskDispatcher:
+    def enqueue_digital_worker_run(self, run_id: UUID) -> None:
+        return None

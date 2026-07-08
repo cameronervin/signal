@@ -121,6 +121,110 @@ async def test_get_and_list_methods_validate_snapshot_payloads() -> None:
 
 
 @pytest.mark.asyncio
+async def test_list_lead_queue_items_appends_loading_runs_without_duplicates() -> None:
+    lead = _lead_response()
+    duplicate_run = AgentRunResponse(
+        run_id=UUID("22222222-3333-4333-8333-222222222222"),
+        lead_id=LEAD_ID,
+        status="queued",
+        current_stage="queued",
+    )
+    loading_run = AgentRunResponse(
+        run_id=UUID("22222222-4444-4444-8444-222222222222"),
+        lead_id=UUID("11111111-2222-4222-8222-111111111111"),
+        status="running",
+        current_stage="agent_execution",
+    )
+    loading_input = LeadCreate(
+        contact_name="Loading Contact",
+        email="loading@sampleoperator.example",
+        company="Loading Operator",
+        role="VP Leasing",
+        property_address="100 Main St",
+        city="Austin",
+        state="TX",
+        country="US",
+    )
+    session = FakeSession(
+        scalars=[
+            [
+                SimpleNamespace(
+                    id=lead.id,
+                    run_id=lead.run_id,
+                    payload=lead.model_dump(mode="json"),
+                )
+            ],
+            [
+                SimpleNamespace(
+                    lead_id=duplicate_run.lead_id,
+                    run_id=duplicate_run.run_id,
+                    input_payload=lead.input.model_dump(mode="json"),
+                    payload=duplicate_run.model_dump(mode="json"),
+                ),
+                SimpleNamespace(
+                    lead_id=loading_run.lead_id,
+                    run_id=loading_run.run_id,
+                    input_payload=loading_input.model_dump(mode="json"),
+                    payload=loading_run.model_dump(mode="json"),
+                ),
+            ],
+        ],
+    )
+    repository = SignalSnapshotRepository(session)
+
+    items = await repository.list_lead_queue_items()
+
+    assert [item.state for item in items] == ["ready", "loading"]
+    assert items[0].lead == lead
+    assert items[0].run is None
+    assert items[1].lead is None
+    assert items[1].run == loading_run
+    assert items[1].input.contact_name == "Loading Contact"
+
+
+@pytest.mark.asyncio
+async def test_delete_lead_intelligence_counts_deleted_records() -> None:
+    session = FakeSession(scalar_values=[0, 1, 2, 3])
+    repository = SignalSnapshotRepository(session)
+
+    result = await repository.delete_lead_intelligence(LEAD_ID)
+
+    assert result.deleted_leads == 1
+    assert result.deleted_agent_runs == 2
+    assert result.deleted_status_events == 3
+    assert result.skipped_assigned_leads == 0
+    assert len(session.executed_statements) == 3
+
+
+@pytest.mark.asyncio
+async def test_delete_lead_intelligence_skips_active_assignment() -> None:
+    session = FakeSession(scalar_values=[1])
+    repository = SignalSnapshotRepository(session)
+
+    result = await repository.delete_lead_intelligence(LEAD_ID)
+
+    assert result.deleted_leads == 0
+    assert result.deleted_agent_runs == 0
+    assert result.deleted_status_events == 0
+    assert result.skipped_assigned_leads == 1
+    assert session.executed_statements == []
+
+
+@pytest.mark.asyncio
+async def test_delete_all_lead_intelligence_counts_skipped_assigned_leads() -> None:
+    session = FakeSession(scalar_values=[2, 3, 4, 1])
+    repository = SignalSnapshotRepository(session)
+
+    result = await repository.delete_all_lead_intelligence()
+
+    assert result.deleted_leads == 2
+    assert result.deleted_agent_runs == 3
+    assert result.deleted_status_events == 4
+    assert result.skipped_assigned_leads == 1
+    assert len(session.executed_statements) == 3
+
+
+@pytest.mark.asyncio
 async def test_analytics_summary_maps_aggregate_rows() -> None:
     session = FakeSession(
         scalars=[[], []],
@@ -160,6 +264,7 @@ class FakeSession:
         self.gets = gets or {}
         self.scalar_values = scalar_values or []
         self.execute_values = execute_values or []
+        self.executed_statements: list[object] = []
 
     async def merge(self, record: object) -> None:
         self.merged.append(record)
@@ -180,6 +285,9 @@ class FakeSession:
         return self.scalar_values.pop(0)
 
     async def execute(self, statement: object) -> list[tuple[object, ...]]:
+        self.executed_statements.append(statement)
+        if not self.execute_values:
+            return []
         return self.execute_values.pop(0)
 
 

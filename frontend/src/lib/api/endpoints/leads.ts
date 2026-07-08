@@ -5,7 +5,9 @@ import type {
   AnalyticsSummaryResponseDto,
   DashboardSummary,
   FixtureLead,
+  InboundLeadQueueRow,
   LeadCreateDto,
+  LeadQueueItemDto,
   LeadResponseDto,
   SourceFact,
   Tier
@@ -24,6 +26,18 @@ export async function listLeads(): Promise<FixtureLead[]> {
 
   const leads = await apiGet<LeadResponseDto[]>("/api/v1/leads");
   return sortLeads(leads.map(mapLeadResponse));
+}
+
+export async function listLeadQueue(): Promise<InboundLeadQueueRow[]> {
+  if (isFixtureMode()) {
+    return [
+      ...sortLeads(fixtureLeads).map((lead) => readyQueueRow(lead, null)),
+      fixtureLoadingQueueRow()
+    ];
+  }
+
+  const rows = await apiGet<LeadQueueItemDto[]>("/api/v1/leads/queue");
+  return rows.map(mapLeadQueueItem);
 }
 
 export async function getLead(id: string): Promise<FixtureLead | undefined> {
@@ -142,6 +156,78 @@ function mapLeadResponse(lead: LeadResponseDto): FixtureLead {
         }
       : null,
     runId: lead.run_id
+  };
+}
+
+function mapLeadQueueItem(item: LeadQueueItemDto): InboundLeadQueueRow {
+  if (item.state === "ready" && item.lead) {
+    return readyQueueRow(mapLeadResponse(item.lead), item.run, item.input);
+  }
+
+  if (item.state === "loading" && item.run) {
+    return {
+      state: "loading",
+      key: item.run_id,
+      id: item.id,
+      runId: item.run_id,
+      input: item.input,
+      run: item.run
+    };
+  }
+
+  throw new Error(`Invalid lead queue item: ${item.id}`);
+}
+
+function readyQueueRow(
+  lead: FixtureLead,
+  run: AgentRunResponseDto | null,
+  input?: LeadCreateDto
+): InboundLeadQueueRow {
+  return {
+    state: "ready",
+    key: lead.runId ?? lead.id,
+    id: lead.id,
+    runId: lead.runId,
+    input: input ?? {
+      contact_name: lead.name,
+      email: lead.email,
+      company: lead.company,
+      role: lead.role,
+      property_address: "",
+      city: lead.market.split(",")[0]?.trim() || lead.market,
+      state: lead.market.split(",")[1]?.trim() || "",
+      country: "US"
+    },
+    lead,
+    run
+  };
+}
+
+function fixtureLoadingQueueRow(): InboundLeadQueueRow {
+  return {
+    state: "loading",
+    key: "21111111-aaaa-4aaa-8aaa-111111111111",
+    id: "11111111-aaaa-4aaa-8aaa-111111111111",
+    runId: "21111111-aaaa-4aaa-8aaa-111111111111",
+    input: {
+      contact_name: "Sample Contact",
+      email: "contact@operator.example",
+      company: "Multifamily Operator",
+      role: "VP Leasing",
+      property_address: "100 Main St",
+      city: "Austin",
+      state: "TX",
+      country: "US"
+    },
+    run: {
+      run_id: "21111111-aaaa-4aaa-8aaa-111111111111",
+      lead_id: "11111111-aaaa-4aaa-8aaa-111111111111",
+      status: "running",
+      trigger: "api_insert",
+      current_stage: "agent_execution",
+      steps: [],
+      activity_log: ["api_insert: lead received", "agent_execution: running"]
+    }
   };
 }
 

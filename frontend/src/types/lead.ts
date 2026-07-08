@@ -102,6 +102,27 @@ export interface FixtureLead {
   runId?: string;
 }
 
+export interface ReadyLeadQueueRow {
+  state: "ready";
+  key: string;
+  id: string;
+  runId?: string;
+  input: LeadCreateDto;
+  lead: FixtureLead;
+  run: AgentRunResponseDto | null;
+}
+
+export interface LoadingLeadQueueRow {
+  state: "loading";
+  key: string;
+  id: string;
+  runId: string;
+  input: LeadCreateDto;
+  run: AgentRunResponseDto;
+}
+
+export type InboundLeadQueueRow = ReadyLeadQueueRow | LoadingLeadQueueRow;
+
 export interface FixtureAgentRun {
   runId: string;
   leadId?: string;
@@ -190,6 +211,15 @@ export interface LeadResponseDto {
   related_leads: Array<{ lead_id: string; label: string; reason: string }>;
   knowledge_graph: LeadKnowledgeGraphDto;
   run_id: string;
+}
+
+export interface LeadQueueItemDto {
+  id: string;
+  run_id: string;
+  state: "ready" | "loading";
+  input: LeadCreateDto;
+  lead: LeadResponseDto | null;
+  run: AgentRunResponseDto | null;
 }
 
 export interface AgentStepDto {

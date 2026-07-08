@@ -22,6 +22,12 @@ def test_signal_graph_provider_reuses_compiled_graph() -> None:
     assert provider.signal_graph() is provider.signal_graph()
 
 
+def test_digital_worker_graph_provider_reuses_compiled_graph() -> None:
+    provider = SignalGraphProvider(settings=Settings())
+
+    assert provider.digital_worker_graph() is provider.digital_worker_graph()
+
+
 def test_signal_graph_provider_cache_replaces_when_settings_change() -> None:
     cache = SignalGraphProviderCache()
 

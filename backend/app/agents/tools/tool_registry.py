@@ -9,6 +9,7 @@ from typing import Any, Literal
 from langchain_core.tools import BaseTool
 
 from app.agents.chains.outreach_drafting import OUTREACH_DRAFT_CHAIN
+from app.agents.tools.digital_worker import DIGITAL_WORKER_TOOL_DESCRIPTIONS
 from app.agents.tools.public_data import (
     create_census_tool,
     create_domain_tool,
@@ -50,6 +51,11 @@ class ToolSpec:
 def create_signal_tool_set() -> dict[str, Any]:
     """Return deterministic node tools used by the Signal pipeline."""
     return {PUBLIC_DATA_ENRICHMENT_TOOL: enrich_lead_with_public_data}
+
+
+def create_digital_worker_tool_registry() -> dict[str, str]:
+    """Return Digital Worker tool names and prompt-facing descriptions."""
+    return dict(DIGITAL_WORKER_TOOL_DESCRIPTIONS)
 
 
 def _research_tools_enabled(context: ToolBuildContext) -> bool:

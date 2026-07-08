@@ -1,15 +1,15 @@
 import { InboundLeadsView } from "@/components/features/leads/InboundLeadsView";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatePanel } from "@/components/ui/StatePanel";
-import { listLeads } from "@/lib/api/endpoints/leads";
+import { listLeadQueue } from "@/lib/api/endpoints/leads";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeadsPage() {
-  let leads: Awaited<ReturnType<typeof listLeads>> | null = null;
+  let leads: Awaited<ReturnType<typeof listLeadQueue>> | null = null;
 
   try {
-    leads = await listLeads();
+    leads = await listLeadQueue();
   } catch {
     leads = null;
   }

@@ -47,6 +47,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         llm_provider = get_llm_provider(settings)
         signal_graph_provider = get_signal_graph_provider(settings=settings)
         signal_graph_provider.signal_graph()
+        signal_graph_provider.digital_worker_graph()
         app.state.http_client = http_client
         app.state.sessionmaker = sessionmaker
         app.state.public_data_client = public_data_client
@@ -64,6 +65,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 "knowledge_graph_service",
                 "llm_provider",
                 "signal_graph_provider",
+                "digital_worker_graph",
             ],
         )
         yield

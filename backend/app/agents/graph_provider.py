@@ -3,7 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from app.agents.builders.graphs_builder import compile_signal_pipeline_graph
+from app.agents.builders.graphs_builder import (
+    compile_digital_worker_graph,
+    compile_signal_pipeline_graph,
+)
 from app.core.config import Settings
 
 
@@ -38,7 +41,17 @@ class SignalGraphProvider:
     ) -> None:
         self.settings = settings
         self.checkpointer = checkpointer
+        self._digital_worker_graph = None
         self._signal_graph = None
+
+    def digital_worker_graph(self):
+        """Return the cached compiled SDR Digital Worker graph."""
+        if self._digital_worker_graph is None:
+            self._digital_worker_graph = compile_digital_worker_graph(
+                app_settings=self.settings,
+                checkpointer=self.checkpointer,
+            )
+        return self._digital_worker_graph
 
     def signal_graph(self):
         """Return the cached compiled Signal lead pipeline graph."""

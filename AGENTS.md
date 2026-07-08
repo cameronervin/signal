@@ -47,8 +47,8 @@ backend/app/schemas/              Pydantic request and response contracts
 | Dashboard | Queue health, tier distribution, top markets, operational KPIs |
 | Inbound leads | Ranked SDR queue sorted by tier and score |
 | Lead detail | Enrichment, why-line, graph context, flags, cited draft |
-| Agent assignment | Runs currently enriching, drafting, or awaiting review |
-| Agent progress | Pipeline state, activity log, approval gate |
+| Digital Workforce | Preview SDR digital worker capabilities and eligible lead handoffs |
+| Digital worker progress | Preview worker assignment progress and SDR check-ins |
 | Gate-failed lead | Clear no-draft state for leads reps should not work |
 
 ## Documentation Index
