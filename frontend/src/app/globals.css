@@ -426,6 +426,8 @@ input:focus-visible {
   font-size: 11.5px;
   font-weight: 500;
   line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: 5px 9px;
   white-space: normal;
 }
@@ -668,7 +670,7 @@ input:focus-visible {
   color: var(--ink-600);
   font-size: 13px;
   min-width: 0;
-  overflow-wrap: normal;
+  overflow-wrap: anywhere;
 }
 
 .table-strong {
@@ -728,6 +730,16 @@ input:focus-visible {
 
 .table-body .table-row:hover {
   background: var(--soft-purple-row);
+}
+
+.table-body .lead-grid[role="link"] {
+  cursor: pointer;
+}
+
+.row-icon-action,
+.action-cell .button,
+.action-cell .flag {
+  cursor: pointer;
 }
 
 .table-row.tier-a-row {
@@ -977,6 +989,17 @@ input:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.lead-field {
+  min-width: 0;
+}
+
+.lead-field dd,
+.lead-field dt {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
 .personalization {
   background: var(--brand-tint);
   border-bottom: 2px solid var(--brand-primary);
@@ -1131,6 +1154,32 @@ input:focus-visible {
   z-index: 50;
 }
 
+.skeleton {
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  background: linear-gradient(90deg, var(--track) 0%, #f7f8fc 45%, var(--track) 100%);
+  background-size: 220% 100%;
+  display: block;
+}
+
+.skeleton-text {
+  border-radius: 999px;
+  height: 12px;
+}
+
+.skeleton-card {
+  box-shadow: none;
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    background-position: 160% 0;
+  }
+
+  100% {
+    background-position: -60% 0;
+  }
+}
+
 .state-panel {
   display: grid;
   gap: 14px;
@@ -1241,17 +1290,42 @@ input:focus-visible {
   color: var(--ink-700);
   font-size: 13.5px;
   line-height: 1.6;
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: 12px 14px;
   resize: vertical;
   width: 100%;
 }
 
-.draft-sources-strip {
+.draft-sources-accordion {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 8px;
   margin-top: 16px;
   padding: 12px;
+}
+
+.draft-sources-accordion summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  list-style: none;
+  min-width: 0;
+}
+
+.draft-sources-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.draft-sources-accordion summary svg {
+  color: var(--ink-400);
+  flex-shrink: 0;
+  transition: transform 160ms ease;
+}
+
+.draft-sources-accordion[open] summary svg {
+  transform: rotate(180deg);
 }
 
 .danger-panel {
@@ -1297,7 +1371,11 @@ input:focus-visible {
   color: var(--ink-600);
   font-size: 11px;
   font-weight: 800;
+  max-width: 150px;
+  overflow-wrap: anywhere;
   padding: 8px 12px;
+  text-align: center;
+  white-space: normal;
 }
 
 .knowledge-graph .graph-node-contact {
@@ -1322,6 +1400,14 @@ input:focus-visible {
 .related-list span {
   display: grid;
   gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.related-list-item strong {
+  color: var(--ink-900);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .agent-cell-copy {

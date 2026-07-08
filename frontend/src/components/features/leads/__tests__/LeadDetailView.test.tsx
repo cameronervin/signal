@@ -58,6 +58,27 @@ describe("LeadDetailView", () => {
     expect(screen.getByDisplayValue("Updated subject")).toBeInTheDocument();
   });
 
+  it("keeps drafted email sources closed by default", () => {
+    const lead = leads.find((item) => item.name === "Sarah Chen");
+    expect(lead).toBeDefined();
+
+    render(<LeadDetailView lead={lead!} />);
+
+    const sourcesDisclosure = screen.getByText("Sources").closest("details");
+    expect(sourcesDisclosure).toBeInTheDocument();
+    expect(sourcesDisclosure).not.toHaveAttribute("open");
+  });
+
+  it("hides seeded related-history text from the knowledge graph notes", () => {
+    const lead = leads.find((item) => item.name === "Sarah Chen");
+    expect(lead).toBeDefined();
+
+    render(<LeadDetailView lead={lead!} />);
+
+    expect(screen.queryByText("Related inbound")).not.toBeInTheDocument();
+    expect(screen.queryByText("Same company appeared in fixture history")).not.toBeInTheDocument();
+  });
+
   it("suppresses drafts for gate-failed leads", () => {
     const lead = leads.find((item) => item.name === "Tom Whitaker");
     expect(lead).toBeDefined();

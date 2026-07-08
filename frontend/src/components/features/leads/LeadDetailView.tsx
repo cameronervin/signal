@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Ban, ChevronLeft, Copy, ExternalLink, Inbox, RefreshCw } from "lucide-react";
+import { AlertTriangle, Ban, ChevronDown, ChevronLeft, Copy, ExternalLink, Inbox, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -113,6 +113,10 @@ function GateFailedLead({ lead }: Props) {
 function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: string) => void }) {
   const [subject, setSubject] = useState(lead.draft?.subject ?? "");
   const [body, setBody] = useState(lead.draft?.body ?? "");
+  const relatedItems = lead.related.filter(isVisibleRelatedItem);
+  const graphLead = { ...lead, related: relatedItems };
+  const graphWarnings = lead.knowledgeGraph?.warnings ?? [];
+  const hasGraphNotes = relatedItems.length > 0 || graphWarnings.length > 0;
 
   async function copyDraft() {
     await navigator.clipboard.writeText(`${subject}\n\n${body}`);
@@ -150,24 +154,24 @@ function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: 
         <div className="surface-card p-5">
           <div className="flex items-center justify-between">
             <h2 className="section-title">Knowledge graph</h2>
-            <span className="filter-chip active">{lead.related.length} related</span>
+            <span className="filter-chip active">{relatedItems.length} related</span>
           </div>
-          <KnowledgeGraph lead={lead} />
-          <div className="related-list">
-            {lead.related.length ? (
-              lead.related.map((item) => (
-                <span key={`${item.label}-${item.reason}`}>
+          <KnowledgeGraph lead={graphLead} />
+          {hasGraphNotes && (
+            <div className="related-list">
+              {relatedItems.map((item) => (
+                <span key={`${item.label}-${item.reason}`} className="related-list-item">
                   <strong>{item.label}</strong>
-                  {item.reason}
+                  <span>{item.reason}</span>
                 </span>
-              ))
-            ) : (
-              <span>No related leads found for this lead.</span>
-            )}
-            {lead.knowledgeGraph?.warnings.map((warning) => (
-              <span key={warning}>{warning}</span>
-            ))}
-          </div>
+              ))}
+              {graphWarnings.map((warning) => (
+                <span key={warning} className="related-list-item">
+                  {warning}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <div className="surface-card flex flex-col p-5">
@@ -179,19 +183,22 @@ function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: 
           <span className="min-w-0 overflow-wrap-anywhere">
             <strong>From:</strong> You · Signal SDR
           </span>
-          <span>
+          <span className="min-w-0 overflow-wrap-anywhere">
             <strong>To:</strong> {lead.email}
           </span>
         </div>
         <EditableDraft subject={subject} body={body} onSubjectChange={setSubject} onBodyChange={setBody} />
-        <div className="draft-sources-strip">
-          <span className="eyebrow">Sources</span>
+        <details className="draft-sources-accordion">
+          <summary>
+            <span className="eyebrow">Sources</span>
+            <ChevronDown aria-hidden="true" size={15} />
+          </summary>
           <div className="mt-2 flex flex-wrap gap-2">
             {lead.draft?.sources.map((source) => (
               <SourceChip key={`${source.source}-${source.label}`} source={source} />
             ))}
           </div>
-        </div>
+        </details>
         <div className="mt-auto flex justify-between pt-5">
           <Button disabled title="Draft regeneration requires a backend drafting endpoint">
             <RefreshCw size={15} /> Regenerate
@@ -214,10 +221,15 @@ function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: 
 
 function Field({ label, value, detail }: FieldProps) {
   return (
-    <div>
+    <div className="lead-field">
       <dt className="mono text-[10px] font-bold uppercase text-[var(--ink-400)]">{label}</dt>
       <dd className="mt-1 text-sm font-bold">{value}</dd>
       <dd className="mt-1 text-xs font-semibold text-[var(--ink-600)]">{detail}</dd>
     </div>
   );
+}
+
+function isVisibleRelatedItem(item: FixtureLead["related"][number]) {
+  const combinedText = `${item.label} ${item.reason}`.toLowerCase();
+  return !["seeded inbound history", "fixture history", "fixture"].some((hiddenText) => combinedText.includes(hiddenText));
 }

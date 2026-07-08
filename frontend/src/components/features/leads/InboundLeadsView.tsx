@@ -154,6 +154,7 @@ export function InboundLeadsView({ leads }: Props) {
                   )}
                 </span>
                 <ChevronRight
+                  className="row-icon-action"
                   size={18}
                   color={lead.gates.status === "failed" ? "var(--muted-chev)" : "var(--ink-400)"}
                 />
