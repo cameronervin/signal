@@ -70,8 +70,9 @@ Acceptance:
 - Assignment creates durable worker state and queues the worker.
 - The worker sends the existing draft through the sandbox email tool.
 - Follow-ups and inbound email triggers wake the worker without live delivery.
-- Worker progress shows phase, goals, sandbox messages, follow-ups, and run
-  status for SDR check-ins.
+- Worker progress shows a vertical phase timeline beside lead information,
+  with per-step communication previews and a separate audit log for activity
+  events linked to the reviewed drafted email.
 
 ## Epic 5 - Rollout Narrative
 

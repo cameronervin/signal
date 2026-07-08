@@ -49,7 +49,7 @@ describe("digital workforce API endpoint mapping", () => {
       currentPhase: "reply_qualification",
       assignmentStatus: "Active · Reply qualification · Run completed",
       channelReadiness: {
-        email: "Sandbox email sent"
+        email: "Outreach email sent"
       }
     });
   });
@@ -122,6 +122,9 @@ describe("digital workforce API endpoint mapping", () => {
     );
     expect(detail).toMatchObject({
       assignmentId: "31111111-1111-4111-8111-111111111111",
+      draftEmail: {
+        subject: leads[0].draft?.subject
+      },
       goals: [{ goal_key: "send_existing_draft" }],
       messages: [{ subject: "Leasing follow-up" }],
       followUps: [{ reason: "first follow-up after initial sandbox email" }],

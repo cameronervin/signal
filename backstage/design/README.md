@@ -214,13 +214,19 @@ Assign controls for unassigned eligible leads, and progress links to
 **Purpose:** show persisted worker progress after the SDR assigns the Digital
 Worker to an eligible lead.
 **Layout:** header = back chevron + "SDR Digital Worker" + assignment phase and
-status + Pause/Resume controls when valid. Body = 2-col grids `1fr 1fr`:
+status + Pause/Resume controls when valid. Body = 2-col grid `1fr 1fr`:
 - **Left — Lead Information** card: score/tier, contact, company, market,
   market signals, helpful context, and View lead link.
-- **Right — Worker activity** card: `PipelineStepper` from persisted lifecycle
-  phase and goal state.
-- **Lower panels:** sandbox email messages, inbound sandbox email trigger form,
-  goals, follow-ups, runs, and sanitized activity log.
+- **Right — Worker activity** card: vertical phase timeline from persisted
+  lifecycle phase and goal-derived step state. Each step shows the email or
+  communication attached to that step when available; steps without
+  communication omit the communication preview. Hovering or focusing a drafted
+  communication preview opens a popover with the full content. Top-right action
+  = "Audit Log", linking to `/agents/[assignmentId]/activity`.
+  The activity list scrolls internally when it would exceed the viewport height.
+- **Audit Log page:** modal-style full activity view with sanitized worker
+  events and relevant events linking to an inline preview of the reviewed
+  drafted email.
 
 ### 6. Gate-Failed Lead State — `/leads/[id]` variant (Inbox active)
 **Purpose:** tell the rep what **not** to work, and why; suppress the draft.
@@ -238,9 +244,14 @@ status + Pause/Resume controls when valid. Body = 2-col grids `1fr 1fr`:
 - **Table pagination:** `/leads` and `/agents` paginate their already-loaded
   table rows client-side with `?page=<n>` URL state. Filters and search reset the
   table to page 1 while preserving unrelated query params such as `leadId`.
-- **Worker progress:** `/agents/[assignmentId]` shows backend assignment phase,
-  goals, sandbox messages, follow-ups, runs, and activity. Email remains
-  sandbox-only; text messaging remains a future capability.
+- **Worker progress:** `/agents/[assignmentId]` shows lead information beside a
+  vertical worker phase timeline with per-step communication previews. The
+  "Audit Log" action opens `/agents/[assignmentId]/activity`, a modal-style page
+  with sanitized activity events and inline drafted-email preview links. Email
+  remains sandbox-only behind the backend boundary; text messaging remains a
+  future capability. Active and paused worker assignment pages refresh the
+  current route periodically so backend worker state changes appear without a
+  manual browser reload.
 - **Hover states:** table rows get a light-purple hover tint; buttons darken ~6–8%; chevrons/links shift toward `#4A32C4`.
 - **Empty / gate-failed / awaiting states:** shown explicitly (screens 5–6) — reproduce as first-class states, not afterthoughts.
 - **Transitions:** keep subtle (150–200ms ease) for row hover, button press, route changes. No large motion.
@@ -252,7 +263,8 @@ status + Pause/Resume controls when valid. Body = 2-col grids `1fr 1fr`:
   snapshots:
   `{assignmentId, leadId, status, currentPhase, lifecycleVersion, goals[],
   messages[], followUps[], runs[], activityLog[]}` plus unassigned eligible
-  lead handoffs.
+  lead handoffs. The progress UI derives a reviewed `draftEmail` preview from
+  the joined lead snapshot rather than adding a backend assignment field.
 - **Data fetching:** enrichment/scoring/draft come from the FastAPI + LangGraph backend (deterministic-enrichment → agent → graph nodes). The run-detail activity log and pipeline states should stream/poll from the run status endpoint. Charts + KPIs read from an analytics endpoint (hard-coded/static acceptable for v1 per plan).
 - **Gates:** a lead failing hard gates renders the gate-failed variant and must **not** expose a draft.
 

@@ -51,7 +51,9 @@ export async function getDigitalWorkerAssignmentDetail(
   assignmentId: string
 ): Promise<DigitalWorkerAssignmentDetail | undefined> {
   if (isFixtureMode()) {
-    const fixtureAssignment = getDigitalWorkerAssignmentPreview(assignmentId, await listLeads());
+    const leads = await listLeads();
+    const fixtureAssignment = getDigitalWorkerAssignmentPreview(assignmentId, leads);
+    const lead = fixtureAssignment ? leads.find((item) => item.id === fixtureAssignment.leadId) : undefined;
     return fixtureAssignment
       ? {
           ...fixtureAssignment,
@@ -62,7 +64,8 @@ export async function getDigitalWorkerAssignmentDetail(
           goals: [],
           messages: [],
           followUps: [],
-          runs: []
+          runs: [],
+          draftEmail: lead ? draftEmailForLead(lead) : null
         }
       : undefined;
   }
@@ -185,7 +188,7 @@ function mapAvailableRow(lead: FixtureLead): DigitalWorkerAssignmentRow {
     channelReadiness: {
       email: lead.email ? "Ready from lead record" : "Pending contact email",
       text: "Pending contact data",
-      humanReview: "Required before sandbox outreach"
+      humanReview: "Required before worker outreach"
     },
     steps: buildAvailableSteps(),
     activityLog: ["lead: eligible for Digital Worker assignment"]
@@ -217,8 +220,8 @@ function mapAssignedRow(assignment: DigitalWorkerAssignmentDto, lead: FixtureLea
     assignmentStatus: assignmentStatusLabel(assignment, latestRun?.status),
     channelReadiness: {
       email: assignment.messages.some((message) => message.direction === "outbound")
-        ? "Sandbox email sent"
-        : "Sandbox email queued",
+        ? "Outreach email sent"
+        : "Outreach email queued",
       text: "Pending contact data",
       humanReview: assignment.status === "paused" ? "Paused by SDR" : "SDR check-in available"
     },
@@ -240,7 +243,8 @@ function mapAssignmentDetail(
     goals: assignment.goals,
     messages: assignment.messages,
     followUps: assignment.follow_ups,
-    runs: assignment.runs
+    runs: assignment.runs,
+    draftEmail: draftEmailForLead(lead)
   };
 }
 
@@ -255,13 +259,13 @@ function buildAvailableSteps(): DigitalWorkerAssignmentRow["steps"] {
     {
       name: "Initial outreach",
       status: "pending",
-      summary: "Assignment will queue the worker and send the existing draft to the sandbox outbox.",
-      chips: ["Sandbox email", "Human gated"]
+      summary: "Assignment will queue the worker and use the existing reviewed draft for outreach.",
+      chips: ["Drafted email", "Human gated"]
     },
     {
       name: "Reply qualification",
       status: "pending",
-      summary: "Inbound sandbox replies wake the worker for SDR-visible progress."
+      summary: "Lead replies wake the worker for SDR-visible progress."
     }
   ];
 }
@@ -319,7 +323,7 @@ function stepSummary(
     return "Assignment is paused; worker communication actions are held.";
   }
   if (assignment.current_phase === phaseKey) {
-    return "Current worker phase for this sandbox assignment.";
+    return "Current worker phase for this assignment.";
   }
   const pendingGoal = goals.find((goal) => goal.status === "pending");
   return pendingGoal ? `${titleize(pendingGoal.goal_key)} is pending.` : "Worker phase is waiting for progression.";
@@ -376,6 +380,17 @@ function isEligibleLead(lead: FixtureLead) {
   return lead.gates.status === "passed" && Boolean(lead.draft);
 }
 
+function draftEmailForLead(lead: FixtureLead): DigitalWorkerAssignmentDetail["draftEmail"] {
+  return lead.draft
+    ? {
+        id: `lead-draft-${lead.id}`,
+        subject: lead.draft.subject,
+        body: lead.draft.body,
+        sources: lead.draft.sources
+      }
+    : null;
+}
+
 function statusSort(row: DigitalWorkerAssignmentRow) {
   const order: Record<string, number> = {
     active: 0,
@@ -413,7 +428,7 @@ function fixtureAssignmentDto(
     latest_run_id: runId,
     activity_log: [
       "fixture: Digital Worker assignment simulated",
-      "fixture: no backend state persisted and no sandbox email sent"
+      "fixture: no backend state persisted and no outreach email sent"
     ],
     goals: [],
     messages: [],

@@ -1,19 +1,22 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 
+import { DigitalWorkerAuditLogView } from "@/components/features/agents/DigitalWorkerAuditLogView";
 import { DigitalWorkforceView } from "@/components/features/agents/DigitalWorkforceView";
 import { DigitalWorkerProgressView } from "@/components/features/agents/DigitalWorkerProgressView";
 import { buildDigitalWorkerAssignmentPreviews, digitalWorkerProfile } from "@/lib/fixtures/digital-workforce";
 import { leads } from "@/lib/fixtures/leads";
 import type { DigitalWorkerAssignmentDetail, DigitalWorkerAssignmentRow } from "@/types/digital-workforce";
 
+const mockRefresh = jest.fn();
+
 jest.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: mockRefresh }),
   useSearchParams: () => new URLSearchParams(window.location.search)
 }));
 
 describe("Digital Workforce views", () => {
   const createAssignmentAction = jest.fn();
   const pauseAssignmentAction = jest.fn();
-  const recordInboundEmailAction = jest.fn();
   const resumeAssignmentAction = jest.fn();
   const availableAssignments = buildDigitalWorkerAssignmentPreviews(leads);
   const assignedAssignment = assignmentDetail();
@@ -22,7 +25,7 @@ describe("Digital Workforce views", () => {
     window.history.replaceState(null, "", "/agents");
     createAssignmentAction.mockReset();
     pauseAssignmentAction.mockReset();
-    recordInboundEmailAction.mockReset();
+    mockRefresh.mockReset();
     resumeAssignmentAction.mockReset();
   });
 
@@ -101,7 +104,6 @@ describe("Digital Workforce views", () => {
       <DigitalWorkerProgressView
         assignment={assignedAssignment}
         pauseAssignmentAction={pauseAssignmentAction}
-        recordInboundEmailAction={recordInboundEmailAction}
         resumeAssignmentAction={resumeAssignmentAction}
         worker={digitalWorkerProfile}
       />
@@ -110,26 +112,82 @@ describe("Digital Workforce views", () => {
     expect(screen.getByRole("heading", { name: "SDR Digital Worker" })).toBeInTheDocument();
     expect(screen.queryByText("Preview only")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /pause/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /record inbound email/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /record inbound email/i })).not.toBeInTheDocument();
 
-    const detailColumns = screen.getByText("Lead Information").closest(".detail-grid");
+    const detailColumns = screen.getByText("Lead Information").closest(".digital-worker-detail-grid");
+    const workerActivity = screen.getByLabelText("Worker activity");
     expect(detailColumns).toBeInTheDocument();
-    const headings = within(detailColumns as HTMLElement)
-      .getAllByRole("heading")
-      .map((heading) => heading.textContent);
-    expect(headings).toEqual(["Lead Information", "Helpful context", "Worker activity"]);
+    expect((screen.getByText("Lead Information").closest(".surface-card") as HTMLElement).compareDocumentPosition(workerActivity) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(detailColumns as HTMLElement).getByRole("heading", { name: "Lead Information" })).toBeInTheDocument();
+    expect(within(detailColumns as HTMLElement).getByRole("heading", { name: "Helpful context" })).toBeInTheDocument();
+    expect(within(detailColumns as HTMLElement).getByRole("heading", { name: "Worker activity" })).toBeInTheDocument();
 
     expect(screen.getByText(assignedAssignment.email)).toBeInTheDocument();
     expect(screen.getByText(assignedAssignment.company)).toBeInTheDocument();
+    expect(screen.getByText("Score / Tier")).toBeInTheDocument();
+    expect(screen.getByText(`${assignedAssignment.score} · ${assignedAssignment.tier}`)).toBeInTheDocument();
     expect(screen.getByText("Initial outreach")).toBeInTheDocument();
     expect(screen.getByText("Reply qualification")).toBeInTheDocument();
-    expect(screen.getByText("Sandbox email")).toBeInTheDocument();
-    expect(screen.getByText("Leasing follow-up")).toBeInTheDocument();
-    expect(screen.getByText("Follow-ups")).toBeInTheDocument();
-    expect(screen.getByText("Runs")).toBeInTheDocument();
-    expect(screen.getByText("Activity")).toBeInTheDocument();
+    expect(screen.queryByText("Reply Qualification")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sandbox email")).not.toBeInTheDocument();
+    expect(screen.queryByText("Goals")).not.toBeInTheDocument();
+    expect(screen.queryByText("Follow-ups")).not.toBeInTheDocument();
+    expect(screen.queryByText("Runs")).not.toBeInTheDocument();
+    expect(screen.queryByText("Drafted email linked")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /view lead/i })).toHaveClass("button", "purple", "small");
+    expect(screen.getByRole("link", { name: /audit log/i })).toHaveAttribute(
+      "href",
+      `/agents/${assignedAssignment.assignmentId}/activity`
+    );
+    expect(screen.getByRole("link", { name: /audit log/i })).toHaveClass("button", "purple", "small");
+    expect(screen.getAllByText(assignedAssignment.draftEmail?.subject ?? "").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Signal flagged this as a strong fit/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("tooltip")).toHaveTextContent(/Would it be worth comparing/i);
+    expect(screen.queryByText("No communication sent yet")).not.toBeInTheDocument();
     expect(screen.queryByText("Check-in log")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /approve review/i })).not.toBeInTheDocument();
+  });
+
+  it("refreshes active assignment pages so backend worker updates appear", () => {
+    jest.useFakeTimers();
+
+    try {
+      render(
+        <DigitalWorkerProgressView
+          assignment={assignedAssignment}
+          pauseAssignmentAction={pauseAssignmentAction}
+          resumeAssignmentAction={resumeAssignmentAction}
+          worker={digitalWorkerProfile}
+        />
+      );
+
+      expect(mockRefresh).not.toHaveBeenCalled();
+
+      act(() => {
+        jest.advanceTimersByTime(8000);
+      });
+
+      expect(mockRefresh).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("renders the full audit log with linked email previews", () => {
+    render(<DigitalWorkerAuditLogView assignment={assignedAssignment} worker={digitalWorkerProfile} />);
+
+    expect(screen.getByRole("heading", { name: "Audit Log" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Full activity" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /back to worker/i })).toHaveAttribute(
+      "href",
+      `/agents/${assignedAssignment.assignmentId}`
+    );
+    expect(screen.getByText("Drafted email linked")).toBeInTheDocument();
+    expect(screen.getByText(assignedAssignment.draftEmail?.subject ?? "")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /hide email/i }));
+
+    expect(screen.getByRole("button", { name: /view email/i })).toBeInTheDocument();
   });
 });
 
@@ -145,7 +203,7 @@ function assignmentDetail(): DigitalWorkerAssignmentDetail {
     latestRunStatus: "completed",
     assignmentStatus: "Active · Reply qualification · Run completed",
     channelReadiness: {
-      email: "Sandbox email sent",
+      email: "Outreach email sent",
       text: "Pending contact data",
       humanReview: "SDR check-in available"
     },
@@ -153,12 +211,12 @@ function assignmentDetail(): DigitalWorkerAssignmentDetail {
       {
         name: "Initial outreach",
         status: "done",
-        summary: "Existing lead-intelligence draft sent through sandbox email."
+        summary: "Existing lead-intelligence draft connected to worker outreach."
       },
       {
         name: "Reply qualification",
         status: "active",
-        summary: "Current worker phase for this sandbox assignment."
+        summary: "Current worker phase for this assignment."
       }
     ],
     activityLog: ["assignment: SDR assigned digital worker", "worker_run: completed"],
@@ -167,7 +225,7 @@ function assignmentDetail(): DigitalWorkerAssignmentDetail {
         phase_key: "initial_outreach",
         goal_key: "send_existing_draft",
         status: "completed",
-        notes: "Existing lead-intelligence draft sent through sandbox email."
+        notes: "Existing lead-intelligence draft connected to worker outreach."
       }
     ],
     messages: [
@@ -177,7 +235,7 @@ function assignmentDetail(): DigitalWorkerAssignmentDetail {
         direction: "outbound",
         channel: "email",
         subject: "Leasing follow-up",
-        body: "Sandbox email body",
+        body: "Outreach email body",
         created_at: "2026-07-08T16:00:00Z"
       }
     ],
@@ -187,7 +245,7 @@ function assignmentDetail(): DigitalWorkerAssignmentDetail {
         assignment_id: "31111111-1111-4111-8111-111111111111",
         status: "pending",
         due_at: "2026-07-09T16:00:00Z",
-        reason: "first follow-up after initial sandbox email"
+        reason: "first follow-up after initial outreach email"
       }
     ],
     runs: [
@@ -200,6 +258,14 @@ function assignmentDetail(): DigitalWorkerAssignmentDetail {
         message: "digital worker completed one wake-up",
         created_at: "2026-07-08T16:00:00Z"
       }
-    ]
+    ],
+    draftEmail: leads[0].draft
+      ? {
+          id: `lead-draft-${leads[0].id}`,
+          subject: leads[0].draft.subject,
+          body: leads[0].draft.body,
+          sources: leads[0].draft.sources
+        }
+      : null
   };
 }

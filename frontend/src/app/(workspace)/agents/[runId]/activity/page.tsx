@@ -1,13 +1,10 @@
 import { notFound } from "next/navigation";
 
-import { DigitalWorkerProgressView } from "@/components/features/agents/DigitalWorkerProgressView";
+import { DigitalWorkerAuditLogView } from "@/components/features/agents/DigitalWorkerAuditLogView";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatePanel } from "@/components/ui/StatePanel";
-import {
-  pauseDigitalWorkerAssignmentAction,
-  resumeDigitalWorkerAssignmentAction
-} from "@/app/(workspace)/agents/actions";
 import { getDigitalWorkerAssignmentDetail } from "@/lib/api/endpoints/digital-workforce";
+import { routes } from "@/lib/constants/routes";
 import { digitalWorkerProfile } from "@/lib/fixtures/digital-workforce";
 
 interface Props {
@@ -16,7 +13,7 @@ interface Props {
 
 export const dynamic = "force-dynamic";
 
-export default async function DigitalWorkerProgressPage({ params }: Props) {
+export default async function DigitalWorkerActivityPage({ params }: Props) {
   const { runId: assignmentId } = await params;
   let assignment: Awaited<ReturnType<typeof getDigitalWorkerAssignmentDetail>> | null = null;
 
@@ -33,23 +30,16 @@ export default async function DigitalWorkerProgressPage({ params }: Props) {
   if (!assignment) {
     return (
       <>
-        <PageHeader title="SDR Digital Worker" subtitle="Lead data unavailable" />
+        <PageHeader title="Audit Log" subtitle="Lead data unavailable" />
         <StatePanel
-          title="Digital worker assignment unavailable"
+          title="Digital worker audit log unavailable"
           message="Signal could not load this Digital Worker assignment. Start the backend or set fixture mode explicitly for local evaluation."
           actionLabel="Open Digital Workforce"
-          actionHref="/agents"
+          actionHref={routes.digitalWorkforce}
         />
       </>
     );
   }
 
-  return (
-    <DigitalWorkerProgressView
-      assignment={assignment}
-      pauseAssignmentAction={pauseDigitalWorkerAssignmentAction}
-      resumeAssignmentAction={resumeDigitalWorkerAssignmentAction}
-      worker={digitalWorkerProfile}
-    />
-  );
+  return <DigitalWorkerAuditLogView assignment={assignment} worker={digitalWorkerProfile} />;
 }

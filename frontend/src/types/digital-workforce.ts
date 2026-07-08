@@ -1,4 +1,4 @@
-import type { Tier } from "@/types/lead";
+import type { SourceFact, Tier } from "@/types/lead";
 
 export type DigitalWorkerAssignmentStatus = "active" | "paused" | "completed" | "failed";
 export type DigitalWorkerRunStatus = "queued" | "running" | "completed" | "failed" | "skipped";
@@ -93,6 +93,13 @@ export interface DigitalWorkerAssignmentDto {
   runs: DigitalWorkerRunDto[];
 }
 
+export interface DigitalWorkerDraftEmail {
+  id: string;
+  subject: string;
+  body: string;
+  sources: SourceFact[];
+}
+
 export interface DigitalWorkerAssignmentRow {
   rowId: string;
   previewId?: string;
@@ -138,6 +145,7 @@ export interface DigitalWorkerAssignmentDetail extends DigitalWorkerAssignmentRo
   messages: DigitalWorkerMessageDto[];
   followUps: DigitalWorkerFollowUpDto[];
   runs: DigitalWorkerRunDto[];
+  draftEmail?: DigitalWorkerDraftEmail | null;
 }
 
 export type DigitalWorkerAssignmentPreview = DigitalWorkerAssignmentRow;
