@@ -66,6 +66,12 @@ export interface LeadKnowledgeGraphDto {
   warnings: string[];
 }
 
+export interface RelatedLeadItem {
+  id: string;
+  label: string;
+  reason: string;
+}
+
 export interface FixtureLead {
   id: string;
   name: string;
@@ -86,7 +92,7 @@ export interface FixtureLead {
   flags: string[];
   talkingPoints: string[];
   marketSignals: Array<{ label: string; value: string }>;
-  related: Array<{ label: string; reason: string }>;
+  related: RelatedLeadItem[];
   knowledgeGraph?: LeadKnowledgeGraphDto;
   draft: {
     subject: string;

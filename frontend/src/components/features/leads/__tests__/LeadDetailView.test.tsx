@@ -121,15 +121,16 @@ describe("LeadDetailView", () => {
     });
   });
 
-  it("renders an editable draft and no live send action for workable leads", () => {
+  it("renders an editable draft with updated send and assignment actions for workable leads", () => {
     const lead = leads.find((item) => item.name === "Sarah Chen");
     expect(lead).toBeDefined();
 
     render(<LeadDetailView lead={lead!} />);
 
     expect(screen.getByDisplayValue("Improving leasing response in Austin")).toBeInTheDocument();
-    expect(screen.getByText("Review gate")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^send$/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Review gate")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /assign agent/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^send$/i })).toBeInTheDocument();
 
     fireEvent.change(screen.getByDisplayValue("Improving leasing response in Austin"), {
       target: { value: "Updated subject" }
@@ -212,6 +213,38 @@ describe("LeadDetailView", () => {
 
     expect(screen.queryByText("Related inbound")).not.toBeInTheDocument();
     expect(screen.queryByText("Same company appeared in fixture history")).not.toBeInTheDocument();
+  });
+
+  it("renders duplicate visible related rows without duplicate React keys", () => {
+    const lead = leads.find((item) => item.name === "Sarah Chen");
+    expect(lead).toBeDefined();
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
+
+    try {
+      render(
+        <LeadDetailView
+          lead={{
+            ...lead!,
+            related: [
+              { id: "related:duplicate-one", label: "Related inbound", reason: "Shared source category." },
+              { id: "related:duplicate-two", label: "Related inbound", reason: "Shared source category." }
+            ]
+          }}
+        />
+      );
+
+      expect(screen.getAllByText("Related inbound")).toHaveLength(2);
+      expect(screen.getAllByText("Shared source category.")).toHaveLength(2);
+      expect(screen.queryByText("related:duplicate-one")).not.toBeInTheDocument();
+      expect(screen.queryByText("related:duplicate-two")).not.toBeInTheDocument();
+      expect(
+        consoleErrorSpy.mock.calls.some((call) =>
+          call.some((message) => String(message).includes("Encountered two children with the same key"))
+        )
+      ).toBe(false);
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
   });
 
   it("suppresses drafts for gate-failed leads", () => {

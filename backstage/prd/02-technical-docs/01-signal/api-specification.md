@@ -103,6 +103,10 @@ represents sales insights for prioritization and draft personalization.
 The legacy `related_leads` field remains in the response and is populated from
 graph related-lead context when available.
 
+Clients should use graph node `id`, graph edge `id`, and top-level related lead
+`lead_id` values as stable UI identity. Display labels are rep-readable text and
+may repeat across distinct graph nodes or related leads.
+
 Drafts are omitted for hard-gate-failed leads. Draft sources are `SourceFact`
 records that support personalization claims for human review.
 

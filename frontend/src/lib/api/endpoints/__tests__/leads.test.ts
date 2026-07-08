@@ -1,18 +1,21 @@
-import { apiGet, isFixtureMode } from "@/lib/api/client";
-import { getLead } from "@/lib/api/endpoints/leads";
-import type { LeadResponseDto } from "@/types/lead";
+import { apiGet, apiPost, isFixtureMode } from "@/lib/api/client";
+import { createLead, getLead } from "@/lib/api/endpoints/leads";
+import type { AgentRunResponseDto, LeadCreateDto, LeadResponseDto } from "@/types/lead";
 
 jest.mock("@/lib/api/client", () => ({
   apiGet: jest.fn(),
+  apiPost: jest.fn(),
   isFixtureMode: jest.fn()
 }));
 
 const apiGetMock = jest.mocked(apiGet);
+const apiPostMock = jest.mocked(apiPost);
 const isFixtureModeMock = jest.mocked(isFixtureMode);
 
 describe("lead API endpoint mapping", () => {
   beforeEach(() => {
     apiGetMock.mockReset();
+    apiPostMock.mockReset();
     isFixtureModeMock.mockReturnValue(false);
   });
 
@@ -43,6 +46,66 @@ describe("lead API endpoint mapping", () => {
     expect(lead?.talkingPoints).toEqual([
       "Related lead context: Shared source category."
     ]);
+  });
+
+  it("preserves related lead ids as hidden frontend identity", async () => {
+    apiGetMock.mockResolvedValueOnce({
+      ...backendLeadWithoutArrayFields(),
+      related_leads: [
+        {
+          lead_id: "11111111-2222-4222-8222-111111111111",
+          label: "Related inbound",
+          reason: "Shared source category."
+        },
+        {
+          lead_id: "11111111-3333-4333-8333-111111111111",
+          label: "Related inbound",
+          reason: "Shared source category."
+        }
+      ]
+    });
+
+    const lead = await getLead("11111111-1111-4111-8111-111111111111");
+
+    expect(lead?.related).toEqual([
+      {
+        id: "11111111-2222-4222-8222-111111111111",
+        label: "Related inbound",
+        reason: "Shared source category."
+      },
+      {
+        id: "11111111-3333-4333-8333-111111111111",
+        label: "Related inbound",
+        reason: "Shared source category."
+      }
+    ]);
+  });
+
+  it("posts lead submissions with the backend create contract", async () => {
+    const payload: LeadCreateDto = {
+      contact_name: "Sample Contact",
+      email: "contact@operator.example",
+      company: "Multifamily Operator",
+      role: null,
+      property_address: "100 Main St",
+      city: "Austin",
+      state: "TX",
+      country: "US"
+    };
+    const response: AgentRunResponseDto = {
+      run_id: "21111111-1111-4111-8111-111111111111",
+      lead_id: "11111111-1111-4111-8111-111111111111",
+      status: "queued",
+      trigger: "api_insert",
+      current_stage: "queued",
+      steps: [],
+      activity_log: ["api_insert: lead received", "agent_run: queued"]
+    };
+    apiPostMock.mockResolvedValueOnce(response);
+
+    await expect(createLead(payload)).resolves.toEqual(response);
+
+    expect(apiPostMock).toHaveBeenCalledWith("/api/v1/leads", payload);
   });
 });
 

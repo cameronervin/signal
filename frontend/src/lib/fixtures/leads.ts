@@ -42,7 +42,7 @@ export const leads: FixtureLead[] = [
       { label: "Unemployment", value: "3.2%" },
       { label: "HH growth", value: "+4.4%" }
     ],
-    related: [{ label: "Related inbound", reason: "Same company appeared in fixture history" }],
+    related: [{ id: "related:sarah:history", label: "Related inbound", reason: "Same company appeared in fixture history" }],
     draft: {
       subject: "Improving leasing response in Austin",
       body:
@@ -156,7 +156,7 @@ export const leads: FixtureLead[] = [
       { label: "Unemployment", value: "3.6%" },
       { label: "HH growth", value: "+3.1%" }
     ],
-    related: [{ label: "Fixture history", reason: "Same market appeared in recent inbound" }],
+    related: [{ id: "related:priya:history", label: "Fixture history", reason: "Same market appeared in recent inbound" }],
     draft: {
       subject: "Prioritizing repeat inbound in Arlington",
       body:

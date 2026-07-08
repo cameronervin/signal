@@ -3,7 +3,10 @@ import pytest
 from app.infrastructure.knowledge_graph.repositories import (
     DisabledKnowledgeGraphRepository,
 )
-from app.schemas.knowledge_graph import KnowledgeGraphRelatedCandidate
+from app.schemas.knowledge_graph import (
+    KnowledgeGraphContext,
+    KnowledgeGraphRelatedCandidate,
+)
 from app.schemas.lead import Enrichment, LeadCreate, SourceFact
 from app.services.knowledge_graph_service import (
     KnowledgeGraphService,
@@ -100,6 +103,54 @@ def test_same_market_only_relation_is_bounded_medium_confidence() -> None:
 
     assert related[0].confidence == pytest.approx(0.5)
     assert related[0].reason == "Same market context."
+
+
+def test_duplicate_related_labels_keep_distinct_lead_identity() -> None:
+    service = KnowledgeGraphService(
+        DisabledKnowledgeGraphRepository(),
+        storage_enabled=False,
+    )
+    lead = _lead()
+    enrichment = _enrichment()
+    record = build_lead_graph_record(
+        lead_id="lead_current",
+        lead=lead,
+        enrichment=enrichment,
+    )
+
+    related = related_leads_for_record(
+        record,
+        [
+            KnowledgeGraphRelatedCandidate(
+                lead_id="lead_duplicate_one",
+                label="Related inbound",
+                source_categories=[record.source_categories[0]],
+            ),
+            KnowledgeGraphRelatedCandidate(
+                lead_id="lead_duplicate_two",
+                label="Related inbound",
+                source_categories=[record.source_categories[0]],
+            ),
+        ],
+    )
+    graph = service.project_lead_graph(
+        lead_id="lead_current",
+        lead=lead,
+        enrichment=enrichment,
+        graph_context=KnowledgeGraphContext(related_leads=related),
+    )
+
+    assert [item.lead_id for item in related] == [
+        "lead_duplicate_one",
+        "lead_duplicate_two",
+    ]
+    assert {item.label for item in related} == {"Related inbound"}
+    assert {item.reason for item in related} == {"Shared source category."}
+    assert {
+        node.id
+        for node in graph.nodes
+        if node.subtitle == "Related inbound lead"
+    } == {"lead:lead_duplicate_one", "lead:lead_duplicate_two"}
 
 
 def test_unrelated_leads_do_not_produce_edges() -> None:

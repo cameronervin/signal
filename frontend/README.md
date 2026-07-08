@@ -3,6 +3,14 @@
 Next.js SDR workspace for the dashboard, ranked lead queue, lead detail review,
 and agent-run monitoring surfaces.
 
+## Routes
+
+- `/request-demo` is a standalone lead submission screen that posts to the
+  FastAPI lead collection API and links successful submissions to the queued
+  agent run.
+- `/dashboard`, `/leads`, and `/agents` are workspace screens behind the Signal
+  app shell.
+
 ## Data Mode
 
 By default the frontend reads from the FastAPI backend through

@@ -1,4 +1,5 @@
 export const routes = {
+  requestDemo: "/request-demo",
   dashboard: "/dashboard",
   leads: "/leads",
   leadDetail: (leadId: string) => `/leads/${leadId}`,

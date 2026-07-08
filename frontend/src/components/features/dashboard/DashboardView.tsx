@@ -49,7 +49,7 @@ export function DashboardView({ leads, summary }: Props) {
               Last 14 days <ChevronDown size={14} />
             </button>
             <span className="sidebar-avatar m-0" aria-label="SDR profile">
-              SD
+              CE
             </span>
           </div>
         }

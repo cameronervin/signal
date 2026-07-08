@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Ban, ChevronDown, ChevronLeft, Copy, ExternalLink, Inbox, RefreshCw } from "lucide-react";
+import { AlertTriangle, Ban, ChevronDown, ChevronLeft, Copy, Inbox, Plus, RefreshCw, SendHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -45,7 +45,7 @@ export function LeadDetailView({ lead }: Props) {
             </Link>
             {!failed && lead.runId && (
               <Link className="button primary" href={routes.agentRunDetail(lead.runId)}>
-                <ExternalLink size={16} /> View agent run
+                <Plus size={16} /> Assign Agent
               </Link>
             )}
           </div>
@@ -157,7 +157,7 @@ function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: 
               </summary>
               <div className="related-list">
                 {relatedItems.map((item) => (
-                  <span key={`${item.label}-${item.reason}`} className="related-list-item">
+                  <span key={item.id} className="related-list-item">
                     <strong>{item.label}</strong>
                     <span>{item.reason}</span>
                   </span>
@@ -187,7 +187,6 @@ function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: 
         <div className="surface-card lead-detail-fill-card lead-detail-draft-card p-5">
           <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
             <h2 className="section-title">Drafted email</h2>
-            <span className="status-pill">Review gate</span>
           </div>
           <div className="mt-4 grid gap-2 border-b border-[var(--border)] pb-4 text-sm">
             <span className="min-w-0 overflow-wrap-anywhere">
@@ -225,7 +224,7 @@ function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: 
               </Button>
               {lead.runId && (
                 <Link className="button primary" href={routes.agentRunDetail(lead.runId)}>
-                  Approve review
+                  <SendHorizontal size={15} /> Send
                 </Link>
               )}
             </div>

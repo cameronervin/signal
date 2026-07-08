@@ -95,6 +95,10 @@ Drafts are absent for gate-failed leads and are never sent automatically.
   `related_leads` response field.
 - `warnings`: explicit graph storage or retrieval warnings.
 
+Graph node `id` values and related lead `lead_id` values are the stable identity
+fields for clients. Rep-readable `label` values are display text only and are
+not guaranteed to be unique.
+
 Neo4j stores relationship-native graph context when
 `SIGNAL_KNOWLEDGE_GRAPH_ENABLED=true`. Postgres remains the canonical store for
 lead and run DTO snapshots. Disabled or unavailable graph storage returns a

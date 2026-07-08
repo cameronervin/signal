@@ -25,7 +25,7 @@ export function AppShell({ children }: Props) {
         </Link>
         <SidebarNavigation />
         <div className="sidebar-avatar" aria-label="SDR profile">
-          SD
+          CE
         </div>
       </aside>
       <div className="workspace">{children}</div>

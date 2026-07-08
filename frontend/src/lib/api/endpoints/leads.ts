@@ -1,9 +1,11 @@
-import { apiGet, isFixtureMode } from "@/lib/api/client";
+import { apiGet, apiPost, isFixtureMode } from "@/lib/api/client";
 import { getLead as getFixtureLead, leads as fixtureLeads } from "@/lib/fixtures/leads";
 import type {
+  AgentRunResponseDto,
   AnalyticsSummaryResponseDto,
   DashboardSummary,
   FixtureLead,
+  LeadCreateDto,
   LeadResponseDto,
   SourceFact,
   Tier
@@ -37,6 +39,10 @@ export async function getLead(id: string): Promise<FixtureLead | undefined> {
     }
     throw error;
   }
+}
+
+export async function createLead(payload: LeadCreateDto): Promise<AgentRunResponseDto> {
+  return apiPost<AgentRunResponseDto, LeadCreateDto>("/api/v1/leads", payload);
 }
 
 export async function getDashboardSummary(): Promise<DashboardSummary> {
@@ -126,7 +132,7 @@ function mapLeadResponse(lead: LeadResponseDto): FixtureLead {
     flags: [...flags, ...gateFailures, ...gateWarnings, ...providerWarnings],
     talkingPoints: uniqueStrings(arrayOrEmpty(lead.talking_points)),
     marketSignals: buildMarketSignals(lead),
-    related: relatedLeads.map((related) => ({ label: related.label, reason: related.reason })),
+    related: relatedLeads.map((related) => ({ id: related.lead_id, label: related.label, reason: related.reason })),
     knowledgeGraph: lead.knowledge_graph,
     draft: lead.draft
       ? {
