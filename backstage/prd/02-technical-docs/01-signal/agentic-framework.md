@@ -16,9 +16,17 @@ START
   -> END
 ```
 
+## Runtime
+
+Lead intake queues `signal.agent_runs.execute` through Celery. The HTTP API
+persists the submitted input and a queued run in Postgres, then returns `202`
+with the queued `AgentRunResponse`. The worker loads that run, marks it running,
+executes the bounded graph, and persists the finished run plus a lead snapshot
+only when analysis reaches an SDR-visible state.
+
 ## State
 
-State lives in `backend/app/agents/states/signal_state.py` and includes:
+Graph state lives in `backend/app/agents/states/signal_state.py` and includes:
 
 - `lead_id`
 - `run_id`
@@ -131,5 +139,8 @@ truth for lead and run snapshots.
 - Hard gate short-circuit for drafts.
 - Human review required before outreach.
 - Approve/pause transitions update run status only and never send outreach.
+- Postgres run state is authoritative; Celery results are operational metadata.
+- Lead queue APIs hide queued, running, paused, and failed runs until analysis
+  produces an awaiting-review or completed lead result.
 - Explicit warnings for unavailable public-data providers.
 - Activity log for operational traceability.

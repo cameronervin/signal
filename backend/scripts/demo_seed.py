@@ -1,12 +1,13 @@
 from dataclasses import dataclass
+from uuid import UUID
 
 from app.schemas.lead import Enrichment, LeadCreate, SourceFact
 
 
 @dataclass(frozen=True)
 class DemoSeedRecord:
-    lead_id: str
-    run_id: str
+    lead_id: UUID
+    run_id: UUID
     lead: LeadCreate
     enrichment: Enrichment
 
@@ -25,8 +26,8 @@ class DemoSeedPublicDataClient:
 def demo_seed_records() -> list[DemoSeedRecord]:
     return [
         DemoSeedRecord(
-            lead_id="lead_seed_a",
-            run_id="run_seed_a",
+            lead_id=UUID("11111111-1111-4111-8111-111111111111"),
+            run_id=UUID("21111111-1111-4111-8111-111111111111"),
             lead=LeadCreate(
                 contact_name="Geoffrey Hinton",
                 email="geoffrey.hinton@regionalresidentialgroup.com",
@@ -52,8 +53,8 @@ def demo_seed_records() -> list[DemoSeedRecord]:
             ),
         ),
         DemoSeedRecord(
-            lead_id="lead_seed_b",
-            run_id="run_seed_b",
+            lead_id=UUID("11111111-2222-4222-8222-111111111111"),
+            run_id=UUID("21111111-2222-4222-8222-111111111111"),
             lead=LeadCreate(
                 contact_name="Andrew Ng",
                 email="andrew.ng@metrocommunitiesgroup.com",
@@ -79,8 +80,8 @@ def demo_seed_records() -> list[DemoSeedRecord]:
             ),
         ),
         DemoSeedRecord(
-            lead_id="lead_seed_c",
-            run_id="run_seed_c",
+            lead_id=UUID("11111111-3333-4333-8333-111111111111"),
+            run_id=UUID("21111111-3333-4333-8333-111111111111"),
             lead=LeadCreate(
                 contact_name="Yann LeCun",
                 email="yann.lecun@localhousingoperator.com",
@@ -106,8 +107,8 @@ def demo_seed_records() -> list[DemoSeedRecord]:
             ),
         ),
         DemoSeedRecord(
-            lead_id="lead_seed_gate_failed",
-            run_id="run_seed_gate_failed",
+            lead_id=UUID("11111111-4444-4444-8444-111111111111"),
+            run_id=UUID("21111111-4444-4444-8444-111111111111"),
             lead=LeadCreate(
                 contact_name="Demis Hassabis",
                 email="demis.hassabis@gmail.com",
@@ -133,8 +134,8 @@ def demo_seed_records() -> list[DemoSeedRecord]:
             ),
         ),
         DemoSeedRecord(
-            lead_id="lead_seed_missing_trigger",
-            run_id="run_seed_missing_trigger",
+            lead_id=UUID("11111111-5555-4555-8555-111111111111"),
+            run_id=UUID("21111111-5555-4555-8555-111111111111"),
             lead=LeadCreate(
                 contact_name="Fei-Fei Li",
                 email="fei-fei.li@portfoliohousinggroup.com",
@@ -162,8 +163,8 @@ def demo_seed_records() -> list[DemoSeedRecord]:
             ),
         ),
         DemoSeedRecord(
-            lead_id="lead_seed_warning_only",
-            run_id="run_seed_warning_only",
+            lead_id=UUID("11111111-6666-4666-8666-111111111111"),
+            run_id=UUID("21111111-6666-4666-8666-111111111111"),
             lead=LeadCreate(
                 contact_name="Yoshua Bengio",
                 email="yoshua.bengio@smalloperatorcollective.com",

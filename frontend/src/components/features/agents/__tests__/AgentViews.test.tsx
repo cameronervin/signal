@@ -35,13 +35,13 @@ describe("Agent views", () => {
     const { unmount } = render(<AgentRunDetailView run={agentRuns[0]} />);
 
     fireEvent.click(screen.getAllByRole("button", { name: /^approve review$/i })[0]);
-    await waitFor(() => expect(approveAgentRun).toHaveBeenCalledWith("run-8842"));
+    await waitFor(() => expect(approveAgentRun).toHaveBeenCalledWith(agentRuns[0].runId));
     expect(screen.getByText("Review approved. No outreach was sent.")).toBeInTheDocument();
 
     unmount();
     render(<AgentRunDetailView run={agentRuns[0]} />);
     fireEvent.click(screen.getByRole("button", { name: /^pause$/i }));
-    await waitFor(() => expect(pauseAgentRun).toHaveBeenCalledWith("run-8842"));
+    await waitFor(() => expect(pauseAgentRun).toHaveBeenCalledWith(agentRuns[0].runId));
     expect(screen.getByText("Agent run paused")).toBeInTheDocument();
   });
 });

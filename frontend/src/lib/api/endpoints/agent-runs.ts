@@ -98,14 +98,22 @@ function mapAgentRunResponse(run: AgentRunResponseDto, lead?: FixtureLead): Fixt
     runtime: totalDurationMs ? `${(totalDurationMs / 1000).toFixed(1)}s` : "n/a",
     apisCalled: apiCallSummary(run.activity_log),
     steps: run.steps.map((step) => ({
-      name: step.name,
+      name: displayStepName(step.name),
       status: stepStatus(step.status, run.current_stage, step.name),
-      summary: step.summary,
+      summary: displayStepSummary(step.name, step.summary),
       duration: step.duration_ms ? `${(step.duration_ms / 1000).toFixed(1)}s` : undefined
     })),
     activityLog: run.activity_log,
     output
   };
+}
+
+function displayStepName(name: string) {
+  return name.toLowerCase() === "send" ? "Complete" : name;
+}
+
+function displayStepSummary(name: string, summary: string) {
+  return name.toLowerCase() === "send" ? "Review completion is logged. No outreach is sent by Signal v1." : summary;
 }
 
 function stageLabel(stage: string) {

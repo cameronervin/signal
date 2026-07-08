@@ -56,21 +56,25 @@ def test_agent_pause_approve_and_analytics_endpoints() -> None:
             ],
         }
 
-        approved = client.post("/api/v1/agent-runs/run_seed_a/approve")
+        approved = client.post(f"/api/v1/agent-runs/{records[0].run_id}/approve")
         assert approved.status_code == 200
         assert approved.json()["status"] == "completed"
         assert approved.json()["current_stage"] == "review_approved"
         assert "human_review: approved without send" in approved.json()["activity_log"]
 
-        invalid_approval = client.post("/api/v1/agent-runs/run_seed_a/approve")
+        invalid_approval = client.post(
+            f"/api/v1/agent-runs/{records[0].run_id}/approve"
+        )
         assert invalid_approval.status_code == 409
 
-        paused = client.post("/api/v1/agent-runs/run_seed_b/pause")
+        paused = client.post(f"/api/v1/agent-runs/{records[1].run_id}/pause")
         assert paused.status_code == 200
         assert paused.json()["status"] == "paused"
         assert paused.json()["current_stage"] == "human_review_paused"
 
-        invalid_pause = client.post("/api/v1/agent-runs/run_seed_gate_failed/pause")
+        invalid_pause = client.post(
+            f"/api/v1/agent-runs/{records[3].run_id}/pause"
+        )
         assert invalid_pause.status_code == 409
 
 

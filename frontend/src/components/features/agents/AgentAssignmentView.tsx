@@ -40,12 +40,12 @@ export function AgentAssignmentView({ agentRuns }: Props) {
         title="Agent Assignment"
         subtitle={`${filteredRuns.length} agents working`}
         actions={
-          <div className="flex gap-2">
+          <div className="toolbar-row">
             <SearchInput label="Search agent runs" placeholder="Search runs..." value={search} onChange={setSearch} />
           </div>
         }
       />
-      <main className="content stack-lg">
+      <main className="content stack-lg screen-fit agent-assignment-screen">
         <div className="flex flex-wrap gap-2">
           <FilterChip active={awaitingOnly} onClick={() => setAwaitingOnly((active) => !active)}>
             Awaiting you
@@ -96,7 +96,7 @@ function AgentRunRow({ run }: AgentRunRowProps) {
 function AgentRunRowContent({ run }: AgentRunRowProps) {
   return (
     <>
-      <span>
+      <span className="table-cell agent-cell" data-label="Agent">
         <span className={cn("icon-tile", run.agent.includes("Enrichment") && "neutral")}>
           {run.agent.includes("Enrichment") ? <CheckCircle size={16} /> : <Send size={16} />}
         </span>
@@ -105,9 +105,9 @@ function AgentRunRowContent({ run }: AgentRunRowProps) {
           <span>{run.kind}</span>
         </span>
       </span>
-      <span className="text-sm font-semibold">{run.lead}</span>
-      <span className="mono text-sm">{run.started}</span>
-      <span>
+      <span className="table-cell table-strong" data-label="Working lead">{run.lead}</span>
+      <span className="table-cell mono" data-label="Started">{run.started}</span>
+      <span className="table-cell" data-label="Stage">
         <span className="mb-2 block text-sm font-semibold">{run.stage}</span>
         <span className="progress-segments">
           {Array.from({ length: 4 }).map((_, index) => (
@@ -115,13 +115,17 @@ function AgentRunRowContent({ run }: AgentRunRowProps) {
               key={index}
               className={cn(
                 index < run.stageIndex && "done",
-                index === run.stageIndex && run.rawStatus === "running" && "active"
+                index === run.stageIndex &&
+                  !run.disabled &&
+                  run.rawStatus !== "completed" &&
+                  run.rawStatus !== "failed" &&
+                  "active"
               )}
             />
           ))}
         </span>
       </span>
-      <StatusPill tone={statusTone(run)}>{run.status}</StatusPill>
+      <StatusPill tone={statusTone(run)} data-label="Status">{run.status}</StatusPill>
     </>
   );
 }
@@ -135,6 +139,9 @@ function statusTone(run: FixtureAgentRun) {
   }
   if (run.rawStatus === "failed" || run.status === "Failed") {
     return "danger";
+  }
+  if (run.rawStatus === "completed" || run.status === "Completed") {
+    return "muted";
   }
   return "purple";
 }

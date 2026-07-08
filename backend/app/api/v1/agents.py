@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.v1.dependencies import get_agent_run_service
@@ -16,7 +18,7 @@ async def list_agent_runs(
 
 @router.get("/{run_id}", response_model=AgentRunResponse)
 async def get_agent_run(
-    run_id: str,
+    run_id: UUID,
     service: AgentRunService = Depends(get_agent_run_service),
 ) -> AgentRunResponse:
     run = await service.get_agent_run(run_id)
@@ -30,7 +32,7 @@ async def get_agent_run(
 
 @router.post("/{run_id}/approve", response_model=AgentRunResponse)
 async def approve_agent_run(
-    run_id: str,
+    run_id: UUID,
     service: AgentRunService = Depends(get_agent_run_service),
 ) -> AgentRunResponse:
     try:
@@ -50,7 +52,7 @@ async def approve_agent_run(
 
 @router.post("/{run_id}/pause", response_model=AgentRunResponse)
 async def pause_agent_run(
-    run_id: str,
+    run_id: UUID,
     service: AgentRunService = Depends(get_agent_run_service),
 ) -> AgentRunResponse:
     try:

@@ -1,9 +1,10 @@
 from collections import Counter
+from uuid import UUID, uuid4
 
 from app.infrastructure.public_data.fixtures import demo_enrichment
 from app.schemas.analytics import AnalyticsSummaryResponse, MarketSummary
 from app.schemas.lead import LeadCreate, LeadResponse
-from app.schemas.run import AgentRunResponse
+from app.schemas.run import AgentRunResponse, AgentRunStatusEvent
 
 
 class FakePublicDataClient:
@@ -17,8 +18,14 @@ class FakePublicDataClient:
 
 class FakeSignalRepository:
     def __init__(self) -> None:
-        self._leads: dict[str, LeadResponse] = {}
-        self._runs: dict[str, AgentRunResponse] = {}
+        self._leads: dict[UUID, LeadResponse] = {}
+        self._runs: dict[UUID, AgentRunResponse] = {}
+        self._run_inputs: dict[UUID, LeadCreate] = {}
+        self._events: dict[UUID, list[AgentRunStatusEvent]] = {}
+        self.commits = 0
+
+    async def commit(self) -> None:
+        self.commits += 1
 
     async def save_lead(self, lead: LeadResponse) -> None:
         self._leads[lead.id] = lead
@@ -32,17 +39,64 @@ class FakeSignalRepository:
             ),
         )
 
-    async def get_lead(self, lead_id: str) -> LeadResponse | None:
+    async def get_lead(self, lead_id: UUID) -> LeadResponse | None:
         return self._leads.get(lead_id)
+
+    async def create_queued_agent_run(
+        self,
+        *,
+        run: AgentRunResponse,
+        lead: LeadCreate,
+        task_id: UUID,
+    ) -> None:
+        self._runs[run.run_id] = run
+        self._run_inputs[run.run_id] = lead
+        await self.append_status_event(
+            run_id=run.run_id,
+            status=run.status,
+            current_stage=run.current_stage,
+            message="lead received and queued",
+        )
 
     async def save_agent_run(self, run: AgentRunResponse) -> None:
         self._runs[run.run_id] = run
+        await self.append_status_event(
+            run_id=run.run_id,
+            status=run.status,
+            current_stage=run.current_stage,
+        )
 
     async def list_agent_runs(self) -> list[AgentRunResponse]:
         return list(self._runs.values())
 
-    async def get_agent_run(self, run_id: str) -> AgentRunResponse | None:
+    async def get_agent_run(self, run_id: UUID) -> AgentRunResponse | None:
         return self._runs.get(run_id)
+
+    async def get_agent_run_input(self, run_id: UUID) -> LeadCreate | None:
+        return self._run_inputs.get(run_id)
+
+    async def append_status_event(
+        self,
+        *,
+        run_id: UUID,
+        status: str,
+        current_stage: str,
+        message: str | None = None,
+        payload: dict[str, object] | None = None,
+    ) -> None:
+        self._events.setdefault(run_id, []).append(
+            AgentRunStatusEvent(
+                id=uuid4(),
+                run_id=run_id,
+                status=status,
+                current_stage=current_stage,
+                message=message,
+                payload=payload,
+            )
+        )
+
+    async def list_status_events(self, run_id: UUID) -> list[AgentRunStatusEvent]:
+        return self._events.get(run_id, [])
 
     async def analytics_summary(self) -> AnalyticsSummaryResponse:
         leads = await self.list_leads()

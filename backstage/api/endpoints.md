@@ -3,10 +3,10 @@
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/api/v1/health` | Service health |
-| POST | `/api/v1/leads` | Trigger enrichment for a new lead |
-| GET | `/api/v1/leads` | List enriched leads |
-| GET | `/api/v1/leads/{lead_id}` | Get lead detail |
-| GET | `/api/v1/agent-runs` | List agent runs |
+| POST | `/api/v1/leads` | Queue enrichment for a new lead and return `202 AgentRunResponse` |
+| GET | `/api/v1/leads` | List completed-analysis leads |
+| GET | `/api/v1/leads/{lead_id}` | Get completed-analysis lead detail |
+| GET | `/api/v1/agent-runs` | List agent runs across queued/running/final states |
 | GET | `/api/v1/agent-runs/{run_id}` | Get run detail |
 | POST | `/api/v1/agent-runs/{run_id}/approve` | Mark a review-gated run approved without sending outreach |
 | POST | `/api/v1/agent-runs/{run_id}/pause` | Pause a queued, running, or review-gated run |

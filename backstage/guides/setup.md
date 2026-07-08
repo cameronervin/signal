@@ -27,17 +27,32 @@ DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Seed deterministic sample data into the configured Postgres database:
+Seed sample lead inputs into the configured Postgres database. The script queues
+agent runs and waits for worker-completed analysis, so keep the Celery worker
+running in another terminal:
 
 ```bash
 cd backend
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
 uv run alembic upgrade head
+```
+
+Terminal 1:
+
+```bash
+cd backend
+uv run celery -A app.workers.app:celery_app worker --loglevel=INFO
+```
+
+Terminal 2:
+
+```bash
+cd backend
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
 uv run python scripts/seed_demo_leads.py
 ```
 
-Optional Celery worker for agent execution:
+Celery worker for agent execution:
 
 ```bash
 cd backend
@@ -181,7 +196,9 @@ Postgres container port. The local developer-facing port is `localhost:5433`.
 LiteLLM uses its database-backed image for the local proxy. On a fresh Postgres
 volume, the first boot can take several minutes while proxy migrations run.
 
-Run the application processes directly while Compose provides dependencies:
+Run the application processes directly while Compose provides dependencies.
+The worker is required for submitted leads to move from queued to completed
+analysis:
 
 ```bash
 cd backend

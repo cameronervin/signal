@@ -1,4 +1,5 @@
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -69,7 +70,7 @@ class RelatedLead(BaseModel):
 
 
 class LeadResponse(BaseModel):
-    id: str
+    id: UUID
     input: LeadCreate
     gates: GateResult
     enrichment: Enrichment
@@ -79,4 +80,4 @@ class LeadResponse(BaseModel):
     draft: DraftEmail | None = None
     related_leads: list[RelatedLead] = Field(default_factory=list)
     knowledge_graph: LeadKnowledgeGraph = Field(default_factory=LeadKnowledgeGraph)
-    run_id: str
+    run_id: UUID

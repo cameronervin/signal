@@ -67,7 +67,7 @@ export function InboundLeadsView({ leads }: Props) {
         title="Inbound Leads"
         subtitle={`${filteredLeads.length} open · sorted by tier`}
         actions={
-          <div className="flex gap-2">
+          <div className="toolbar-row">
             <Button>
               <SlidersHorizontal size={16} /> Filter
             </Button>
@@ -75,7 +75,7 @@ export function InboundLeadsView({ leads }: Props) {
           </div>
         }
       />
-      <main className="content stack-lg">
+      <main className="content stack-lg screen-fit leads-screen">
         <Toast message={toast} />
         <div className="flex flex-wrap gap-2">
           <FilterChip active={tierAOnly} onClick={() => setTierAOnly((active) => !active)}>
@@ -119,16 +119,26 @@ export function InboundLeadsView({ leads }: Props) {
                 }}
               >
                 <TierBadge tier={lead.score.tier} />
-                <span>
-                  <strong className="block text-sm">{lead.name}</strong>
-                  <span className="text-xs font-semibold text-[var(--ink-600)]">{lead.role}</span>
+                <span className="table-cell cell-stack" data-label="Lead">
+                  <strong>{lead.name}</strong>
+                  <span>{lead.role}</span>
                 </span>
-                <span className="text-sm font-semibold text-[var(--ink-500)]">{lead.company}</span>
-                <span className="text-sm">{lead.market}</span>
-                <span className="mono text-sm">{lead.units ? `${Math.round(lead.units / 1000)}k` : "-"}</span>
-                <ScoreMeter score={lead.score.total} tier={lead.score.tier} />
-                <span className="text-sm text-[var(--ink-600)]">{lead.score.whyLine}</span>
-                <span>
+                <span className="table-cell table-strong" data-label="Company">
+                  {lead.company}
+                </span>
+                <span className="table-cell" data-label="Market">
+                  {lead.market}
+                </span>
+                <span className="table-cell mono" data-label="Units">
+                  {lead.units ? `${Math.round(lead.units / 1000)}k` : "-"}
+                </span>
+                <span className="table-cell" data-label="Score">
+                  <ScoreMeter score={lead.score.total} tier={lead.score.tier} />
+                </span>
+                <span className="table-cell why-cell" data-label="Why this lead">
+                  {lead.score.whyLine}
+                </span>
+                <span className="table-cell action-cell" data-label="Draft">
                   {lead.gates.status === "failed" ? (
                     <Flag>Review flags</Flag>
                   ) : (

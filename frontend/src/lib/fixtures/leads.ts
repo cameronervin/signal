@@ -1,8 +1,23 @@
 import type { FixtureAgentRun, FixtureLead } from "@/types/lead";
 
+const fixtureIds = {
+  sarahLead: "11111111-1111-4111-8111-111111111111",
+  sarahRun: "21111111-1111-4111-8111-111111111111",
+  marcusLead: "11111111-2222-4222-8222-111111111111",
+  marcusRun: "21111111-2222-4222-8222-111111111111",
+  robertLead: "11111111-3333-4333-8333-111111111111",
+  priyaLead: "11111111-4444-4444-8444-111111111111",
+  davidLead: "11111111-5555-4555-8555-111111111111",
+  davidRun: "21111111-5555-4555-8555-111111111111",
+  linLead: "11111111-6666-4666-8666-111111111111",
+  jennaLead: "11111111-7777-4777-8777-111111111111",
+  tomLead: "11111111-8888-4888-8888-111111111111",
+  nextReleaseRun: "21111111-9999-4999-8999-111111111111"
+};
+
 export const leads: FixtureLead[] = [
   {
-    id: "lead-sarah-chen",
+    id: fixtureIds.sarahLead,
     name: "Sarah Chen",
     email: "sarah@meridianresidential.example",
     role: "VP Leasing",
@@ -38,10 +53,10 @@ export const leads: FixtureLead[] = [
         { source: "News", label: "Trigger", value: "Regional portfolio expansion" }
       ]
     },
-    runId: "run-8842"
+    runId: fixtureIds.sarahRun
   },
   {
-    id: "lead-marcus-webb",
+    id: fixtureIds.marcusLead,
     name: "Marcus Webb",
     email: "marcus@northstarliving.example",
     role: "Director Operations",
@@ -76,10 +91,10 @@ export const leads: FixtureLead[] = [
         { source: "FRED", label: "Labor market", value: "3.2% unemployment" }
       ]
     },
-    runId: "run-9011"
+    runId: fixtureIds.marcusRun
   },
   {
-    id: "lead-robert-diaz",
+    id: fixtureIds.robertLead,
     name: "Robert Diaz",
     email: "robert@urban-nest.example",
     role: "Regional Manager",
@@ -116,7 +131,7 @@ export const leads: FixtureLead[] = [
     }
   },
   {
-    id: "lead-priya-nair",
+    id: fixtureIds.priyaLead,
     name: "Priya Nair",
     email: "priya@copperline-homes.example",
     role: "Regional Manager",
@@ -153,7 +168,7 @@ export const leads: FixtureLead[] = [
     }
   },
   {
-    id: "lead-david-okafor",
+    id: fixtureIds.davidLead,
     name: "David Okafor",
     email: "david@sunhaven-residential.example",
     role: "Asset Manager",
@@ -188,10 +203,10 @@ export const leads: FixtureLead[] = [
         { source: "FRED", label: "Rent growth", value: "6.2% YoY" }
       ]
     },
-    runId: "run-7750"
+    runId: fixtureIds.davidRun
   },
   {
-    id: "lead-lin-zhao",
+    id: fixtureIds.linLead,
     name: "Lin Zhao",
     email: "lin@havenbridge-living.example",
     role: "Director Leasing",
@@ -228,7 +243,7 @@ export const leads: FixtureLead[] = [
     }
   },
   {
-    id: "lead-jenna-cole",
+    id: fixtureIds.jennaLead,
     name: "Jenna Cole",
     email: "jenna@ridgeview-communities.example",
     role: "Property Manager",
@@ -265,7 +280,7 @@ export const leads: FixtureLead[] = [
     }
   },
   {
-    id: "lead-tom-whitaker",
+    id: fixtureIds.tomLead,
     name: "Tom Whitaker",
     email: "tom@personalmail.example",
     role: "Property Manager",
@@ -288,8 +303,8 @@ export const leads: FixtureLead[] = [
 
 export const agentRuns: FixtureAgentRun[] = [
   {
-    runId: "run-8842",
-    leadId: "lead-sarah-chen",
+    runId: fixtureIds.sarahRun,
+    leadId: fixtureIds.sarahLead,
     agent: "Outreach Agent",
     kind: "Draft review",
     lead: "Sarah Chen · Meridian Residential",
@@ -310,7 +325,7 @@ export const agentRuns: FixtureAgentRun[] = [
       },
       { name: "Knowledge graph", status: "done", summary: "Related company context attached." },
       { name: "Human review", status: "active", summary: "Awaiting SDR approval before outreach." },
-      { name: "Send", status: "pending", summary: "Runs only after approval." }
+      { name: "Complete", status: "pending", summary: "Logs review completion after approval. No outreach is sent." }
     ],
     activityLog: [
       "11:42:01 api_insert received",
@@ -324,12 +339,12 @@ export const agentRuns: FixtureAgentRun[] = [
       score: 92,
       tier: "A",
       summary: "Large portfolio · senior contact · 8.1% rent growth · recent trigger event",
-      leadId: "lead-sarah-chen"
+      leadId: fixtureIds.sarahLead
     }
   },
   {
-    runId: "run-9011",
-    leadId: "lead-marcus-webb",
+    runId: fixtureIds.marcusRun,
+    leadId: fixtureIds.marcusLead,
     agent: "Enrichment Agent",
     kind: "Lead enrichment",
     lead: "Marcus Webb · Northstar Living",
@@ -350,15 +365,15 @@ export const agentRuns: FixtureAgentRun[] = [
     activityLog: ["11:35:02 api_insert received", "11:35:04 deterministic enrichment completed"]
   },
   {
-    runId: "run-7750",
-    leadId: "lead-david-okafor",
+    runId: fixtureIds.davidRun,
+    leadId: fixtureIds.davidLead,
     agent: "Outreach Agent",
     kind: "Draft review",
     lead: "David Okafor · Sunhaven Residential",
     started: "1h",
-    stage: "Sent",
+    stage: "Review approved",
     stageIndex: 4,
-    status: "Sent",
+    status: "Completed",
     rawStatus: "completed",
     trigger: "api insert",
     runtime: "12.0s",
@@ -368,12 +383,12 @@ export const agentRuns: FixtureAgentRun[] = [
       { name: "Agent scoring and drafting", status: "done", summary: "Score 71, B-tier, draft generated." },
       { name: "Knowledge graph", status: "done", summary: "Related context attached." },
       { name: "Human review", status: "done", summary: "Approved by SDR." },
-      { name: "Send", status: "done", summary: "Touch logged to the lead timeline." }
+      { name: "Complete", status: "done", summary: "Review logged. No outreach was sent." }
     ],
-    activityLog: ["10:18:01 api_insert received", "10:18:08 review approved", "10:18:12 send completed"]
+    activityLog: ["10:18:01 api_insert received", "10:18:08 review approved", "10:18:12 completed without send"]
   },
   {
-    runId: "run-next-release",
+    runId: fixtureIds.nextReleaseRun,
     agent: "Follow-up Agent",
     kind: "Next release",
     lead: "Auto-cadence outreach",

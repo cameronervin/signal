@@ -89,9 +89,15 @@ class FakeSessionContext:
     def __call__(self) -> "FakeSessionContext":
         return self
 
-    async def __aenter__(self) -> object:
+    async def __aenter__(self) -> "FakeSessionContext":
         self.entered = True
-        return object()
+        return self
 
     async def __aexit__(self, *args: object) -> None:
         self.exited = True
+
+    async def commit(self) -> None:
+        return None
+
+    async def rollback(self) -> None:
+        return None

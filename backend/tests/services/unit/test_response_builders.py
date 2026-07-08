@@ -1,8 +1,13 @@
+from uuid import UUID
+
 from app.agents.utils.scoring import score_lead
 from app.infrastructure.public_data.fixtures import demo_enrichment
 from app.schemas.lead import DraftEmail, GateResult, LeadCreate
 from app.services.agent_execution_service import AgentExecutionService
 from tests.fakes import FakeSignalRepository
+
+LEAD_ID = UUID("11111111-1111-4111-8111-111111111111")
+RUN_ID = UUID("22222222-2222-4222-8222-222222222222")
 
 
 def _lead() -> LeadCreate:
@@ -25,12 +30,12 @@ def test_execution_service_lead_response_defaults_optional_graph_outputs() -> No
     service = AgentExecutionService(FakeSignalRepository())
 
     response = service._build_lead_response(
-        lead_id="lead_test",
-        run_id="run_test",
+        lead_id=LEAD_ID,
+        run_id=RUN_ID,
         lead=lead,
         result={
-            "lead_id": "lead_test",
-            "run_id": "run_test",
+            "lead_id": str(LEAD_ID),
+            "run_id": str(RUN_ID),
             "lead": lead,
             "gates": gates,
             "enrichment": enrichment,
@@ -38,8 +43,8 @@ def test_execution_service_lead_response_defaults_optional_graph_outputs() -> No
         },
     )
 
-    assert response.id == "lead_test"
-    assert response.run_id == "run_test"
+    assert response.id == LEAD_ID
+    assert response.run_id == RUN_ID
     assert response.talking_points == []
     assert response.flags == []
     assert response.related_leads == []
@@ -53,12 +58,12 @@ def test_execution_service_preserves_human_review_gate() -> None:
     service = AgentExecutionService(FakeSignalRepository())
 
     response = service._build_lead_response(
-        lead_id="lead_test",
-        run_id="run_test",
+        lead_id=LEAD_ID,
+        run_id=RUN_ID,
         lead=lead,
         result={
-            "lead_id": "lead_test",
-            "run_id": "run_test",
+            "lead_id": str(LEAD_ID),
+            "run_id": str(RUN_ID),
             "lead": lead,
             "gates": gates,
             "enrichment": enrichment,
@@ -90,12 +95,12 @@ def test_execution_service_marks_model_drafting_failure() -> None:
     service = AgentExecutionService(FakeSignalRepository())
 
     response = service._build_lead_response(
-        lead_id="lead_test",
-        run_id="run_test",
+        lead_id=LEAD_ID,
+        run_id=RUN_ID,
         lead=lead,
         result={
-            "lead_id": "lead_test",
-            "run_id": "run_test",
+            "lead_id": str(LEAD_ID),
+            "run_id": str(RUN_ID),
             "lead": lead,
             "gates": gates,
             "enrichment": enrichment,
@@ -125,12 +130,12 @@ def test_execution_service_marks_gate_failed_lead_completed() -> None:
     service = AgentExecutionService(FakeSignalRepository())
 
     response = service._build_lead_response(
-        lead_id="lead_test",
-        run_id="run_test",
+        lead_id=LEAD_ID,
+        run_id=RUN_ID,
         lead=lead,
         result={
-            "lead_id": "lead_test",
-            "run_id": "run_test",
+            "lead_id": str(LEAD_ID),
+            "run_id": str(RUN_ID),
             "lead": lead,
             "gates": gates,
             "enrichment": enrichment,

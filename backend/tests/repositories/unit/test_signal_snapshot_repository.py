@@ -1,13 +1,21 @@
 from types import SimpleNamespace
+from uuid import UUID
 
 import pytest
 
 from app.agents.utils.scoring import score_lead
 from app.infrastructure.public_data.fixtures import demo_enrichment
-from app.models.signal import SignalAgentRunRecord, SignalLeadRecord
+from app.models.signal import (
+    SignalAgentRunRecord,
+    SignalAgentRunStatusEventRecord,
+    SignalLeadRecord,
+)
 from app.repositories.signal_snapshot import SignalSnapshotRepository
 from app.schemas.lead import GateResult, LeadCreate, LeadResponse
 from app.schemas.run import AgentRunResponse
+
+LEAD_ID = UUID("11111111-1111-4111-8111-111111111111")
+RUN_ID = UUID("22222222-2222-4222-8222-222222222222")
 
 
 @pytest.mark.asyncio
@@ -20,13 +28,13 @@ async def test_save_lead_indexes_snapshot_fields() -> None:
 
     record = session.merged[0]
     assert isinstance(record, SignalLeadRecord)
-    assert record.id == "lead_test"
-    assert record.run_id == "run_test"
+    assert record.id == LEAD_ID
+    assert record.run_id == RUN_ID
     assert record.tier == lead.score.tier
     assert record.score_total == lead.score.total
     assert record.market == "Austin, TX"
     assert record.gate_status == "passed"
-    assert record.payload["id"] == "lead_test"
+    assert record.payload["id"] == str(LEAD_ID)
 
 
 @pytest.mark.asyncio
@@ -34,8 +42,8 @@ async def test_save_agent_run_indexes_snapshot_fields() -> None:
     session = FakeSession()
     repository = SignalSnapshotRepository(session)
     run = AgentRunResponse(
-        run_id="run_test",
-        lead_id="lead_test",
+        run_id=RUN_ID,
+        lead_id=LEAD_ID,
         status="awaiting_review",
         trigger="api_insert",
         current_stage="human_review",
@@ -43,21 +51,48 @@ async def test_save_agent_run_indexes_snapshot_fields() -> None:
 
     await repository.save_agent_run(run)
 
-    record = session.merged[0]
+    record = session.added[0]
     assert isinstance(record, SignalAgentRunRecord)
-    assert record.run_id == "run_test"
-    assert record.lead_id == "lead_test"
+    assert record.run_id == RUN_ID
+    assert record.lead_id == LEAD_ID
     assert record.status == "awaiting_review"
     assert record.trigger == "api_insert"
     assert record.payload["current_stage"] == "human_review"
+    assert isinstance(session.added[1], SignalAgentRunStatusEventRecord)
+
+
+@pytest.mark.asyncio
+async def test_create_queued_agent_run_stores_input_and_status_event() -> None:
+    session = FakeSession()
+    repository = SignalSnapshotRepository(session)
+    lead = _lead_response().input
+    run = AgentRunResponse(
+        run_id=RUN_ID,
+        lead_id=LEAD_ID,
+        status="queued",
+        trigger="api_insert",
+        current_stage="queued",
+    )
+
+    await repository.create_queued_agent_run(
+        run=run,
+        lead=lead,
+        task_id=RUN_ID,
+    )
+
+    record = session.merged[0]
+    assert record.input_payload["email"] == str(lead.email)
+    assert record.task_id == RUN_ID
+    assert isinstance(session.added[0], SignalAgentRunStatusEventRecord)
+    assert session.added[0].status == "queued"
 
 
 @pytest.mark.asyncio
 async def test_get_and_list_methods_validate_snapshot_payloads() -> None:
     lead = _lead_response()
     run = AgentRunResponse(
-        run_id="run_test",
-        lead_id="lead_test",
+        run_id=RUN_ID,
+        lead_id=LEAD_ID,
         status="awaiting_review",
         current_stage="human_review",
     )
@@ -67,20 +102,22 @@ async def test_get_and_list_methods_validate_snapshot_payloads() -> None:
             [SimpleNamespace(payload=run.model_dump(mode="json"))],
         ],
         gets={
-            (SignalLeadRecord, "lead_test"): SimpleNamespace(
+            (SignalLeadRecord, LEAD_ID): SimpleNamespace(
                 payload=lead.model_dump(mode="json")
             ),
-            (SignalAgentRunRecord, "run_test"): SimpleNamespace(
-                payload=run.model_dump(mode="json")
+            (SignalAgentRunRecord, RUN_ID): SimpleNamespace(
+                payload=run.model_dump(mode="json"),
+                input_payload=lead.input.model_dump(mode="json"),
             ),
         },
     )
     repository = SignalSnapshotRepository(session)
 
     assert await repository.list_leads() == [lead]
-    assert await repository.get_lead("lead_test") == lead
+    assert await repository.get_lead(LEAD_ID) == lead
     assert await repository.list_agent_runs() == [run]
-    assert await repository.get_agent_run("run_test") == run
+    assert await repository.get_agent_run(RUN_ID) == run
+    assert await repository.get_agent_run_input(RUN_ID) == lead.input
 
 
 @pytest.mark.asyncio
@@ -113,11 +150,12 @@ class FakeSession:
         self,
         *,
         scalars: list[list[object]] | None = None,
-        gets: dict[tuple[type[object], str], object] | None = None,
+        gets: dict[tuple[type[object], object], object] | None = None,
         scalar_values: list[object] | None = None,
         execute_values: list[list[tuple[object, ...]]] | None = None,
     ) -> None:
         self.merged: list[object] = []
+        self.added: list[object] = []
         self.scalars_results = scalars or []
         self.gets = gets or {}
         self.scalar_values = scalar_values or []
@@ -126,10 +164,16 @@ class FakeSession:
     async def merge(self, record: object) -> None:
         self.merged.append(record)
 
+    def add(self, record: object) -> None:
+        self.added.append(record)
+
+    async def commit(self) -> None:
+        return None
+
     async def scalars(self, statement: object) -> list[object]:
         return self.scalars_results.pop(0)
 
-    async def get(self, model: type[object], key: str) -> object | None:
+    async def get(self, model: type[object], key: object) -> object | None:
         return self.gets.get((model, key))
 
     async def scalar(self, statement: object) -> object:
@@ -153,8 +197,8 @@ def _lead_response() -> LeadResponse:
     gates = GateResult(status="passed")
     enrichment = demo_enrichment(lead.company, lead.city, lead.state)
     return LeadResponse(
-        id="lead_test",
-        run_id="run_test",
+        id=LEAD_ID,
+        run_id=RUN_ID,
         input=lead,
         gates=gates,
         enrichment=enrichment,

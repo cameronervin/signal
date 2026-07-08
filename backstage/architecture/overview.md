@@ -10,8 +10,14 @@ Signal is a small monorepo with three collaboration surfaces:
 
 ```text
 POST /api/v1/leads
-  -> LeadIntakeService.create_and_enrich
-  -> AgentExecutionService.execute_for_inbound_lead
+  -> LeadIntakeService.create_and_enqueue
+  -> signal_agent_runs queued row + status event
+  -> Celery execute_signal_agent_run task
+  -> 202 AgentRunResponse
+
+Celery worker
+  -> loads queued run and lead input from Postgres
+  -> marks run running
   -> SignalPipelineExecutor
      -> deterministic_enrichment
      -> knowledge_graph_ingest
@@ -19,8 +25,7 @@ POST /api/v1/leads
      -> deterministic_scoring
      -> agent_research_and_drafting
      -> knowledge_graph_builder
-  -> SignalSnapshotRepository
-  -> LeadResponse + AgentRunResponse
+  -> SignalSnapshotRepository completed-analysis lead/run snapshots
 ```
 
 ## Boundaries
@@ -41,8 +46,10 @@ POST /api/v1/leads
 Signal uses `SignalSnapshotRepository`, which stores stable Pydantic response
 DTO snapshots in Postgres through SQLAlchemy async sessions while indexing queue
 and run fields such as tier, score, market, gate status, run status, and run
-trigger. Alembic owns schema creation and migrations. This preserves API
-response models while the relational model matures.
+trigger. Primary identifiers are UUID4 values stored in native Postgres UUID
+columns. Agent run lifecycle changes are recorded in
+`signal_agent_run_status_events`. Alembic owns schema creation and migrations.
+This preserves API response models while the relational model matures.
 
 Neo4j is an optional relationship store for lead graph context. It is enabled
 with `SIGNAL_KNOWLEDGE_GRAPH_ENABLED` and stores current lead, contact, company,
@@ -69,10 +76,11 @@ backend/app/agents/
   utils/       pure scoring/text helpers
 ```
 
-The current HTTP lead-create path runs inline so it can preserve the existing
-`201 LeadResponse` contract. `app.workers.tasks.execute_signal_agent_run` is the
-Celery worker entrypoint for moving agent execution behind a queued contract in
-the next slice.
+The HTTP lead-create path queues a Celery task and returns `202 AgentRunResponse`
+with queued status. `app.workers.tasks.execute_signal_agent_run` is the Celery
+worker entrypoint that loads queued run input from Postgres, runs the graph, and
+persists completed analysis results. Celery's result backend is operational
+metadata only; Signal APIs read run and lead state from Postgres.
 
 Graph compilation follows the Playbook pattern: `chains_builder` creates the
 workflow chain set with active research tools, `nodes_builder` creates node

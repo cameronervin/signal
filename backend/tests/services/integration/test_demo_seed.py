@@ -64,12 +64,12 @@ async def test_demo_seed_records_are_stable_and_idempotent() -> None:
     assert len(second_pass) == 6
     assert len(leads) == 6
     assert [lead.id for lead in leads] == [
-        "lead_seed_a",
-        "lead_seed_missing_trigger",
-        "lead_seed_warning_only",
-        "lead_seed_b",
-        "lead_seed_c",
-        "lead_seed_gate_failed",
+        records[0].lead_id,
+        records[4].lead_id,
+        records[5].lead_id,
+        records[1].lead_id,
+        records[2].lead_id,
+        records[3].lead_id,
     ]
     assert {lead.score.tier for lead in leads} == {"A", "B", "C"}
     assert {lead.input.contact_name for lead in leads} == {
@@ -99,18 +99,18 @@ async def test_demo_seed_records_are_stable_and_idempotent() -> None:
         any(source.label == "Household count" for source in lead.enrichment.sources)
         for lead in leads
     )
-    gate_failed = await service.get_lead("lead_seed_gate_failed")
+    gate_failed = await service.get_lead(records[3].lead_id)
     assert gate_failed is not None
     assert gate_failed.gates.status == "failed"
     assert gate_failed.draft is None
-    warning_only = await service.get_lead("lead_seed_warning_only")
+    warning_only = await service.get_lead(records[5].lead_id)
     assert warning_only is not None
     assert warning_only.gates.status == "passed"
     assert warning_only.gates.warnings == ["sub-scale portfolio"]
 
 
 @pytest.mark.asyncio
-async def test_seed_script_writes_demo_records_through_postgres_repository(
+async def test_seed_script_queues_demo_records_and_reports_worker_timeout(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture,
 ) -> None:
@@ -138,14 +138,22 @@ async def test_seed_script_writes_demo_records_through_postgres_repository(
         "scripts.seed_demo_leads.SignalSnapshotRepository",
         lambda session: repository,
     )
-
-    exit_code = await seed_demo_leads(
-        Settings(database_url="postgresql+asyncpg://postgres:test/db")
+    monkeypatch.setattr(
+        "app.services.lead_intake_service.CeleryAgentTaskDispatcher.enqueue_agent_run",
+        lambda self, run_id: None,
     )
 
-    assert exit_code == 0
-    assert "Seeded 6 example leads" in capsys.readouterr().out
-    assert len(await repository.list_leads()) == 6
+    exit_code = await seed_demo_leads(
+        Settings(database_url="postgresql+asyncpg://postgres:test/db"),
+        timeout_seconds=0.01,
+        poll_interval_seconds=0.01,
+    )
+
+    assert exit_code == 1
+    output = capsys.readouterr().out
+    assert "Queued 6 example lead agent run(s)" in output
+    assert "Timed out waiting for queued seed runs to complete" in output
+    assert len(await repository.list_leads()) == 0
     assert len(await repository.list_agent_runs()) == 6
     runs = await repository.list_agent_runs()
     assert all(run.trigger == "seed_script" for run in runs)

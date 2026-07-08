@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from app.agents.executors.signal_pipeline import SignalPipelineExecutor
 from app.agents.states.signal_state import SignalState
 from app.repositories.signal_snapshot import SignalRepository
@@ -22,13 +24,31 @@ class AgentExecutionService:
         self,
         *,
         lead: LeadCreate,
-        lead_id: str,
-        run_id: str,
+        lead_id: UUID,
+        run_id: UUID,
         trigger: str,
     ) -> LeadResponse:
+        response, run = await self.execute_pipeline(
+            lead=lead,
+            lead_id=lead_id,
+            run_id=run_id,
+            trigger=trigger,
+        )
+        await self.repository.save_lead(response)
+        await self.repository.save_agent_run(run)
+        return response
+
+    async def execute_pipeline(
+        self,
+        *,
+        lead: LeadCreate,
+        lead_id: UUID,
+        run_id: UUID,
+        trigger: str,
+    ) -> tuple[LeadResponse, AgentRunResponse]:
         initial_state: SignalState = {
-            "lead_id": lead_id,
-            "run_id": run_id,
+            "lead_id": str(lead_id),
+            "run_id": str(run_id),
             "lead": lead,
             "activity_log": [f"{trigger}: lead received"],
         }
@@ -36,17 +56,6 @@ class AgentExecutionService:
             executor = self.pipeline_executor or SignalPipelineExecutor()
             result = await executor.execute(initial_state)
         except Exception:
-            await self.repository.save_agent_run(
-                self._build_failed_run_response(
-                    lead_id=lead_id,
-                    run_id=run_id,
-                    trigger=trigger,
-                    activity_log=[
-                        *initial_state["activity_log"],
-                        "agent_execution: failed",
-                    ],
-                )
-            )
             raise
 
         response = self._build_lead_response(
@@ -60,15 +69,13 @@ class AgentExecutionService:
             activity_log=result.get("activity_log", []),
             trigger=trigger,
         )
-        await self.repository.save_lead(response)
-        await self.repository.save_agent_run(run)
-        return response
+        return response, run
 
     def _build_lead_response(
         self,
         *,
-        lead_id: str,
-        run_id: str,
+        lead_id: UUID,
+        run_id: UUID,
         lead: LeadCreate,
         result: SignalState,
     ) -> LeadResponse:
@@ -170,8 +177,8 @@ class AgentExecutionService:
     def _build_failed_run_response(
         self,
         *,
-        lead_id: str,
-        run_id: str,
+        lead_id: UUID,
+        run_id: UUID,
         trigger: str,
         activity_log: list[str],
     ) -> AgentRunResponse:
@@ -192,4 +199,63 @@ class AgentExecutionService:
                 )
             ],
             activity_log=activity_log,
+        )
+
+    def build_queued_run_response(
+        self,
+        *,
+        lead_id: UUID,
+        run_id: UUID,
+        trigger: str,
+    ) -> AgentRunResponse:
+        return AgentRunResponse(
+            run_id=run_id,
+            lead_id=lead_id,
+            status="queued",
+            trigger=trigger,
+            current_stage="queued",
+            steps=[
+                AgentStep(
+                    name="Deterministic enrichment",
+                    status="pending",
+                    summary="Waiting for worker execution.",
+                ),
+                AgentStep(
+                    name="Deterministic scoring",
+                    status="pending",
+                    summary="Waiting for worker execution.",
+                ),
+                AgentStep(
+                    name="Agent research and drafting",
+                    status="pending",
+                    summary="Waiting for worker execution.",
+                ),
+                AgentStep(
+                    name="Knowledge graph",
+                    status="pending",
+                    summary="Waiting for worker execution.",
+                ),
+                AgentStep(
+                    name="Human review",
+                    status="pending",
+                    summary="Waiting for completed analysis.",
+                ),
+            ],
+            activity_log=[f"{trigger}: lead received", "agent_run: queued"],
+        )
+
+    def build_running_run_response(self, run: AgentRunResponse) -> AgentRunResponse:
+        return run.model_copy(
+            update={
+                "status": "running",
+                "current_stage": "agent_execution",
+                "steps": [
+                    step.model_copy(update={"status": "running"})
+                    if step.name == "Deterministic enrichment"
+                    else step
+                    for step in run.steps
+                ],
+                "activity_log": [*run.activity_log, "agent_execution: running"],
+            },
+            deep=True,
         )

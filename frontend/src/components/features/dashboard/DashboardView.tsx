@@ -44,7 +44,7 @@ export function DashboardView({ leads, summary }: Props) {
       <PageHeader
         title="Dashboard"
         actions={
-          <div className="flex items-center gap-3">
+          <div className="toolbar-row">
             <button className="button secondary" type="button">
               Last 14 days <ChevronDown size={14} />
             </button>
@@ -54,7 +54,7 @@ export function DashboardView({ leads, summary }: Props) {
           </div>
         }
       />
-      <main className="content stack-lg">
+      <main className="content stack-lg screen-fit dashboard-screen">
         <section className="grid gap-4 lg:grid-cols-5">
           {metrics.map((metric) => (
             <MetricCard key={metric.label} {...metric} />
@@ -71,11 +71,14 @@ export function DashboardView({ leads, summary }: Props) {
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {summary.topMarkets.map((market) => (
               <div key={market.market} className="market-bar">
-                <span className="text-sm font-semibold">{market.market}</span>
+                <span className="market-bar-label">
+                  <strong>{market.market}</strong>
+                  <span>{market.leadCount} leads</span>
+                </span>
                 <span className="meter-track h-2">
                   <span className={`meter-fill ${market.score >= 75 ? "is-high" : "is-medium"}`} style={{ width: `${market.score}%` }} />
                 </span>
-                <span className="mono text-sm font-semibold">{market.leadCount}</span>
+                <span className="mono text-sm font-semibold">{market.score}</span>
               </div>
             ))}
           </div>

@@ -19,16 +19,29 @@ DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Seed example leads into Postgres for local evaluation:
+Seed example lead inputs into Postgres for local evaluation. Keep the Celery
+worker running; the script queues agent runs and waits for completed analysis:
 
 ```bash
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
 uv run alembic upgrade head
+```
+
+Terminal 1:
+
+```bash
+uv run celery -A app.workers.app:celery_app worker --loglevel=INFO
+```
+
+Terminal 2:
+
+```bash
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/signal \
 uv run python scripts/seed_demo_leads.py
 ```
 
-Celery worker entrypoint for agent execution:
+Celery worker entrypoint for queued agent execution. This process is required
+for `POST /api/v1/leads` submissions to move beyond queued status:
 
 ```bash
 uv run celery -A app.workers.app:celery_app worker --loglevel=INFO

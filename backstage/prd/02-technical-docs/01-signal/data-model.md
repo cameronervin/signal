@@ -88,8 +88,8 @@ current-lead projection plus graph warnings.
 
 `AgentRunResponse` tracks:
 
-- `run_id`
-- `lead_id`
+- `run_id`: UUID4
+- `lead_id`: UUID4
 - `status`
 - `trigger`
 - `current_stage`
@@ -97,15 +97,33 @@ current-lead projection plus graph warnings.
 - `activity_log`
 
 The v1 status surface is enough for polling. Streaming can be added later.
+Postgres is the source of truth for queued, running, paused, failed,
+awaiting-review, and completed statuses.
+
+## Agent Run Status Event
+
+`AgentRunStatusEvent` records lifecycle changes:
+
+- `id`: UUID4
+- `run_id`: UUID4
+- `status`
+- `current_stage`
+- `message`
+- `payload`
+- timestamp
 
 ## Persistence Records
 
 Signal writes:
 
-- `signal_leads`: lead id, run id, tier, score total, market, gate status,
-  timestamps, and the serialized `LeadResponse` payload.
-- `signal_agent_runs`: run id, lead id, status, trigger, current stage,
-  timestamps, and the serialized `AgentRunResponse` payload.
+- `signal_leads`: UUID lead id, UUID run id, tier, score total, market, gate
+  status, timestamps, and the serialized `LeadResponse` payload. Records are
+  only written after analysis completes.
+- `signal_agent_runs`: UUID run id, UUID lead id, Celery task id, status,
+  trigger, current stage, submitted lead input, lifecycle timestamps, and the
+  serialized `AgentRunResponse` payload.
+- `signal_agent_run_status_events`: UUID event id, UUID run id, status, stage,
+  optional message/payload, and timestamp.
 - Neo4j, when enabled, stores graph relationships for lead context. It does not
   replace Postgres snapshots as the source of truth.
 

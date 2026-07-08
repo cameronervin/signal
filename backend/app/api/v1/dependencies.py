@@ -24,13 +24,13 @@ async def get_signal_repository(
     if session_factory is None:
         session_factory = get_sessionmaker(settings)
 
-    context = (
-        session_factory.begin()
-        if hasattr(session_factory, "begin")
-        else session_factory()
-    )
-    async with context as session:
-        yield SignalSnapshotRepository(session)
+    async with session_factory() as session:
+        try:
+            yield SignalSnapshotRepository(session)
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 
 def get_public_data_dependency(

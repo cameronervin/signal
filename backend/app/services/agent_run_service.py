@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from app.repositories.signal_snapshot import SignalRepository
 from app.schemas.run import AgentRunResponse, AgentStep
 
@@ -15,10 +17,10 @@ class AgentRunService:
     async def list_agent_runs(self) -> list[AgentRunResponse]:
         return await self.repository.list_agent_runs()
 
-    async def get_agent_run(self, run_id: str) -> AgentRunResponse | None:
+    async def get_agent_run(self, run_id: UUID) -> AgentRunResponse | None:
         return await self.repository.get_agent_run(run_id)
 
-    async def approve_agent_run(self, run_id: str) -> AgentRunResponse | None:
+    async def approve_agent_run(self, run_id: UUID) -> AgentRunResponse | None:
         run = await self.repository.get_agent_run(run_id)
         if run is None:
             return None
@@ -41,7 +43,7 @@ class AgentRunService:
         await self.repository.save_agent_run(updated)
         return updated
 
-    async def pause_agent_run(self, run_id: str) -> AgentRunResponse | None:
+    async def pause_agent_run(self, run_id: UUID) -> AgentRunResponse | None:
         run = await self.repository.get_agent_run(run_id)
         if run is None:
             return None

@@ -49,7 +49,7 @@ export function AgentRunDetailView({ run }: Props) {
         title={currentRun.agent}
         subtitle={`${currentRun.runId} · Working ${currentRun.lead}`}
         actions={
-          <div className="flex gap-2">
+          <div className="toolbar-row">
             <Link className="button secondary" href={routes.agents}>
               <ChevronLeft size={16} /> Back
             </Link>
@@ -63,7 +63,7 @@ export function AgentRunDetailView({ run }: Props) {
           </div>
         }
       />
-      <main className="content stack">
+      <main className="content stack screen-fit agent-progress-screen">
         <Toast message={toast} />
         <section className="grid gap-3 md:grid-cols-4">
           <MetadataCard label="Started" value={currentRun.started} />
@@ -83,7 +83,7 @@ export function AgentRunDetailView({ run }: Props) {
           <div className="stack">
             <div className="surface-card p-5">
               <h2 className="section-title">Activity log</h2>
-              <pre className="mono mt-4 whitespace-pre-wrap rounded-lg bg-[var(--surface-2)] p-4 text-xs leading-6 text-[var(--ink-600)]">
+              <pre className="activity-log mono mt-4 whitespace-pre-wrap rounded-lg bg-[var(--surface-2)] p-4 text-xs leading-6 text-[var(--ink-600)]">
                 {currentRun.activityLog.join("\n")}
               </pre>
             </div>

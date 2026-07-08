@@ -37,12 +37,33 @@ Request:
 Behavior:
 
 - Validates input.
-- Creates lead and run ids.
-- Invokes the LangGraph pipeline.
-- Persists the enriched lead and run in the v1 repository.
-- Returns the full lead response.
+- Creates UUID4 lead and run ids.
+- Persists a queued agent run and submitted lead input.
+- Queues `signal.agent_runs.execute` in Celery with `task_id` equal to the run
+  UUID.
+- Returns the queued run response immediately.
 
-Response: `201 LeadResponse`
+Response: `202 AgentRunResponse`
+
+```json
+{
+  "run_id": "21111111-1111-4111-8111-111111111111",
+  "lead_id": "11111111-1111-4111-8111-111111111111",
+  "status": "queued",
+  "trigger": "api_insert",
+  "current_stage": "queued",
+  "steps": [],
+  "activity_log": ["api_insert: lead received", "agent_run: queued"]
+}
+```
+
+The Celery worker loads the queued run from Postgres, runs the LangGraph
+pipeline, and persists the resulting lead snapshot only after analysis
+completes.
+
+## Lead Response Shape
+
+Completed lead responses include `knowledge_graph`:
 
 `LeadResponse` includes `knowledge_graph`:
 
@@ -81,19 +102,24 @@ graph related-lead context when available.
 
 `GET /leads`
 
-Returns leads sorted by tier then score.
+Returns completed-analysis leads sorted by tier then score. Queued, running,
+paused, and failed runs do not appear in the lead queue. Draftable leads become
+visible while awaiting review; gate-failed analysis results become visible with
+completed run status and no draft.
 
 ## Get Lead
 
 `GET /leads/{lead_id}`
 
-Returns one lead or 404.
+Returns one completed-analysis lead or 404. Queued, running, paused, and failed
+runs return 404 from this endpoint until a visible lead snapshot exists.
 
 ## List Agent Runs
 
 `GET /agent-runs`
 
-Returns current and historical v1 runs.
+Returns current and historical v1 runs across queued, running, paused, failed,
+awaiting-review, and completed statuses.
 
 ## Get Agent Run
 

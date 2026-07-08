@@ -1,6 +1,7 @@
+import uuid
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, Integer, String, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.db.base import Base
@@ -9,8 +10,8 @@ from app.infrastructure.db.base import Base
 class SignalLeadRecord(Base):
     __tablename__ = "signal_leads"
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    run_id: Mapped[str] = mapped_column(String(64), index=True)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    run_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), index=True)
     tier: Mapped[str] = mapped_column(String(1), index=True)
     score_total: Mapped[int] = mapped_column(Integer, index=True)
     market: Mapped[str | None] = mapped_column(String(120), index=True)
@@ -27,11 +28,16 @@ class SignalLeadRecord(Base):
 class SignalAgentRunRecord(Base):
     __tablename__ = "signal_agent_runs"
 
-    run_id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    lead_id: Mapped[str] = mapped_column(String(64), index=True)
+    run_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    lead_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), index=True)
+    task_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        index=True,
+    )
     status: Mapped[str] = mapped_column(String(40), index=True)
     trigger: Mapped[str | None] = mapped_column(String(40), index=True)
     current_stage: Mapped[str] = mapped_column(String(80), index=True)
+    input_payload: Mapped[dict[str, Any] | None] = mapped_column(JSON)
     payload: Mapped[dict[str, Any]] = mapped_column(JSON)
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at = mapped_column(
@@ -39,3 +45,26 @@ class SignalAgentRunRecord(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+    started_at = mapped_column(DateTime(timezone=True))
+    completed_at = mapped_column(DateTime(timezone=True))
+    failed_at = mapped_column(DateTime(timezone=True))
+
+
+class SignalAgentRunStatusEventRecord(Base):
+    __tablename__ = "signal_agent_run_status_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("signal_agent_runs.run_id", ondelete="CASCADE"),
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(String(40), index=True)
+    current_stage: Mapped[str] = mapped_column(String(80), index=True)
+    message: Mapped[str | None] = mapped_column(String(240))
+    payload: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    created_at = mapped_column(DateTime(timezone=True), server_default=func.now())

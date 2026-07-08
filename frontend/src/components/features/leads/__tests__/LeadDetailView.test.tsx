@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { KnowledgeGraph } from "@/components/features/leads/KnowledgeGraph";
 import { LeadDetailView } from "@/components/features/leads/LeadDetailView";
-import { getLead } from "@/lib/fixtures/leads";
+import { leads } from "@/lib/fixtures/leads";
 import type { FixtureLead } from "@/types/lead";
 
 jest.mock("@xyflow/react", () => ({
@@ -43,7 +43,7 @@ describe("LeadDetailView", () => {
   });
 
   it("renders an editable draft and no live send action for workable leads", () => {
-    const lead = getLead("lead-sarah-chen");
+    const lead = leads.find((item) => item.name === "Sarah Chen");
     expect(lead).toBeDefined();
 
     render(<LeadDetailView lead={lead!} />);
@@ -59,7 +59,7 @@ describe("LeadDetailView", () => {
   });
 
   it("suppresses drafts for gate-failed leads", () => {
-    const lead = getLead("lead-tom-whitaker");
+    const lead = leads.find((item) => item.name === "Tom Whitaker");
     expect(lead).toBeDefined();
 
     render(<LeadDetailView lead={lead!} />);
@@ -128,7 +128,7 @@ function withKnowledgeGraph(
     warnings: []
   }
 ): FixtureLead {
-  const lead = getLead("lead-sarah-chen");
+  const lead = leads.find((item) => item.name === "Sarah Chen");
   expect(lead).toBeDefined();
   return {
     ...lead!,

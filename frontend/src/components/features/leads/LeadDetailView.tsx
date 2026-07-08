@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ChevronLeft, Copy, ExternalLink, RefreshCw } from "lucide-react";
+import { AlertTriangle, Ban, ChevronLeft, Copy, ExternalLink, Inbox, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -67,17 +67,32 @@ export function LeadDetailView({ lead }: Props) {
 function GateFailedLead({ lead }: Props) {
   return (
     <section className="detail-grid">
-      <div className="surface-card danger-panel p-5">
-        <h2 className="section-title danger-title">
-          <AlertTriangle size={16} /> Hard gates failed — do not work this lead
-        </h2>
-        <ul className="mt-4 grid gap-3 text-sm font-semibold text-[var(--danger-text)]">
-          {lead.flags.map((flag) => (
-            <li key={flag}>x {flag}</li>
-          ))}
-        </ul>
+      <div className="stack">
+        <div className="surface-card danger-panel p-5">
+          <h2 className="section-title danger-title">
+            <AlertTriangle size={16} /> Hard gates failed — do not work this lead
+          </h2>
+          <ul className="mt-4 grid gap-3 text-sm font-semibold text-[var(--danger-text)]">
+            {lead.flags.map((flag, index) => (
+              <li key={`${flag}-${index}`} className="gate-failure-item">
+                <Ban size={15} />
+                <span>{flag}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="surface-card p-5">
+          <h2 className="section-title">Why flags matter</h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--ink-600)]">
+            Signal keeps low-confidence records out of the outreach workflow so reps do not spend time on unverifiable
+            accounts or risk sending to contacts without a trustworthy company signal.
+          </p>
+        </div>
       </div>
       <div className="surface-card flex min-h-80 flex-col items-center justify-center p-8 text-center">
+        <span className="empty-icon">
+          <Inbox size={24} />
+        </span>
         <h2 className="text-lg font-bold">No draft generated</h2>
         <p className="mt-2 max-w-sm text-sm leading-6 text-[var(--ink-600)]">
           Signal suppresses outreach when required lead-quality gates fail.
@@ -156,22 +171,26 @@ function WorkableLeadDetail({ lead, showToast }: Props & { showToast: (message: 
         </div>
       </div>
       <div className="surface-card flex flex-col p-5">
-        <div className="flex items-center justify-between">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
           <h2 className="section-title">Drafted email</h2>
-          <span className="rounded-md bg-[var(--brand-tint)] px-2 py-1 text-xs font-bold text-[var(--brand-deep)]">
-            Review gate
-          </span>
+          <span className="status-pill">Review gate</span>
         </div>
         <div className="mt-4 grid gap-2 border-b border-[var(--border)] pb-4 text-sm">
+          <span className="min-w-0 overflow-wrap-anywhere">
+            <strong>From:</strong> You · Signal SDR
+          </span>
           <span>
             <strong>To:</strong> {lead.email}
           </span>
         </div>
         <EditableDraft subject={subject} body={body} onSubjectChange={setSubject} onBodyChange={setBody} />
-        <div className="mt-4 flex flex-wrap gap-2">
-          {lead.draft?.sources.map((source) => (
-            <SourceChip key={`${source.source}-${source.label}`} source={source} />
-          ))}
+        <div className="draft-sources-strip">
+          <span className="eyebrow">Sources</span>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {lead.draft?.sources.map((source) => (
+              <SourceChip key={`${source.source}-${source.label}`} source={source} />
+            ))}
+          </div>
         </div>
         <div className="mt-auto flex justify-between pt-5">
           <Button disabled title="Draft regeneration requires a backend drafting endpoint">
