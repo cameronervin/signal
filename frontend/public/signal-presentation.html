@@ -1,0 +1,1826 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Signal Presentation</title>
+    <style>
+      :root {
+        --ink: #080716;
+        --ink-2: #111019;
+        --ink-3: #2a2936;
+        --muted: #64667a;
+        --faint: #959bad;
+        --surface: #ffffff;
+        --surface-2: #f8f7ff;
+        --surface-3: #f5f6fb;
+        --line: #e5e7ef;
+        --line-strong: #dcd4fb;
+        --purple: #6547f4;
+        --purple-2: #3822a8;
+        --purple-soft: #f1eeff;
+        --purple-soft-2: #fbfaff;
+        --amber: #f5a623;
+        --amber-soft: #fff4dc;
+        --danger: #b4272b;
+        --danger-soft: #fdecec;
+        --green: #0b6b45;
+        --green-soft: #edf8f3;
+        --shadow: 0 1px 2px rgba(17, 16, 25, 0.05), 0 24px 60px rgba(17, 16, 25, 0.11);
+        --shadow-soft: 0 18px 42px rgba(17, 16, 25, 0.08);
+        --radius: 22px;
+        --card-radius: 16px;
+        --font: "Proxima Nova", Figtree, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --mono: "JetBrains Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--ink);
+        color: var(--ink-2);
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 8% 10%, rgba(101, 71, 244, 0.22), transparent 28rem),
+          linear-gradient(135deg, #080716 0%, #141126 48%, #f7f7fb 48%, #f7f7fb 100%);
+        font-family: var(--font);
+        letter-spacing: 0;
+        overflow-x: hidden;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .deck {
+        height: 100dvh;
+        overflow-x: hidden;
+        overflow-y: auto;
+        scroll-snap-type: y mandatory;
+      }
+
+      .slide {
+        align-items: stretch;
+        display: flex;
+        min-height: 100dvh;
+        padding: clamp(18px, 3vw, 42px);
+        position: relative;
+        scroll-snap-align: start;
+      }
+
+      .slide-frame {
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.98)),
+          var(--surface);
+        border: 1px solid rgba(255, 255, 255, 0.78);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        display: grid;
+        gap: clamp(18px, 2vw, 26px);
+        grid-template-rows: auto 1fr auto;
+        margin: auto;
+        max-width: 1420px;
+        min-height: min(920px, calc(100dvh - clamp(36px, 6vw, 84px)));
+        overflow: hidden;
+        position: relative;
+        width: 100%;
+      }
+
+      .slide-frame::before {
+        background:
+          linear-gradient(90deg, rgba(101, 71, 244, 0.16), transparent 32%),
+          repeating-linear-gradient(90deg, rgba(101, 71, 244, 0.08) 0 1px, transparent 1px 84px);
+        content: "";
+        height: 10px;
+        inset: 0 0 auto;
+        position: absolute;
+      }
+
+      .slide-header,
+      .slide-body,
+      .slide-footer {
+        padding-inline: clamp(24px, 4vw, 58px);
+      }
+
+      .slide-header {
+        align-items: center;
+        display: flex;
+        gap: 18px;
+        justify-content: space-between;
+        padding-top: clamp(26px, 4vw, 52px);
+      }
+
+      .slide-body {
+        align-items: center;
+        display: grid;
+        gap: clamp(20px, 3vw, 42px);
+        min-height: 0;
+      }
+
+      .two-col {
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      }
+
+      .wide-col {
+        grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+      }
+
+      .slide-footer {
+        align-items: center;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        display: flex;
+        font-size: 13px;
+        font-weight: 700;
+        justify-content: space-between;
+        padding-bottom: 18px;
+        padding-top: 16px;
+      }
+
+      .brand-row {
+        align-items: center;
+        display: flex;
+        gap: 12px;
+      }
+
+      .mark {
+        align-items: center;
+        background: var(--purple);
+        border-radius: 13px;
+        box-shadow: inset 0 1px rgba(255, 255, 255, 0.22), 0 14px 28px rgba(101, 71, 244, 0.26);
+        color: white;
+        display: grid;
+        height: 42px;
+        justify-content: center;
+        width: 42px;
+      }
+
+      .brand-name {
+        color: var(--ink-2);
+        font-size: 16px;
+        font-weight: 800;
+      }
+
+      .eyebrow {
+        color: var(--purple-2);
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .slide-number {
+        color: var(--faint);
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        color: var(--ink-2);
+        font-size: clamp(48px, 7vw, 112px);
+        font-weight: 850;
+        line-height: 0.92;
+        max-width: 900px;
+      }
+
+      h2 {
+        color: var(--ink-2);
+        font-size: clamp(34px, 4.8vw, 74px);
+        font-weight: 850;
+        line-height: 0.98;
+        max-width: 900px;
+      }
+
+      h3 {
+        color: var(--ink-2);
+        font-size: 18px;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .lede {
+        color: var(--muted);
+        font-size: clamp(18px, 2vw, 24px);
+        font-weight: 600;
+        line-height: 1.35;
+        max-width: 680px;
+      }
+
+      .microcopy {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      .stack {
+        display: grid;
+        gap: 18px;
+      }
+
+      .stack-lg {
+        display: grid;
+        gap: 26px;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .pill {
+        align-items: center;
+        background: var(--purple-soft);
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        color: var(--purple-2);
+        display: inline-flex;
+        font-size: 13px;
+        font-weight: 800;
+        gap: 8px;
+        line-height: 1;
+        padding: 9px 12px;
+      }
+
+      .pill.neutral {
+        background: #fff;
+        border-color: var(--line);
+        color: var(--ink-3);
+      }
+
+      .dot {
+        background: currentColor;
+        border-radius: 999px;
+        display: inline-block;
+        height: 7px;
+        width: 7px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--card-radius);
+        box-shadow: var(--shadow-soft);
+        min-width: 0;
+      }
+
+      .panel {
+        background: var(--surface-3);
+        border: 1px solid var(--line);
+        border-radius: var(--card-radius);
+        min-width: 0;
+      }
+
+      .dark-card {
+        background:
+          radial-gradient(circle at 16% 14%, rgba(101, 71, 244, 0.38), transparent 18rem),
+          linear-gradient(145deg, #080716 0%, #171426 100%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: calc(var(--card-radius) + 4px);
+        box-shadow: var(--shadow);
+        color: white;
+        overflow: hidden;
+      }
+
+      .metric-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .metric {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 14px;
+        padding: 16px;
+      }
+
+      .metric strong {
+        display: block;
+        font-family: var(--mono);
+        font-size: clamp(24px, 3vw, 38px);
+        font-weight: 800;
+        letter-spacing: 0;
+        line-height: 1;
+      }
+
+      .metric span {
+        color: rgba(255, 255, 255, 0.68);
+        display: block;
+        font-size: 12px;
+        font-weight: 750;
+        margin-top: 8px;
+      }
+
+      .queue-card {
+        padding: 18px;
+      }
+
+      .queue-title {
+        align-items: center;
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+
+      .queue-row {
+        align-items: center;
+        border-radius: 13px;
+        display: grid;
+        gap: 14px;
+        grid-template-columns: 68px minmax(130px, 1.2fr) minmax(110px, 0.8fr) 70px minmax(170px, 1.45fr);
+        padding: 13px 14px;
+      }
+
+      .queue-row + .queue-row {
+        border-top: 1px solid var(--line);
+      }
+
+      .queue-row.top {
+        background: var(--purple-soft-2);
+        border: 1px solid var(--line-strong);
+      }
+
+      .queue-row.failed {
+        background: #fffafa;
+        color: var(--muted);
+      }
+
+      .dark-card .queue-row:not(.top):not(.failed) .lead-main strong,
+      .dark-card .queue-row:not(.top):not(.failed) .score strong {
+        color: white;
+      }
+
+      .dark-card .queue-row:not(.top):not(.failed) .lead-main span,
+      .dark-card .queue-row:not(.top):not(.failed) .queue-muted {
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .tier {
+        align-items: center;
+        border-radius: 9px;
+        display: inline-flex;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 850;
+        gap: 6px;
+        justify-content: center;
+        padding: 6px 8px;
+        white-space: nowrap;
+      }
+
+      .tier.a {
+        background: var(--purple-soft);
+        border: 1px solid var(--line-strong);
+        color: var(--purple-2);
+      }
+
+      .tier.b {
+        background: var(--amber-soft);
+        border: 1px solid #f2dcaa;
+        color: #8c5605;
+      }
+
+      .tier.c {
+        background: var(--danger-soft);
+        border: 1px solid #f6d2d3;
+        color: var(--danger);
+      }
+
+      .lead-main strong {
+        display: block;
+        font-size: 14px;
+        font-weight: 850;
+      }
+
+      .lead-main span,
+      .queue-muted {
+        color: var(--muted);
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      .score {
+        align-items: center;
+        display: flex;
+        gap: 8px;
+      }
+
+      .score strong {
+        font-family: var(--mono);
+        font-size: 14px;
+      }
+
+      .meter {
+        background: #eceff6;
+        border-radius: 999px;
+        height: 7px;
+        overflow: hidden;
+        width: 58px;
+      }
+
+      .meter span {
+        background: var(--purple);
+        border-radius: inherit;
+        display: block;
+        height: 100%;
+      }
+
+      .meter.amber span {
+        background: var(--amber);
+      }
+
+      .meter.gray span {
+        background: #8f98a8;
+      }
+
+      .why {
+        color: var(--ink-3);
+        font-size: 12px;
+        font-weight: 760;
+        line-height: 1.35;
+      }
+
+      .api-map {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .api-card {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        min-height: 148px;
+        padding: 18px;
+      }
+
+      .api-icon {
+        align-items: center;
+        background: var(--purple-soft);
+        border: 1px solid var(--line-strong);
+        border-radius: 12px;
+        color: var(--purple);
+        display: grid;
+        height: 40px;
+        margin-bottom: 15px;
+        place-items: center;
+        width: 40px;
+      }
+
+      .api-card p {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 680;
+        line-height: 1.45;
+        margin-top: 8px;
+      }
+
+      .workflow {
+        display: grid;
+        gap: 15px;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+      }
+
+      .workflow.seven {
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+      }
+
+      .step {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        min-height: 172px;
+        padding: 16px;
+        position: relative;
+      }
+
+      .step:not(:last-child)::after {
+        background: var(--line-strong);
+        content: "";
+        height: 2px;
+        position: absolute;
+        right: -15px;
+        top: 44px;
+        width: 15px;
+      }
+
+      .step-index {
+        align-items: center;
+        background: var(--ink);
+        border-radius: 999px;
+        color: white;
+        display: grid;
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 850;
+        height: 30px;
+        place-items: center;
+        width: 30px;
+      }
+
+      .step h3 {
+        font-size: 16px;
+        margin-top: 18px;
+      }
+
+      .step p {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.4;
+        margin-top: 8px;
+      }
+
+      .step.future {
+        background: #fbfbfd;
+        border-color: #dfe3eb;
+        opacity: 0.62;
+      }
+
+      .step.future .step-index {
+        background: #8f98a8;
+      }
+
+      .detail-mock {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .mini-card {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 16px;
+      }
+
+      .signals {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 12px;
+      }
+
+      .signal {
+        background: var(--green-soft);
+        border: 1px solid #d6ece2;
+        border-radius: 12px;
+        padding: 12px;
+      }
+
+      .signal span {
+        color: var(--muted);
+        display: block;
+        font-size: 10px;
+        font-weight: 850;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .signal strong {
+        color: var(--green);
+        display: block;
+        font-family: var(--mono);
+        font-size: 20px;
+        margin-top: 4px;
+      }
+
+      .email-box {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        display: grid;
+        gap: 12px;
+        padding: 18px;
+      }
+
+      .email-line {
+        background: #f0f2f6;
+        border-radius: 999px;
+        height: 8px;
+      }
+
+      .email-line.short {
+        width: 62%;
+      }
+
+      .highlight {
+        background: var(--purple-soft);
+        border-bottom: 2px solid var(--purple);
+        border-radius: 6px;
+        color: var(--purple-2);
+        display: inline-block;
+        font-size: 13px;
+        font-weight: 800;
+        padding: 5px 8px;
+      }
+
+      .io-flow {
+        align-items: stretch;
+        display: grid;
+        gap: 16px;
+        grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr);
+      }
+
+      .io-card {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 20px;
+      }
+
+      .io-card.outputs {
+        background: var(--purple-soft-2);
+        border-color: var(--line-strong);
+      }
+
+      .io-list {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 16px;
+      }
+
+      .io-item {
+        align-items: center;
+        background: var(--surface-3);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        color: var(--ink-3);
+        display: flex;
+        font-size: 13px;
+        font-weight: 780;
+        gap: 8px;
+        min-height: 42px;
+        padding: 10px 12px;
+      }
+
+      .outputs .io-item {
+        background: white;
+        border-color: var(--line-strong);
+      }
+
+      .io-arrow {
+        align-items: center;
+        color: var(--purple);
+        display: flex;
+        justify-content: center;
+      }
+
+      .rubric-grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .rubric-card {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 20px;
+      }
+
+      .rubric-score {
+        align-items: end;
+        display: flex;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .rubric-score strong {
+        color: var(--purple);
+        font-family: var(--mono);
+        font-size: 52px;
+        line-height: 0.9;
+      }
+
+      .rubric-score span {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 800;
+        padding-bottom: 5px;
+      }
+
+      .bar-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .bar-row {
+        align-items: center;
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 112px 1fr 42px;
+      }
+
+      .bar-row span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .bar-row strong {
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+
+      .bar-track {
+        background: #eceff6;
+        border-radius: 999px;
+        height: 9px;
+        overflow: hidden;
+      }
+
+      .bar-track i {
+        background: var(--purple);
+        border-radius: inherit;
+        display: block;
+        height: 100%;
+      }
+
+      .gate-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .gate-item {
+        align-items: center;
+        background: var(--surface-2);
+        border: 1px solid var(--line-strong);
+        border-radius: 13px;
+        color: var(--ink-3);
+        display: flex;
+        font-size: 13px;
+        font-weight: 780;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .gate-item.fail {
+        background: var(--danger-soft);
+        border-color: #f6d2d3;
+        color: var(--danger);
+      }
+
+      .method-flow {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .method-step {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        min-height: 132px;
+        padding: 16px;
+        position: relative;
+      }
+
+      .method-step:not(:last-child)::after {
+        background: var(--line-strong);
+        content: "";
+        height: 2px;
+        position: absolute;
+        right: -12px;
+        top: 33px;
+        width: 12px;
+      }
+
+      .method-step strong {
+        align-items: center;
+        background: var(--purple-soft);
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        color: var(--purple-2);
+        display: inline-flex;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 850;
+        height: 30px;
+        justify-content: center;
+        padding-inline: 10px;
+      }
+
+      .method-step h3 {
+        font-size: 16px;
+        margin-top: 14px;
+      }
+
+      .method-step p {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 720;
+        line-height: 1.4;
+        margin-top: 7px;
+      }
+
+      .score-equation {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: 1fr auto 1fr auto 0.72fr;
+      }
+
+      .score-part {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 20px;
+      }
+
+      .score-part.primary {
+        border-color: var(--line-strong);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .score-number {
+        color: var(--purple);
+        display: block;
+        font-family: var(--mono);
+        font-size: 54px;
+        font-weight: 850;
+        line-height: 0.9;
+      }
+
+      .score-plus {
+        align-items: center;
+        color: var(--faint);
+        display: flex;
+        font-family: var(--mono);
+        font-size: 30px;
+        font-weight: 850;
+        justify-content: center;
+      }
+
+      .rep-grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .rep-card {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        min-height: 236px;
+        padding: 22px;
+      }
+
+      .rep-card svg {
+        color: var(--purple);
+      }
+
+      .rep-card h3 {
+        font-size: 22px;
+        margin-top: 20px;
+      }
+
+      .rep-card p {
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 1.5;
+        margin-top: 10px;
+      }
+
+      .before-after {
+        align-items: stretch;
+        display: grid;
+        gap: 16px;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .ba-card {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+      }
+
+      .ba-card.before {
+        background: #fbfbfd;
+      }
+
+      .ba-card.after {
+        background: var(--purple-soft-2);
+        border-color: var(--line-strong);
+      }
+
+      .ba-card ul {
+        display: grid;
+        gap: 10px;
+        list-style: none;
+        margin: 14px 0 0;
+        padding: 0;
+      }
+
+      .ba-card li {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 760;
+      }
+
+      .timeline {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .timeline.five {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .timeline.compact {
+        gap: 12px;
+      }
+
+      .phase {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 17px;
+        min-height: 220px;
+        padding: 20px;
+      }
+
+      .phase-num {
+        align-items: center;
+        background: var(--purple-soft);
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        color: var(--purple-2);
+        display: inline-flex;
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 850;
+        height: 34px;
+        justify-content: center;
+        margin-bottom: 18px;
+        width: 34px;
+      }
+
+      .phase p {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 720;
+        line-height: 1.45;
+        margin-top: 10px;
+      }
+
+      .phase.future {
+        background: var(--purple-soft-2);
+        border-color: var(--line-strong);
+      }
+
+      .timeline.compact .phase {
+        min-height: 196px;
+        padding: 16px;
+      }
+
+      .timeline.compact .phase-num {
+        height: 32px;
+        margin-bottom: 14px;
+        min-width: 42px;
+        padding-inline: 10px;
+        width: auto;
+      }
+
+      .timeline.compact .phase h3 {
+        font-size: 16px;
+      }
+
+      .timeline.compact .phase p {
+        font-size: 12px;
+        line-height: 1.38;
+      }
+
+      .proof-grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .proof-card {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+      }
+
+      .proof-card.warning {
+        background: #fffbf4;
+        border-color: var(--amber-border);
+      }
+
+      .proof-card.future {
+        background: var(--purple-soft-2);
+        border-color: var(--line-strong);
+      }
+
+      .proof-list {
+        display: grid;
+        gap: 8px;
+        list-style: none;
+        margin: 12px 0 0;
+        padding: 0;
+      }
+
+      .proof-list li {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 760;
+        line-height: 1.34;
+        padding-left: 15px;
+        position: relative;
+      }
+
+      .proof-list li::before {
+        background: var(--purple);
+        border-radius: 999px;
+        content: "";
+        height: 6px;
+        left: 0;
+        position: absolute;
+        top: 6px;
+        width: 6px;
+      }
+
+      .proof-card.warning .proof-list li::before {
+        background: var(--amber);
+      }
+
+      .stakeholders {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .nav {
+        align-items: center;
+        background: rgba(8, 7, 22, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        bottom: 18px;
+        box-shadow: 0 16px 36px rgba(8, 7, 22, 0.28);
+        color: white;
+        display: flex;
+        gap: 8px;
+        left: 50%;
+        padding: 8px;
+        position: fixed;
+        transform: translateX(-50%);
+        z-index: 20;
+      }
+
+      .nav button,
+      .nav a {
+        align-items: center;
+        background: transparent;
+        border: 0;
+        border-radius: 999px;
+        color: rgba(255, 255, 255, 0.7);
+        cursor: pointer;
+        display: flex;
+        font-size: 13px;
+        font-weight: 850;
+        justify-content: center;
+        min-height: 34px;
+        min-width: 34px;
+        padding: 0 10px;
+        text-decoration: none;
+      }
+
+      .nav a.active {
+        background: var(--purple);
+        color: white;
+      }
+
+      .nav button:hover,
+      .nav a:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+      }
+
+      .kbd {
+        color: rgba(255, 255, 255, 0.58);
+        font-family: var(--mono);
+        font-size: 11px;
+        padding-inline: 8px;
+      }
+
+      @media (max-width: 1100px) {
+        .two-col,
+        .wide-col,
+        .detail-mock,
+        .rubric-grid,
+        .before-after {
+          grid-template-columns: 1fr;
+        }
+
+        .workflow,
+        .api-map,
+        .timeline,
+        .workflow.seven,
+        .method-flow {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .io-flow,
+        .score-equation {
+          grid-template-columns: 1fr;
+        }
+
+        .io-arrow,
+        .score-plus {
+          min-height: 28px;
+          transform: rotate(90deg);
+        }
+
+        .rep-grid,
+        .metric-grid,
+        .proof-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .slide-frame {
+          min-height: auto;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .slide {
+          min-height: auto;
+          padding: 10px;
+        }
+
+        .slide-frame {
+          border-radius: 16px;
+          min-height: calc(100dvh - 20px);
+        }
+
+        .slide-header,
+        .slide-body,
+        .slide-footer {
+          padding-inline: 18px;
+        }
+
+        .slide-body {
+          padding-bottom: 72px;
+        }
+
+        .slide-footer {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .api-map,
+        .workflow,
+        .timeline,
+        .workflow.seven,
+        .method-flow,
+        .io-list {
+          grid-template-columns: 1fr;
+        }
+
+        .queue-row {
+          grid-template-columns: 1fr;
+        }
+
+        .nav {
+          bottom: 10px;
+          max-width: calc(100vw - 20px);
+          overflow-x: auto;
+        }
+
+        .kbd {
+          display: none;
+        }
+      }
+
+      @media print {
+        html,
+        body,
+        .deck {
+          background: white;
+          height: auto;
+          overflow: visible;
+        }
+
+        .slide {
+          break-after: page;
+          min-height: 100vh;
+          padding: 0;
+          page-break-after: always;
+        }
+
+        .slide-frame {
+          border: 0;
+          border-radius: 0;
+          box-shadow: none;
+          min-height: 100vh;
+          width: 100%;
+        }
+
+        .nav {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="deck" id="deck">
+      <section class="slide" id="slide-1" aria-labelledby="slide-1-title">
+        <div class="slide-frame">
+          <header class="slide-header">
+            <div class="brand-row">
+              <div class="mark" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 15.5c3.2 0 3.2-7 6.4-7s3.2 7 6.4 7" stroke="currentColor" stroke-linecap="round" stroke-width="2.2" />
+                  <circle cx="19.4" cy="6" fill="currentColor" r="2.1" />
+                </svg>
+              </div>
+              <div>
+                <div class="brand-name">Signal</div>
+                <div class="eyebrow">Inbound lead intelligence</div>
+              </div>
+            </div>
+            <span class="slide-number">01 / 06</span>
+          </header>
+          <div class="slide-body two-col">
+            <div class="stack-lg">
+              <div class="stack">
+                <p class="eyebrow">Introduction</p>
+                <h1 id="slide-1-title">Rank, explain, and draft inbound leads.</h1>
+                <p class="lede">Signal turns sparse form fills into a prioritized SDR queue with cited context and a human review gate.</p>
+              </div>
+              <div class="pill-row" aria-label="Signal outcomes">
+                <span class="pill"><span class="dot"></span>Who first</span>
+                <span class="pill"><span class="dot"></span>What to say</span>
+                <span class="pill"><span class="dot"></span>How urgent</span>
+              </div>
+            </div>
+            <div class="dark-card queue-card">
+              <div class="queue-title">
+                <div>
+                  <div class="eyebrow" style="color: rgba(255,255,255,.58)">Live queue</div>
+                  <h3 style="color: white; margin-top: 6px">Sorted by tier and score</h3>
+                </div>
+                <span class="tier a"><span class="dot"></span>A-tier</span>
+              </div>
+              <div class="queue-row top">
+                <span class="tier a"><span class="dot"></span>A 92</span>
+                <span class="lead-main"><strong>Sarah C.</strong><span>VP Leasing</span></span>
+                <span class="queue-muted">Austin, TX</span>
+                <span class="score"><strong>92</strong><span class="meter"><span style="width: 92%"></span></span></span>
+                <span class="why">Large portfolio, senior contact, recent trigger.</span>
+              </div>
+              <div class="queue-row" style="color: white">
+                <span class="tier a"><span class="dot"></span>A 84</span>
+                <span class="lead-main"><strong>Marcus W.</strong><span>Director Ops</span></span>
+                <span class="queue-muted">Charlotte, NC</span>
+                <span class="score"><strong>84</strong><span class="meter"><span style="width: 84%"></span></span></span>
+                <span class="why" style="color: rgba(255,255,255,.78)">Renter density and tight labor market.</span>
+              </div>
+              <div class="queue-row failed">
+                <span class="tier c"><span class="dot"></span>C 28</span>
+                <span class="lead-main"><strong>Tom W.</strong><span>Unverified</span></span>
+                <span class="queue-muted">Miami, FL</span>
+                <span class="score"><strong>28</strong><span class="meter gray"><span style="width: 28%"></span></span></span>
+                <span class="why">No draft: hard gate failed.</span>
+              </div>
+              <div class="metric-grid" style="margin-top: 18px">
+                <div class="metric"><strong>30s</strong><span>top lead identified</span></div>
+                <div class="metric"><strong>A/B/C</strong><span>clear prioritization</span></div>
+                <div class="metric"><strong>0</strong><span>auto-sends in v1</span></div>
+              </div>
+            </div>
+          </div>
+          <footer class="slide-footer">
+            <span>Built for SDR triage, not broad analytics.</span>
+            <span>Signal presentation</span>
+          </footer>
+        </div>
+      </section>
+
+      <section class="slide" id="slide-2" aria-labelledby="slide-2-title">
+        <div class="slide-frame">
+          <header class="slide-header">
+            <div class="brand-row">
+              <div class="mark" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 15.5c3.2 0 3.2-7 6.4-7s3.2 7 6.4 7" stroke="currentColor" stroke-linecap="round" stroke-width="2.2" />
+                  <circle cx="19.4" cy="6" fill="currentColor" r="2.1" />
+                </svg>
+              </div>
+              <div>
+                <div class="brand-name">Signal</div>
+                <div class="eyebrow">Public data layer</div>
+              </div>
+            </div>
+            <span class="slide-number">02 / 06</span>
+          </header>
+          <div class="slide-body wide-col">
+            <div class="stack-lg">
+              <div class="stack">
+                <p class="eyebrow">APIs used and why</p>
+                <h2 id="slide-2-title">Free public data becomes rep-ready context.</h2>
+                <p class="lede">Each adapter turns sparse lead input into normalized facts for scoring, insight, and cited outreach.</p>
+              </div>
+              <div class="pill-row" aria-label="Public data jobs">
+                <span class="pill"><span class="dot"></span>Locate</span>
+                <span class="pill"><span class="dot"></span>Size</span>
+                <span class="pill"><span class="dot"></span>Validate</span>
+                <span class="pill"><span class="dot"></span>Personalize</span>
+              </div>
+            </div>
+            <div class="api-map">
+              <article class="api-card">
+                <div class="api-icon" aria-hidden="true">01</div>
+                <h3>Nominatim / OSM</h3>
+                <p>Address resolution and place context for geo-based enrichment.</p>
+              </article>
+              <article class="api-card">
+                <div class="api-icon" aria-hidden="true">02</div>
+                <h3>U.S. Census ACS</h3>
+                <p>Renter share, rent, households, and growth signals.</p>
+              </article>
+              <article class="api-card">
+                <div class="api-icon" aria-hidden="true">03</div>
+                <h3>FRED</h3>
+                <p>Labor and rent trend context for market urgency.</p>
+              </article>
+              <article class="api-card">
+                <div class="api-icon" aria-hidden="true">04</div>
+                <h3>News API</h3>
+                <p>Recent trigger events for timing and personalization.</p>
+              </article>
+              <article class="api-card">
+                <div class="api-icon" aria-hidden="true">05</div>
+                <h3>Wikipedia API</h3>
+                <p>Company background hints and scale evidence.</p>
+              </article>
+              <article class="api-card">
+                <div class="api-icon" aria-hidden="true">06</div>
+                <h3>DNS / MX</h3>
+                <p>Corporate email validation for lead-quality gates.</p>
+              </article>
+            </div>
+          </div>
+          <footer class="slide-footer">
+            <span>Public APIs are normalized into source facts.</span>
+            <span>Cache-backed adapters</span>
+          </footer>
+        </div>
+      </section>
+
+      <section class="slide" id="slide-3" aria-labelledby="slide-3-title">
+        <div class="slide-frame">
+          <header class="slide-header">
+            <div class="brand-row">
+              <div class="mark" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 15.5c3.2 0 3.2-7 6.4-7s3.2 7 6.4 7" stroke="currentColor" stroke-linecap="round" stroke-width="2.2" />
+                  <circle cx="19.4" cy="6" fill="currentColor" r="2.1" />
+                </svg>
+              </div>
+              <div>
+                <div class="brand-name">Signal</div>
+                <div class="eyebrow">Workflow</div>
+              </div>
+            </div>
+            <span class="slide-number">03 / 06</span>
+          </header>
+          <div class="slide-body">
+            <div class="stack">
+              <p class="eyebrow">Enrich -> score -> output</p>
+              <h2 id="slide-3-title">A bounded pipeline turns input into a reviewable lead snapshot.</h2>
+            </div>
+            <div class="workflow seven" aria-label="Signal workflow steps">
+              <article class="step">
+                <span class="step-index">1</span>
+                <h3>Lead inserted</h3>
+                <p>API trigger accepts contact, company, and property fields.</p>
+              </article>
+              <article class="step">
+                <span class="step-index">2</span>
+                <h3>Enrich</h3>
+                <p>Public adapters resolve market, company, and email signals.</p>
+              </article>
+              <article class="step">
+                <span class="step-index">3</span>
+                <h3>Graph context</h3>
+                <p>Related leads and market relationships stay bounded.</p>
+              </article>
+              <article class="step">
+                <span class="step-index">4</span>
+                <h3>Score</h3>
+                <p>Config gates and weights produce tier, score, and why-line.</p>
+              </article>
+              <article class="step">
+                <span class="step-index">5</span>
+                <h3>Draft</h3>
+                <p>Passed leads get cited outreach and sales insights.</p>
+              </article>
+              <article class="step">
+                <span class="step-index">6</span>
+                <h3>Review</h3>
+                <p>Human approval is required before any outreach handoff.</p>
+              </article>
+              <article class="step future">
+                <span class="step-index">7</span>
+                <h3>Digital Worker handoff</h3>
+                <p>Future gated handoff to SDR Digital Workers for approved follow-up.</p>
+              </article>
+            </div>
+            <div class="io-flow" aria-label="Inputs and outputs">
+              <div class="io-card">
+                <p class="eyebrow">Inputs</p>
+                <h3 style="margin-top: 8px">Sparse inbound record</h3>
+                <div class="io-list">
+                  <span class="io-item"><span class="dot"></span>Contact name</span>
+                  <span class="io-item"><span class="dot"></span>Email</span>
+                  <span class="io-item"><span class="dot"></span>Company</span>
+                  <span class="io-item"><span class="dot"></span>Role</span>
+                  <span class="io-item"><span class="dot"></span>Property address</span>
+                  <span class="io-item"><span class="dot"></span>City, state, country</span>
+                </div>
+              </div>
+              <div class="io-arrow" aria-hidden="true">
+                <svg width="48" height="28" viewBox="0 0 48 28" fill="none">
+                  <path d="M3 14h39M31 4l11 10-11 10" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+                </svg>
+              </div>
+              <div class="io-card outputs">
+                <p class="eyebrow">Outputs</p>
+                <h3 style="margin-top: 8px">Outreach-ready lead</h3>
+                <div class="io-list">
+                  <span class="io-item"><span class="dot"></span>Enriched facts</span>
+                  <span class="io-item"><span class="dot"></span>Score and tier</span>
+                  <span class="io-item"><span class="dot"></span>Why-line</span>
+                  <span class="io-item"><span class="dot"></span>Sales insights</span>
+                  <span class="io-item"><span class="dot"></span>Cited draft</span>
+                  <span class="io-item"><span class="dot"></span>Gate flags</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <footer class="slide-footer">
+            <span>Queued and running leads stay separate from completed snapshots.</span>
+            <span>Human-in-the-loop</span>
+          </footer>
+        </div>
+      </section>
+
+      <section class="slide" id="slide-4" aria-labelledby="slide-4-title">
+        <div class="slide-frame">
+          <header class="slide-header">
+            <div class="brand-row">
+              <div class="mark" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 15.5c3.2 0 3.2-7 6.4-7s3.2 7 6.4 7" stroke="currentColor" stroke-linecap="round" stroke-width="2.2" />
+                  <circle cx="19.4" cy="6" fill="currentColor" r="2.1" />
+                </svg>
+              </div>
+              <div>
+                <div class="brand-name">Signal</div>
+                <div class="eyebrow">Assumptions</div>
+              </div>
+            </div>
+            <span class="slide-number">04 / 06</span>
+          </header>
+          <div class="slide-body">
+            <div class="stack">
+              <p class="eyebrow">Logic behind the score</p>
+              <h2 id="slide-4-title">Scoring is gates first, then fit plus opportunity.</h2>
+              <p class="lede">The score is transparent enough for reps to trust and simple enough to recalibrate.</p>
+            </div>
+            <div class="method-flow" aria-label="Scoring methodology flow">
+              <article class="method-step">
+                <strong>1</strong>
+                <h3>Hard gates</h3>
+                <p>Bad inputs cannot score their way into a draft.</p>
+              </article>
+              <article class="method-step">
+                <strong>2</strong>
+                <h3>Weighted score</h3>
+                <p>Company fit plus market opportunity creates a 0-100 base.</p>
+              </article>
+              <article class="method-step">
+                <strong>3</strong>
+                <h3>Bonuses</h3>
+                <p>Recent trigger events and related inbound signals lift urgency.</p>
+              </article>
+              <article class="method-step">
+                <strong>4</strong>
+                <h3>Tier</h3>
+                <p>A, B, or C determines queue order and SLA.</p>
+              </article>
+              <article class="method-step">
+                <strong>5</strong>
+                <h3>Calibrate</h3>
+                <p>Reweight after pilot conversion data is available.</p>
+              </article>
+            </div>
+            <div class="score-equation" aria-label="Scoring equation">
+              <article class="score-part primary">
+                <span class="score-number">60</span>
+                <h3>Company fit</h3>
+                <div class="bar-list">
+                  <div class="bar-row"><span>Portfolio scale</span><div class="bar-track"><i style="width: 100%"></i></div><strong>25</strong></div>
+                  <div class="bar-row"><span>Seniority</span><div class="bar-track"><i style="width: 60%"></i></div><strong>15</strong></div>
+                  <div class="bar-row"><span>Asset fit</span><div class="bar-track"><i style="width: 40%"></i></div><strong>10</strong></div>
+                  <div class="bar-row"><span>Momentum</span><div class="bar-track"><i style="width: 40%"></i></div><strong>10</strong></div>
+                </div>
+              </article>
+              <div class="score-plus" aria-hidden="true">+</div>
+              <article class="score-part primary">
+                <span class="score-number">40</span>
+                <h3>Market opportunity</h3>
+                <div class="bar-list">
+                  <div class="bar-row"><span>Renter share</span><div class="bar-track"><i style="width: 100%"></i></div><strong>12</strong></div>
+                  <div class="bar-row"><span>Rent trend</span><div class="bar-track"><i style="width: 83%"></i></div><strong>10</strong></div>
+                  <div class="bar-row"><span>HH growth</span><div class="bar-track"><i style="width: 67%"></i></div><strong>8</strong></div>
+                  <div class="bar-row"><span>Labor</span><div class="bar-track"><i style="width: 42%"></i></div><strong>5</strong></div>
+                  <div class="bar-row"><span>Density</span><div class="bar-track"><i style="width: 42%"></i></div><strong>5</strong></div>
+                </div>
+              </article>
+              <div class="score-plus" aria-hidden="true">+</div>
+              <article class="score-part">
+                <h3>Bonuses</h3>
+                <p class="microcopy" style="margin-top: 10px">Trigger event: +10. Related inbound: planned +10. Max score: 100.</p>
+                <div class="pill-row" style="margin-top: 12px">
+                  <span class="tier a"><span class="dot"></span>A 75-100</span>
+                  <span class="tier b"><span class="dot"></span>B 50-74</span>
+                  <span class="tier c"><span class="dot"></span>C 0-49</span>
+                </div>
+              </article>
+            </div>
+          </div>
+          <footer class="slide-footer">
+            <span>Weights live in config and can be recalibrated.</span>
+            <span>Gates -> weights -> bonuses</span>
+          </footer>
+        </div>
+      </section>
+
+      <section class="slide" id="slide-5" aria-labelledby="slide-5-title">
+        <div class="slide-frame">
+          <header class="slide-header">
+            <div class="brand-row">
+              <div class="mark" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 15.5c3.2 0 3.2-7 6.4-7s3.2 7 6.4 7" stroke="currentColor" stroke-linecap="round" stroke-width="2.2" />
+                  <circle cx="19.4" cy="6" fill="currentColor" r="2.1" />
+                </svg>
+              </div>
+              <div>
+                <div class="brand-name">Signal</div>
+                <div class="eyebrow">Rep value</div>
+              </div>
+            </div>
+            <span class="slide-number">05 / 06</span>
+          </header>
+          <div class="slide-body">
+            <div class="stack">
+              <p class="eyebrow">How this helps an SDR</p>
+              <h2 id="slide-5-title">Less research time. More qualified conversations.</h2>
+            </div>
+            <div class="rep-grid">
+              <article class="rep-card">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 7h16M4 12h12M4 17h8" stroke="currentColor" stroke-linecap="round" stroke-width="2" />
+                </svg>
+                <h3>Who first</h3>
+                <p>The queue sorts by tier and score, so the rep starts with the highest-fit inbound lead.</p>
+              </article>
+              <article class="rep-card">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 5h16v11H7l-3 3V5z" stroke="currentColor" stroke-linejoin="round" stroke-width="2" />
+                </svg>
+                <h3>What to say</h3>
+                <p>Talking points and draft snippets are grounded in source facts the rep can review.</p>
+              </article>
+              <article class="rep-card">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 8v5l3 2M20 12a8 8 0 1 1-16 0 8 8 0 0 1 16 0z" stroke="currentColor" stroke-linecap="round" stroke-width="2" />
+                </svg>
+                <h3>How urgent</h3>
+                <p>Trigger events, market pressure, and tier SLAs make speed-to-lead visible.</p>
+              </article>
+            </div>
+            <div class="before-after">
+              <div class="ba-card before">
+                <h3>Before Signal</h3>
+                <ul>
+                  <li>Manual tabs and inconsistent lead research.</li>
+                  <li>Low-quality records consume rep attention.</li>
+                  <li>Personalization depends on rep bandwidth.</li>
+                </ul>
+              </div>
+              <div class="ba-card after">
+                <h3>With Signal now</h3>
+                <ul>
+                  <li>A/B/C triage focuses the work queue.</li>
+                  <li>Gate-failed leads show no draft or send-like action.</li>
+                  <li>Cited outreach gives reps a safer starting point.</li>
+                </ul>
+              </div>
+              <div class="ba-card after" style="grid-column: 1 / -1">
+                <h3>Future state: digital worker handoff</h3>
+                <ul>
+                  <li>Approved leads move to a gated worker for first interaction and follow-up.</li>
+                  <li>SDRs focus on qualified replies, meetings, and closing work.</li>
+                  <li>Human review stays in front of outbound messaging policy.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <footer class="slide-footer">
+            <span>Decision support first, automation after trust is earned.</span>
+            <span>Rep leverage</span>
+          </footer>
+        </div>
+      </section>
+
+      <section class="slide" id="slide-6" aria-labelledby="slide-6-title">
+        <div class="slide-frame">
+          <header class="slide-header">
+            <div class="brand-row">
+              <div class="mark" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 15.5c3.2 0 3.2-7 6.4-7s3.2 7 6.4 7" stroke="currentColor" stroke-linecap="round" stroke-width="2.2" />
+                  <circle cx="19.4" cy="6" fill="currentColor" r="2.1" />
+                </svg>
+              </div>
+              <div>
+                <div class="brand-name">Signal</div>
+                <div class="eyebrow">Rollout</div>
+              </div>
+            </div>
+            <span class="slide-number">06 / 06</span>
+          </header>
+          <div class="slide-body">
+            <div class="stack">
+              <p class="eyebrow">Project plan</p>
+              <h2 id="slide-6-title">Augment first. Prove lift. Then automate.</h2>
+              <p class="lede">Earn trust with reps and managers before expanding the worker into follow-up.</p>
+            </div>
+            <div class="timeline five compact" aria-label="Rollout timeline">
+              <article class="phase">
+                <span class="phase-num">Week 1</span>
+                <h3>Build and validate</h3>
+                <p>Document rubric assumptions, test sample leads, review intake and outputs with SDR manager and RevOps.</p>
+              </article>
+              <article class="phase">
+                <span class="phase-num">Weeks 2-3</span>
+                <h3>Shadow</h3>
+                <p>No rep behavior change. Validate enrichment, calibrate tiers, and capture baseline metrics.</p>
+              </article>
+              <article class="phase">
+                <span class="phase-num">Weeks 4-7</span>
+                <h3>Mixed SDR pilot</h3>
+                <p>Run 3-5 reps: champions, skeptic, median performer, and ramping rep. Ship feedback weekly.</p>
+              </article>
+              <article class="phase">
+                <span class="phase-num">Weeks 8-10</span>
+                <h3>Graduated rollout</h3>
+                <p>Expand team-by-team. Pilot SDRs enable peers; RevOps takes the runbook and rubric config.</p>
+              </article>
+              <article class="phase future">
+                <span class="phase-num">Q2</span>
+                <h3>Calibrate and automate</h3>
+                <p>Regress scores vs. conversion, recalibrate weights, scope human-approved worker follow-up.</p>
+              </article>
+            </div>
+            <div class="proof-grid">
+              <div class="proof-card">
+                <h3>Success criteria</h3>
+                <ul class="proof-list">
+                  <li>A-tier speed-to-lead down 50%.</li>
+                  <li>Why-line accuracy over 80%.</li>
+                  <li>Response rate up; draft edits minimal.</li>
+                </ul>
+              </div>
+              <div class="proof-card warning">
+                <h3>Kill or rework</h3>
+                <ul class="proof-list">
+                  <li>Scores conflict with rep judgment.</li>
+                  <li>Personalization is unsupported.</li>
+                  <li>Latency breaks speed-to-lead SLA.</li>
+                </ul>
+              </div>
+              <div class="proof-card future">
+                <h3>Stakeholders</h3>
+                <div class="stakeholders" style="margin-top: 12px">
+                  <span class="pill">SDR manager</span>
+                  <span class="pill">RevOps</span>
+                  <span class="pill">Marketing Ops</span>
+                  <span class="pill">Sales leadership</span>
+                  <span class="pill">Security review</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <footer class="slide-footer">
+            <span>Baseline first, then pilot proof, then worker expansion.</span>
+            <span>Human review before automation</span>
+          </footer>
+        </div>
+      </section>
+    </main>
+
+    <nav class="nav" aria-label="Presentation navigation">
+      <button type="button" data-prev aria-label="Previous slide">Prev</button>
+      <a href="#slide-1" aria-label="Slide 1">1</a>
+      <a href="#slide-2" aria-label="Slide 2">2</a>
+      <a href="#slide-3" aria-label="Slide 3">3</a>
+      <a href="#slide-4" aria-label="Slide 4">4</a>
+      <a href="#slide-5" aria-label="Slide 5">5</a>
+      <a href="#slide-6" aria-label="Slide 6">6</a>
+      <button type="button" data-next aria-label="Next slide">Next</button>
+      <span class="kbd">Use arrows</span>
+    </nav>
+
+    <script>
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const links = Array.from(document.querySelectorAll(".nav a"));
+      const deck = document.querySelector("#deck");
+
+      function currentIndex() {
+        const top = deck.scrollTop;
+        let index = 0;
+        let best = Infinity;
+        slides.forEach((slide, slideIndex) => {
+          const distance = Math.abs(slide.offsetTop - top);
+          if (distance < best) {
+            best = distance;
+            index = slideIndex;
+          }
+        });
+        return index;
+      }
+
+      function goTo(index) {
+        const bounded = Math.max(0, Math.min(slides.length - 1, index));
+        slides[bounded].scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function setActive() {
+        const active = currentIndex();
+        links.forEach((link, index) => {
+          link.classList.toggle("active", index === active);
+          if (index === active) {
+            link.setAttribute("aria-current", "page");
+          } else {
+            link.removeAttribute("aria-current");
+          }
+        });
+      }
+
+      document.querySelector("[data-prev]").addEventListener("click", () => goTo(currentIndex() - 1));
+      document.querySelector("[data-next]").addEventListener("click", () => goTo(currentIndex() + 1));
+      deck.addEventListener("scroll", () => window.requestAnimationFrame(setActive), { passive: true });
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowDown" || event.key === "ArrowRight" || event.key === "PageDown") {
+          event.preventDefault();
+          goTo(currentIndex() + 1);
+        }
+        if (event.key === "ArrowUp" || event.key === "ArrowLeft" || event.key === "PageUp") {
+          event.preventDefault();
+          goTo(currentIndex() - 1);
+        }
+        if (event.key === "Home") {
+          event.preventDefault();
+          goTo(0);
+        }
+        if (event.key === "End") {
+          event.preventDefault();
+          goTo(slides.length - 1);
+        }
+      });
+      setActive();
+    </script>
+  </body>
+</html>
