@@ -490,6 +490,21 @@
         width: 40px;
       }
 
+      .api-card .api-tag {
+        background: var(--surface-3);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--ink-3);
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 850;
+        letter-spacing: 0.05em;
+        margin-top: 10px;
+        padding: 5px 9px;
+        text-transform: uppercase;
+      }
+
       .api-card p {
         color: var(--muted);
         font-size: 13px;
@@ -764,6 +779,8 @@
       .gate-list {
         display: grid;
         gap: 10px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-top: 14px;
       }
 
       .gate-item {
@@ -1030,7 +1047,7 @@
 
       .proof-card.warning {
         background: #fffbf4;
-        border-color: var(--amber-border);
+        border-color: #f2dcaa;
       }
 
       .proof-card.future {
@@ -1142,7 +1159,8 @@
         .api-map,
         .timeline,
         .workflow.seven,
-        .method-flow {
+        .method-flow,
+        .gate-list {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
@@ -1200,6 +1218,7 @@
         .timeline,
         .workflow.seven,
         .method-flow,
+        .gate-list,
         .io-list {
           grid-template-columns: 1fr;
         }
@@ -1311,15 +1330,15 @@
                 <span class="why">No draft: hard gate failed.</span>
               </div>
               <div class="metric-grid" style="margin-top: 18px">
-                <div class="metric"><strong>30s</strong><span>top lead identified</span></div>
-                <div class="metric"><strong>A/B/C</strong><span>clear prioritization</span></div>
+                <div class="metric"><strong>6</strong><span>public APIs per lead</span></div>
+                <div class="metric"><strong>A/B/C</strong><span>tiers with SLAs</span></div>
                 <div class="metric"><strong>0</strong><span>auto-sends in v1</span></div>
               </div>
             </div>
           </div>
           <footer class="slide-footer">
-            <span>Built for SDR triage, not broad analytics.</span>
-            <span>Signal presentation</span>
+            <span>Every output answers one SDR decision: who first, what to say, how urgent.</span>
+            <span>EliseAI GTM take-home</span>
           </footer>
         </div>
       </section>
@@ -1359,38 +1378,44 @@
               <article class="api-card">
                 <div class="api-icon" aria-hidden="true">01</div>
                 <h3>Nominatim / OSM</h3>
-                <p>Address resolution and place context for geo-based enrichment.</p>
+                <p>Geocodes the property address to coordinates and census tract — the unlock for all geo enrichment.</p>
+                <span class="api-tag">Feeds: everything below</span>
               </article>
               <article class="api-card">
                 <div class="api-icon" aria-hidden="true">02</div>
                 <h3>U.S. Census ACS</h3>
-                <p>Renter share, rent, households, and growth signals.</p>
+                <p>Renter share, median gross rent, and household growth at the tract. High renter density = leasing volume = EliseAI fit.</p>
+                <span class="api-tag">Feeds: market score (40 pts)</span>
               </article>
               <article class="api-card">
                 <div class="api-icon" aria-hidden="true">03</div>
                 <h3>FRED</h3>
-                <p>Labor and rent trend context for market urgency.</p>
+                <p>Metro unemployment and rent trends. A tight labor market means leasing-staff pain — EliseAI's core pitch.</p>
+                <span class="api-tag">Feeds: score + talking points</span>
               </article>
               <article class="api-card">
                 <div class="api-icon" aria-hidden="true">04</div>
                 <h3>News API</h3>
-                <p>Recent trigger events for timing and personalization.</p>
+                <p>Acquisitions, funding, expansion. Trigger events set urgency and make the draft read researched, not templated.</p>
+                <span class="api-tag">Feeds: +10 bonus + email</span>
               </article>
               <article class="api-card">
                 <div class="api-icon" aria-hidden="true">05</div>
                 <h3>Wikipedia API</h3>
-                <p>Company background hints and scale evidence.</p>
+                <p>Cheap operator-scale detection: page presence and NMHC Top 50 mentions signal a major portfolio.</p>
+                <span class="api-tag">Feeds: company fit (60 pts)</span>
               </article>
               <article class="api-card">
                 <div class="api-icon" aria-hidden="true">06</div>
                 <h3>DNS / MX</h3>
-                <p>Corporate email validation for lead-quality gates.</p>
+                <p>Verifies the email domain is corporate and real. Garbage inputs are gated before they can score.</p>
+                <span class="api-tag">Feeds: hard gates</span>
               </article>
             </div>
           </div>
           <footer class="slide-footer">
-            <span>Public APIs are normalized into source facts.</span>
-            <span>Cache-backed adapters</span>
+            <span>All free tiers. Responses cached per lead — no live-API dependency in the demo.</span>
+            <span>Locate &middot; Size &middot; Validate &middot; Personalize</span>
           </footer>
         </div>
       </section>
@@ -1414,44 +1439,44 @@
           </header>
           <div class="slide-body">
             <div class="stack">
-              <p class="eyebrow">Enrich -> score -> output</p>
-              <h2 id="slide-3-title">A bounded pipeline turns input into a reviewable lead snapshot.</h2>
+              <p class="eyebrow">LangGraph pipeline &mdash; triggered per lead insertion</p>
+              <h2 id="slide-3-title">Deterministic data first. Agent reasoning second.</h2>
             </div>
             <div class="workflow seven" aria-label="Signal workflow steps">
               <article class="step">
                 <span class="step-index">1</span>
                 <h3>Lead inserted</h3>
-                <p>API trigger accepts contact, company, and property fields.</p>
+                <p>API trigger fires on pipeline insert. In production: a CRM webhook pointed at the same endpoint.</p>
               </article>
               <article class="step">
                 <span class="step-index">2</span>
-                <h3>Enrich</h3>
-                <p>Public adapters resolve market, company, and email signals.</p>
+                <h3>Node 1: Enrich</h3>
+                <p>Deterministic calls to all six APIs. Cheap, reliable facts fetched before any LLM spend.</p>
               </article>
               <article class="step">
                 <span class="step-index">3</span>
-                <h3>Graph context</h3>
-                <p>Related leads and market relationships stay bounded.</p>
+                <h3>Node 2: Agent</h3>
+                <p>LLM reviews context, fills gaps with targeted tool calls, applies the rubric, writes why-line and draft.</p>
               </article>
               <article class="step">
                 <span class="step-index">4</span>
-                <h3>Score</h3>
-                <p>Config gates and weights produce tier, score, and why-line.</p>
+                <h3>Node 3: Graph</h3>
+                <p>Links Contact &rarr; Company &rarr; Property &rarr; Market. Surfaces repeat inbound and shared submarkets.</p>
               </article>
               <article class="step">
                 <span class="step-index">5</span>
-                <h3>Draft</h3>
-                <p>Passed leads get cited outreach and sales insights.</p>
+                <h3>SDR queue</h3>
+                <p>Table sorted by tier and score: why-line, flags, copy-ready email. Click through for graph and full detail.</p>
               </article>
               <article class="step">
                 <span class="step-index">6</span>
-                <h3>Review</h3>
-                <p>Human approval is required before any outreach handoff.</p>
+                <h3>Human review</h3>
+                <p>Rep verifies cited facts and sends. No message leaves without approval in v1.</p>
               </article>
               <article class="step future">
                 <span class="step-index">7</span>
-                <h3>Digital Worker handoff</h3>
-                <p>Future gated handoff to SDR Digital Workers for approved follow-up.</p>
+                <h3>Digital Worker</h3>
+                <p>Next release: gated handoff to an agent that sends and manages follow-up cadence.</p>
               </article>
             </div>
             <div class="io-flow" aria-label="Inputs and outputs">
@@ -1487,7 +1512,7 @@
             </div>
           </div>
           <footer class="slide-footer">
-            <span>Queued and running leads stay separate from completed snapshots.</span>
+            <span>Deterministic node handles the fetching; the agent spends reasoning only on gaps and judgment.</span>
             <span>Human-in-the-loop</span>
           </footer>
         </div>
@@ -1516,35 +1541,18 @@
               <h2 id="slide-4-title">Scoring is gates first, then fit plus opportunity.</h2>
               <p class="lede">The score is transparent enough for reps to trust and simple enough to recalibrate.</p>
             </div>
-            <div class="method-flow" aria-label="Scoring methodology flow">
-              <article class="method-step">
-                <strong>1</strong>
-                <h3>Hard gates</h3>
-                <p>Bad inputs cannot score their way into a draft.</p>
-              </article>
-              <article class="method-step">
-                <strong>2</strong>
-                <h3>Weighted score</h3>
-                <p>Company fit plus market opportunity creates a 0-100 base.</p>
-              </article>
-              <article class="method-step">
-                <strong>3</strong>
-                <h3>Bonuses</h3>
-                <p>Recent trigger events and related inbound signals lift urgency.</p>
-              </article>
-              <article class="method-step">
-                <strong>4</strong>
-                <h3>Tier</h3>
-                <p>A, B, or C determines queue order and SLA.</p>
-              </article>
-              <article class="method-step">
-                <strong>5</strong>
-                <h3>Calibrate</h3>
-                <p>Reweight after pilot conversion data is available.</p>
-              </article>
+            <div class="panel" style="padding: 20px" aria-label="Stage 1 hard gates">
+              <p class="eyebrow">Stage 1 &mdash; hard gates &middot; fail any &rarr; C-tier, no draft generated</p>
+              <div class="gate-list">
+                <span class="gate-item"><span class="dot"></span>Corporate email with valid MX record</span>
+                <span class="gate-item"><span class="dot"></span>Company resolves to a real PM entity</span>
+                <span class="gate-item"><span class="dot"></span>US address that geocodes</span>
+                <span class="gate-item fail"><span class="dot"></span>Why: a fake address in a great market must not score well</span>
+              </div>
             </div>
             <div class="score-equation" aria-label="Scoring equation">
               <article class="score-part primary">
+                <p class="eyebrow" style="margin-bottom: 8px">Stage 2 &mdash; who they are</p>
                 <span class="score-number">60</span>
                 <h3>Company fit</h3>
                 <div class="bar-list">
@@ -1556,6 +1564,7 @@
               </article>
               <div class="score-plus" aria-hidden="true">+</div>
               <article class="score-part primary">
+                <p class="eyebrow" style="margin-bottom: 8px">Stage 2 &mdash; where they operate</p>
                 <span class="score-number">40</span>
                 <h3>Market opportunity</h3>
                 <div class="bar-list">
@@ -1568,19 +1577,21 @@
               </article>
               <div class="score-plus" aria-hidden="true">+</div>
               <article class="score-part">
-                <h3>Bonuses</h3>
-                <p class="microcopy" style="margin-top: 10px">Trigger event: +10. Related inbound: planned +10. Max score: 100.</p>
+                <p class="eyebrow" style="margin-bottom: 8px">Stage 3 &mdash; timing</p>
+                <h3>Bonuses &rarr; tier</h3>
+                <p class="microcopy" style="margin-top: 10px">News trigger event +10. Repeat inbound from same company (graph) +10. Capped at 100.</p>
                 <div class="pill-row" style="margin-top: 12px">
-                  <span class="tier a"><span class="dot"></span>A 75-100</span>
+                  <span class="tier a"><span class="dot"></span>A &ge; 75</span>
                   <span class="tier b"><span class="dot"></span>B 50-74</span>
-                  <span class="tier c"><span class="dot"></span>C 0-49</span>
+                  <span class="tier c"><span class="dot"></span>C &lt; 50</span>
                 </div>
+                <p class="microcopy" style="margin-top: 12px">Market is capped at 40: a great submarket can't rescue a bad-fit company.</p>
               </article>
             </div>
           </div>
           <footer class="slide-footer">
-            <span>Weights live in config and can be recalibrated.</span>
-            <span>Gates -> weights -> bonuses</span>
+            <span>Weights are documented hypotheses in config &mdash; regressed against conversion data at 90 days.</span>
+            <span>Gates &rarr; 60/40 weights &rarr; bonuses</span>
           </footer>
         </div>
       </section>
@@ -1634,25 +1645,25 @@
               <div class="ba-card before">
                 <h3>Before Signal</h3>
                 <ul>
-                  <li>Manual tabs and inconsistent lead research.</li>
-                  <li>Low-quality records consume rep attention.</li>
-                  <li>Personalization depends on rep bandwidth.</li>
+                  <li>10&ndash;15 min of manual research per lead across Census pages, news, and company sites.</li>
+                  <li>Leads worked first-in-first-out &mdash; a 20,000-unit operator waits behind a gmail form-fill.</li>
+                  <li>Personalization only happens when the rep has time; most first touches are templates.</li>
                 </ul>
               </div>
               <div class="ba-card after">
-                <h3>With Signal now</h3>
+                <h3>With Signal (v1)</h3>
                 <ul>
-                  <li>A/B/C triage focuses the work queue.</li>
-                  <li>Gate-failed leads show no draft or send-like action.</li>
-                  <li>Cited outreach gives reps a safer starting point.</li>
+                  <li>Rep opens a pre-ranked queue and starts at row one; A-tier carries a speed-to-lead SLA.</li>
+                  <li>Gate-failed leads are flagged and excluded &mdash; no rep time spent on unworkable records.</li>
+                  <li>Every draft cites its sources (news headline, Census stat) so the rep verifies in seconds, then sends.</li>
                 </ul>
               </div>
               <div class="ba-card after" style="grid-column: 1 / -1">
-                <h3>Future state: digital worker handoff</h3>
+                <h3>Next release: Digital Worker handoff <span class="pill neutral" style="margin-left: 8px">Out of scope for v1 &mdash; shown greyed out in UI</span></h3>
                 <ul>
-                  <li>Approved leads move to a gated worker for first interaction and follow-up.</li>
-                  <li>SDRs focus on qualified replies, meetings, and closing work.</li>
-                  <li>Human review stays in front of outbound messaging policy.</li>
+                  <li>Rep approves a lead once; the worker sends the draft and runs the follow-up cadence, logging each touch.</li>
+                  <li>SDR time shifts from first-touch mechanics to qualified replies, discovery calls, and meetings.</li>
+                  <li>Ships only after pilot trust is earned and compliance signs off &mdash; human approval on every send at first.</li>
                 </ul>
               </div>
             </div>
@@ -1718,9 +1729,9 @@
               <div class="proof-card">
                 <h3>Success criteria</h3>
                 <ul class="proof-list">
-                  <li>A-tier speed-to-lead down 50%.</li>
-                  <li>Why-line accuracy over 80%.</li>
-                  <li>Response rate up; draft edits minimal.</li>
+                  <li>A-tier speed-to-lead down 50% vs. shadow baseline.</li>
+                  <li>Reps rate the why-line accurate on &gt;80% of leads.</li>
+                  <li>Drafts sent with minimal edits (logged edit distance).</li>
                 </ul>
               </div>
               <div class="proof-card warning">
@@ -1738,7 +1749,7 @@
                   <span class="pill">RevOps</span>
                   <span class="pill">Marketing Ops</span>
                   <span class="pill">Sales leadership</span>
-                  <span class="pill">Security review</span>
+                  <span class="pill">Legal / Security</span>
                 </div>
               </div>
             </div>
