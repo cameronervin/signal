@@ -18,6 +18,7 @@ describe("InboundLeadsView", () => {
     refresh.mockClear();
     window.history.replaceState(null, "", "/leads");
     jest.useRealTimers();
+    setDocumentVisibility("visible");
     Object.assign(navigator, {
       clipboard: {
         writeText: jest.fn().mockResolvedValue(undefined)
@@ -101,7 +102,22 @@ describe("InboundLeadsView", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it("refreshes the route only while loading rows exist", () => {
+  it("passively refreshes the route every 10 seconds when no loading rows exist", () => {
+    jest.useFakeTimers();
+    render(<InboundLeadsView leads={readyRows([leads[0]])} />);
+
+    act(() => {
+      jest.advanceTimersByTime(3000);
+    });
+    expect(refresh).not.toHaveBeenCalled();
+
+    act(() => {
+      jest.advanceTimersByTime(7000);
+    });
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("actively refreshes the route every 3 seconds while loading rows exist", () => {
     jest.useFakeTimers();
     const { rerender } = render(<InboundLeadsView leads={[loadingRow()]} />);
 
@@ -114,10 +130,54 @@ describe("InboundLeadsView", () => {
     act(() => {
       jest.advanceTimersByTime(3000);
     });
+    expect(refresh).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      jest.advanceTimersByTime(7000);
+    });
+    expect(refresh).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not refresh on interval ticks while the document is hidden", () => {
+    jest.useFakeTimers();
+    setDocumentVisibility("hidden");
+    render(<InboundLeadsView leads={[loadingRow()]} />);
+
+    act(() => {
+      jest.advanceTimersByTime(3000);
+    });
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("refreshes immediately on window focus when visible", () => {
+    render(<InboundLeadsView leads={readyRows([leads[0]])} />);
+
+    act(() => {
+      window.dispatchEvent(new Event("focus"));
+    });
+
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("refreshes immediately when the document becomes visible", () => {
+    setDocumentVisibility("hidden");
+    render(<InboundLeadsView leads={readyRows([leads[0]])} />);
+
+    setDocumentVisibility("visible");
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
 
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 });
+
+function setDocumentVisibility(visibilityState: DocumentVisibilityState) {
+  Object.defineProperty(document, "visibilityState", {
+    configurable: true,
+    value: visibilityState
+  });
+}
 
 function readyRows(source: FixtureLead[]): InboundLeadQueueRow[] {
   return source.map((lead) => ({

@@ -48,6 +48,10 @@ class KnowledgeGraphRepository(Protocol):
         record: KnowledgeGraphLeadRecord,
     ) -> list[KnowledgeGraphRelatedCandidate]: ...
 
+    async def delete_lead_graph(self, lead_id: str) -> None: ...
+
+    async def delete_all_graphs(self) -> None: ...
+
     async def close(self) -> None: ...
 
 
@@ -135,6 +139,22 @@ class KnowledgeGraphService:
             enrichment=enrichment,
             graph_context=graph_context or KnowledgeGraphContext(),
         )
+
+    async def delete_lead_graph(self, lead_id: str) -> None:
+        if not self.storage_enabled:
+            return
+        try:
+            await self.repository.delete_lead_graph(lead_id)
+        except Exception:  # noqa: BLE001
+            return
+
+    async def delete_all_graphs(self) -> None:
+        if not self.storage_enabled:
+            return
+        try:
+            await self.repository.delete_all_graphs()
+        except Exception:  # noqa: BLE001
+            return
 
     async def close(self) -> None:
         await self.repository.close()

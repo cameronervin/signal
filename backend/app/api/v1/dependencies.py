@@ -122,10 +122,14 @@ def get_lead_intake_service(
     agent_execution_service: AgentExecutionService = Depends(
         get_agent_execution_service
     ),
+    knowledge_graph_service: KnowledgeGraphService = Depends(
+        get_knowledge_graph_dependency
+    ),
 ) -> LeadIntakeService:
     return LeadIntakeService(
         repository,
         agent_execution_service=agent_execution_service,
+        knowledge_graph_service=knowledge_graph_service,
     )
 
 

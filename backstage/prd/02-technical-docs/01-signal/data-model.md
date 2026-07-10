@@ -159,8 +159,11 @@ Delete APIs remove Signal lead snapshots, matching agent runs, and status
 events by default. Per-lead delete can opt into Digital Workforce cleanup; this
 removes matching assignments, sandbox messages, follow-ups, worker runs, and
 goal states before deleting lead intelligence. Bulk delete does not delete
-Digital Workforce state. Delete APIs do not remove Neo4j graph context or revoke
-Celery tasks already dispatched.
+Digital Workforce state. When Neo4j graph storage is enabled, successful
+per-lead delete operations also prune that lead's derived graph context after
+the Postgres delete commits; bulk delete resets the derived graph store after
+commit. Postgres remains canonical if optional graph cleanup is unavailable.
+Delete APIs do not revoke Celery tasks already dispatched.
 
 ## Agent Run Status Event
 

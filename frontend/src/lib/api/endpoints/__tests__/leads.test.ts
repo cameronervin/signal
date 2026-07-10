@@ -108,7 +108,7 @@ describe("lead API endpoint mapping", () => {
     expect(apiPostMock).toHaveBeenCalledWith("/api/v1/leads", payload);
   });
 
-  it("maps ready and loading lead queue rows from the backend", async () => {
+  it("maps lead queue rows and pins loading rows for demo visibility", async () => {
     apiGetMock.mockResolvedValueOnce([
       {
         id: "11111111-1111-4111-8111-111111111111",
@@ -149,13 +149,13 @@ describe("lead API endpoint mapping", () => {
 
     expect(apiGetMock).toHaveBeenCalledWith("/api/v1/leads/queue");
     expect(rows[0]).toMatchObject({
-      state: "ready",
-      lead: { name: "Sample Contact" }
-    });
-    expect(rows[1]).toMatchObject({
       state: "loading",
       input: { contact_name: "Loading Contact" },
       run: { status: "running" }
+    });
+    expect(rows[1]).toMatchObject({
+      state: "ready",
+      lead: { name: "Sample Contact" }
     });
   });
 });

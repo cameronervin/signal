@@ -22,6 +22,9 @@ interface Props {
   leads: InboundLeadQueueRow[];
 }
 
+const ACTIVE_REFRESH_MS = 3000;
+const PASSIVE_REFRESH_MS = 10000;
+
 export function InboundLeadsView({ leads }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -49,12 +52,24 @@ export function InboundLeadsView({ leads }: Props) {
   });
 
   useEffect(() => {
-    if (!hasLoadingRows) {
-      return;
-    }
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        router.refresh();
+      }
+    };
 
-    const refreshId = window.setInterval(() => router.refresh(), 3000);
-    return () => window.clearInterval(refreshId);
+    const refreshId = window.setInterval(
+      refreshWhenVisible,
+      hasLoadingRows ? ACTIVE_REFRESH_MS : PASSIVE_REFRESH_MS
+    );
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(refreshId);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
   }, [hasLoadingRows, router]);
 
   async function copyDraft(lead: FixtureLead) {
@@ -80,7 +95,7 @@ export function InboundLeadsView({ leads }: Props) {
     <>
       <PageHeader
         title="Inbound Leads"
-        subtitle={`${filteredLeads.length} open · sorted by tier`}
+        subtitle={`${filteredLeads.length} open · active first`}
         actions={
           <div className="toolbar-row">
             <Button>

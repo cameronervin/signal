@@ -173,6 +173,8 @@ Vertical. Each step = flex row: a `22px` rail column (status dot + `2px` connect
 ### 2. Inbound Leads — `/leads` (Inbox active)
 **Purpose:** the ranked work queue; rep starts at row one.
 **Layout:** top bar (title + "187 open · sorted by tier" + right: Filter + Search). Filter-chip row (`Tier A · 11` active purple, `Corporate email`, `Unassigned`, `+ Add filter`). Then a `DataTable`.
+**Demo ordering:** loading inbound submissions are pinned above ready rows so in-progress agent work is visible during demos; ready rows remain ranked by tier and score.
+**Refresh behavior:** the queue passively refreshes every 10 seconds while visible, switches to a 3-second refresh while loading submissions are present, and refreshes immediately when the rep returns to the tab.
 **Columns** (grid `56px 1.5fr 1.4fr 1.1fr 72px 96px 2.1fr 150px 34px`): Tier · Lead (name + role) · Company · Market · Units (mono) · Score (`ScoreMeter`) · Why this lead · Draft action · chevron.
 **Rows (sample data):**
 - Sarah Chen · VP Leasing · Greystar · Austin TX · 794k · **92 A** · "Top-50 operator · acquisition news 3d ago · 8% rent growth" · [Copy draft]. Row tinted `#FAF9FE`.

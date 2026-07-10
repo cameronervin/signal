@@ -122,8 +122,9 @@ def test_lead_queue_shows_ready_rows_before_loading_runs() -> None:
 def test_delete_lead_removes_ready_lead_queue_row_and_agent_run() -> None:
     repository = FakeSignalRepository()
     execution_service = AgentExecutionService(repository)
+    knowledge_graph = FakeKnowledgeGraphService()
     app = _test_app()
-    _override_services(app, repository, execution_service)
+    _override_services(app, repository, execution_service, knowledge_graph)
     ready_lead = _lead_response(
         lead_id=READY_LEAD_ID,
         run_id=READY_RUN_ID,
@@ -165,13 +166,15 @@ def test_delete_lead_removes_ready_lead_queue_row_and_agent_run() -> None:
     assert queue.json() == []
     assert completed.json() == []
     assert runs.json() == []
+    assert knowledge_graph.deleted_lead_ids == [str(READY_LEAD_ID)]
 
 
 def test_delete_lead_removes_loading_queue_row() -> None:
     repository = FakeSignalRepository()
     execution_service = AgentExecutionService(repository)
+    knowledge_graph = FakeKnowledgeGraphService()
     app = _test_app()
-    _override_services(app, repository, execution_service)
+    _override_services(app, repository, execution_service, knowledge_graph)
     loading_run = execution_service.build_queued_run_response(
         lead_id=LOADING_LEAD_ID,
         run_id=LOADING_RUN_ID,
@@ -199,26 +202,30 @@ def test_delete_lead_removes_loading_queue_row() -> None:
     assert deleted.json()["deleted_agent_runs"] == 1
     assert deleted.json()["deleted_status_events"] == 1
     assert queue.json() == []
+    assert knowledge_graph.deleted_lead_ids == [str(LOADING_LEAD_ID)]
 
 
 def test_delete_lead_returns_404_for_missing_lead_intelligence() -> None:
     repository = FakeSignalRepository()
     execution_service = AgentExecutionService(repository)
+    knowledge_graph = FakeKnowledgeGraphService()
     app = _test_app()
-    _override_services(app, repository, execution_service)
+    _override_services(app, repository, execution_service, knowledge_graph)
 
     with TestClient(app) as client:
         response = client.delete(f"/api/v1/leads/{READY_LEAD_ID}")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Lead not found"
+    assert knowledge_graph.deleted_lead_ids == []
 
 
 def test_delete_lead_returns_409_for_active_worker_assignment() -> None:
     repository = FakeSignalRepository()
     execution_service = AgentExecutionService(repository)
+    knowledge_graph = FakeKnowledgeGraphService()
     app = _test_app()
-    _override_services(app, repository, execution_service)
+    _override_services(app, repository, execution_service, knowledge_graph)
     repository.active_assignment_lead_ids.add(READY_LEAD_ID)
 
     with TestClient(app) as client:
@@ -226,13 +233,15 @@ def test_delete_lead_returns_409_for_active_worker_assignment() -> None:
 
     assert response.status_code == 409
     assert "Digital Workforce assignment" in response.json()["detail"]
+    assert knowledge_graph.deleted_lead_ids == []
 
 
 def test_delete_lead_includes_worker_cleanup_when_requested() -> None:
     repository = FakeSignalRepository()
     execution_service = AgentExecutionService(repository)
+    knowledge_graph = FakeKnowledgeGraphService()
     app = _test_app()
-    _override_services(app, repository, execution_service)
+    _override_services(app, repository, execution_service, knowledge_graph)
     repository.active_assignment_lead_ids.add(READY_LEAD_ID)
     repository.worker_cleanup_counts_by_lead[READY_LEAD_ID] = {
         "assignments": 1,
@@ -283,13 +292,15 @@ def test_delete_lead_includes_worker_cleanup_when_requested() -> None:
     assert queue.json() == []
     assert runs.json() == []
     assert READY_LEAD_ID not in repository.active_assignment_lead_ids
+    assert knowledge_graph.deleted_lead_ids == [str(READY_LEAD_ID)]
 
 
 def test_delete_all_leads_skips_assigned_leads() -> None:
     repository = FakeSignalRepository()
     execution_service = AgentExecutionService(repository)
+    knowledge_graph = FakeKnowledgeGraphService()
     app = _test_app()
-    _override_services(app, repository, execution_service)
+    _override_services(app, repository, execution_service, knowledge_graph)
     repository.active_assignment_lead_ids.add(READY_LEAD_ID)
     blocked_lead = _lead_response(
         lead_id=READY_LEAD_ID,
@@ -347,6 +358,7 @@ def test_delete_all_leads_skips_assigned_leads() -> None:
     }
     assert [lead["id"] for lead in completed.json()] == [str(READY_LEAD_ID)]
     assert [run["lead_id"] for run in runs.json()] == [str(READY_LEAD_ID)]
+    assert knowledge_graph.deleted_all_graphs == 1
 
 
 class FakeDispatcher:
@@ -355,6 +367,18 @@ class FakeDispatcher:
 
     def enqueue_agent_run(self, run_id: UUID) -> None:
         self.run_ids.append(run_id)
+
+
+class FakeKnowledgeGraphService:
+    def __init__(self) -> None:
+        self.deleted_lead_ids: list[str] = []
+        self.deleted_all_graphs = 0
+
+    async def delete_lead_graph(self, lead_id: str) -> None:
+        self.deleted_lead_ids.append(lead_id)
+
+    async def delete_all_graphs(self) -> None:
+        self.deleted_all_graphs += 1
 
 
 def _test_app() -> FastAPI:
@@ -367,11 +391,13 @@ def _override_services(
     app: FastAPI,
     repository: FakeSignalRepository,
     execution_service: AgentExecutionService,
+    knowledge_graph_service: FakeKnowledgeGraphService | None = None,
 ) -> None:
     async def override_lead_service() -> LeadIntakeService:
         return LeadIntakeService(
             repository,
             agent_execution_service=execution_service,
+            knowledge_graph_service=knowledge_graph_service,
             task_dispatcher=FakeDispatcher(),
         )
 

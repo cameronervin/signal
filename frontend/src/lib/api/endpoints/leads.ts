@@ -30,14 +30,14 @@ export async function listLeads(): Promise<FixtureLead[]> {
 
 export async function listLeadQueue(): Promise<InboundLeadQueueRow[]> {
   if (isFixtureMode()) {
-    return [
+    return prioritizeLoadingRows([
       ...sortLeads(fixtureLeads).map((lead) => readyQueueRow(lead, null)),
       fixtureLoadingQueueRow()
-    ];
+    ]);
   }
 
   const rows = await apiGet<LeadQueueItemDto[]>("/api/v1/leads/queue");
-  return rows.map(mapLeadQueueItem);
+  return prioritizeLoadingRows(rows.map(mapLeadQueueItem));
 }
 
 export async function getLead(id: string): Promise<FixtureLead | undefined> {
@@ -201,6 +201,12 @@ function readyQueueRow(
     lead,
     run
   };
+}
+
+function prioritizeLoadingRows(rows: InboundLeadQueueRow[]): InboundLeadQueueRow[] {
+  const loadingRows = rows.filter((row) => row.state === "loading");
+  const readyRows = rows.filter((row) => row.state === "ready");
+  return [...loadingRows, ...readyRows];
 }
 
 function fixtureLoadingQueueRow(): InboundLeadQueueRow {

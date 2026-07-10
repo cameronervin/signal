@@ -16,6 +16,12 @@ class AgentTaskDispatcher(Protocol):
     def enqueue_agent_run(self, run_id: UUID) -> None: ...
 
 
+class KnowledgeGraphCleanupService(Protocol):
+    async def delete_lead_graph(self, lead_id: str) -> None: ...
+
+    async def delete_all_graphs(self) -> None: ...
+
+
 class CeleryAgentTaskDispatcher:
     def enqueue_agent_run(self, run_id: UUID) -> None:
         from app.workers.tasks import execute_signal_agent_run
@@ -46,10 +52,12 @@ class LeadIntakeService:
         repository: SignalRepository,
         *,
         agent_execution_service: AgentExecutionService,
+        knowledge_graph_service: KnowledgeGraphCleanupService | None = None,
         task_dispatcher: AgentTaskDispatcher | None = None,
     ) -> None:
         self.repository = repository
         self.agent_execution_service = agent_execution_service
+        self.knowledge_graph_service = knowledge_graph_service
         self.task_dispatcher = task_dispatcher or CeleryAgentTaskDispatcher()
 
     async def create_and_enqueue(self, lead: LeadCreate) -> AgentRunResponse:
@@ -146,9 +154,21 @@ class LeadIntakeService:
         ):
             raise LeadDeleteNotFoundError("Lead not found")
         await self.repository.commit()
+        await self._delete_knowledge_graph_lead(lead_id)
         return result
 
     async def delete_all_leads(self) -> LeadDeleteResponse:
         result = await self.repository.delete_all_lead_intelligence()
         await self.repository.commit()
+        await self._delete_all_knowledge_graphs()
         return result
+
+    async def _delete_knowledge_graph_lead(self, lead_id: UUID) -> None:
+        if self.knowledge_graph_service is None:
+            return
+        await self.knowledge_graph_service.delete_lead_graph(str(lead_id))
+
+    async def _delete_all_knowledge_graphs(self) -> None:
+        if self.knowledge_graph_service is None:
+            return
+        await self.knowledge_graph_service.delete_all_graphs()
